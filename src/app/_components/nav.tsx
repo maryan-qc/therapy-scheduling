@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
-import type { Role } from "@/lib/holds/types";
+import { isStaff, type Role } from "@/lib/holds/types";
 
 export function Nav({ email, role }: { email: string | null; role: Role | null }) {
   return (
@@ -10,6 +10,15 @@ export function Nav({ email, role }: { email: string | null; role: Role | null }
         <Link href="/slots" className="underline-offset-4 hover:underline">
           Slots
         </Link>
+        {isStaff(role) ? (
+          <Link href="/holds" className="underline-offset-4 hover:underline">
+            Holds
+          </Link>
+        ) : (
+          <Link href="/schedule" className="underline-offset-4 hover:underline">
+            My schedule
+          </Link>
+        )}
       </nav>
       <span className="ml-auto text-zinc-500" data-testid="viewer">
         {email ?? "—"} · {role ?? "no role"}
