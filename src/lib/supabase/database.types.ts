@@ -1,6 +1,7 @@
 // Типи схеми бази. Оновлюйте разом із міграцією: готовий файл — у Summary прогону job db-check у CI
-// (supabase gen types typescript --local на одноразовій базі); або npm run db:types після npx supabase link на ваш проєкт. Ця стартова версія написана вручну
-// й описує лише таблицю з міграції 20261012000000_profiles_and_roles.sql.
+// (supabase gen types typescript --local на одноразовій базі); або npm run db:types після npx supabase link на ваш проєкт.
+// Ця версія написана вручну за міграціями 20261012000000_profiles_and_roles.sql, 20261021150000_slot_hold_roles.sql і
+// 20261021150100_slot_holds.sql.
 
 export type Json =
   | string
@@ -36,6 +37,131 @@ export type Database = {
           created_at?: string;
         };
         Relationships: [];
+      };
+      therapists: {
+        Row: {
+          id: string;
+          email: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          name?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      slots: {
+        Row: {
+          id: string;
+          therapist_id: string;
+          starts_at: string;
+          ends_at: string;
+        };
+        Insert: {
+          id?: string;
+          therapist_id: string;
+          starts_at: string;
+          ends_at: string;
+        };
+        Update: {
+          id?: string;
+          therapist_id?: string;
+          starts_at?: string;
+          ends_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "slots_therapist_id_fkey";
+            columns: ["therapist_id"];
+            isOneToOne: false;
+            referencedRelation: "therapists";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      clients: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      holds: {
+        Row: {
+          id: string;
+          slot_id: string;
+          client_id: string;
+          created_by: string | null;
+          created_at: string;
+          expires_at: string;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+          released_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          slot_id: string;
+          client_id: string;
+          created_by?: string | null;
+          created_at: string;
+          expires_at: string;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          released_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          slot_id?: string;
+          client_id?: string;
+          created_by?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          released_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "holds_slot_id_fkey";
+            columns: ["slot_id"];
+            isOneToOne: false;
+            referencedRelation: "slots";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "holds_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
