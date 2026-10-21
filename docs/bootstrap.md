@@ -62,8 +62,16 @@
 - [x] Actions → CI → **Run workflow** (гілка `main`, `include_seed` ✓, один раз) → job `db-deploy` зелений —
       https://github.com/maryan-qc/therapy-scheduling/actions/runs/39632278553. У лозі: `Applying migration`
       `20261012000000_profiles_and_roles.sql`, `20261021150000_slot_hold_roles.sql`, `20261021150100_slot_holds.sql`,
-      `20261021160000_hold_and_confirm.sql`, далі `Seeding data from supabase/seed.sql`. Supabase MCP (лише читання):
-      4 міграції в історії, RLS увімкнено на всіх 5 таблицях `public`, Security Advisor — без зауважень
+      `20261021160000_hold_and_confirm.sql`, далі `Seeding data from supabase/seed.sql`
+- [x] Стан бази після `db-deploy` — інструменти Supabase MCP лише на читання (відтворити тими самими викликами для
+      проєкту `therapy-scheduling`):
+      - `list_migrations` → `20261012000000`, `20261021150000`, `20261021150100`, `20261021160000`;
+      - `list_tables(schemas: ["public"])` → `profiles`, `therapists`, `slots`, `clients`, `holds`, у кожної
+        `rls_enabled: true`;
+      - `get_advisors(type: "security")` → `lints: []`.
+
+      RLS, `revoke` і явні `grant` задано в міграції `supabase/migrations/20261021150100_slot_holds.sql`, а
+      функції утримання й підтвердження — у `supabase/migrations/20261021160000_hold_and_confirm.sql`
 - [x] Перша спроба `db-deploy` (push після merge https://github.com/maryan-qc/therapy-scheduling/pull/8) впала на кроці
       Dry run — `failed to parse connection string`: рядок секрету був неправильний, у базу нічого не потрапило. Секрет
       задано заново, повторний прогін зелений («Remote database is up to date») —
@@ -73,12 +81,13 @@
       `supabase/demo-users.json`
 - [x] Вхід на прод-URL через форму `/login`: `admin@example.test` і `scheduler1@example.test` → `/slots`,
       `therapist1@example.test` → `/schedule` (змінні Vercel і адреси Auth працюють)
-- [x] Перевірка зрізу на справжній базі через REST API з publishable-ключем під демо-користувачами: анонім — 401;
+- [x] Перевірка зрізу на справжній базі через REST API з publishable-ключем від імені демо-користувачів: анонім — 401;
       терапевт не створює картку клієнта (403) і не утримує / не підтверджує (`HOLD_FORBIDDEN`, `CONFIRM_FORBIDDEN`);
       планувальник: утримання `OK` → повторне `SLOT_UNAVAILABLE` → той самий клієнт в інший слот того самого часу
       `CLIENT_BUSY` → підтвердження `OK` → повторне `ALREADY_CONFIRMED`; утримання бачить лише терапевт свого слоту
-- [x] CI на `main` зелений: `spec`, `app`, `conformance`, `db-check` (`db-deploy` без секрету — пропущено) —
-      https://github.com/maryan-qc/therapy-scheduling/actions/runs/39322984542
+- [x] CI на `main` зелений: `spec`, `app`, `conformance`, `db-check` і `db-deploy` —
+      https://github.com/maryan-qc/therapy-scheduling/actions/runs/39631473516 (перший прогін на `main`, ще без
+      секрету й з пропущеним `db-deploy`, — https://github.com/maryan-qc/therapy-scheduling/actions/runs/39322984542)
 
 ## 6. Ruleset `solo-main` (лише після зеленого CI на `main`)
 
