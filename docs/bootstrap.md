@@ -30,8 +30,8 @@
       eu-west-3 (Paris). Старі проєкти — на паузі (вільний слот Free)
 - [x] Authentication → Sign In / Providers → User Signups: «Allow new users to sign up» **вимкнено**, «Confirm email»
       **вимкнено** (в інтерфейсі обидва перемикачі в одному блоці) — `docs/img/auth-signups.png`
-- [ ] Authentication → URL Configuration: Site URL = `https://therapy-scheduling-sigma.vercel.app`; Redirect URLs
-      `http://localhost:3000/**`, `https://*-mandrushchak-4349s-projects.vercel.app/**` — очікує
+- [x] Authentication → URL Configuration: Site URL = `https://therapy-scheduling-sigma.vercel.app`; Redirect URLs
+      `http://localhost:3000/**`, `https://*-mandrushchak-4349s-projects.vercel.app/**`
 - [x] `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_…`),
       `SUPABASE_SECRET_KEY` (`sb_secret_…`), `DEMO_USER_PASSWORD` — лише назви; значення не в git і не в чаті
 
@@ -40,7 +40,9 @@
 - [x] Settings → Environments → `production` (створив перший прогін CI): **Deployment branches** = Selected branches →
       `main`. Доказ (`gh api repos/maryan-qc/therapy-scheduling/environments/production`):
       `deployment_branch_policy: {custom_branch_policies: true, protected_branches: false}`, політики гілок: `["main"]`
-- [ ] Секрет environment `SUPABASE_DB_URL` = рядок **Session pooler** (порт 5432) з Supabase → Connect — очікує
+- [x] Секрет environment `SUPABASE_DB_URL` = рядок **Session pooler** (порт 5432) з Supabase → Connect, пароль
+      percent-encoded. Доказ: `gh secret list --env production` → `SUPABASE_DB_URL`; `gh secret list` (секрети репо) —
+      порожньо
 - [x] Запасний шлях (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`) — не потрібно
 - [ ] (Необов'язково) секрет репо `SPEC_DENYLIST` — не потрібно: списку назв PM не надсилала
 
@@ -57,10 +59,24 @@
 
 ## 5. База й перший зелений CI
 
-- [ ] Actions → CI → **Run workflow** (гілка `main`, `include_seed` ✓) → job `db-deploy` застосував міграції й сид — очікує
-      секрету `SUPABASE_DB_URL`
-- [ ] `npm run users:demo` (admin, scheduler1, scheduler2, therapist1, therapist2 з `supabase/demo-users.json`) →
-      вхід як `admin@example.test` локально й на прод-URL — після `db-deploy`
+- [x] Actions → CI → **Run workflow** (гілка `main`, `include_seed` ✓, один раз) → job `db-deploy` зелений —
+      https://github.com/maryan-qc/therapy-scheduling/actions/runs/39632278553. У лозі: `Applying migration`
+      `20261012000000_profiles_and_roles.sql`, `20261021150000_slot_hold_roles.sql`, `20261021150100_slot_holds.sql`,
+      `20261021160000_hold_and_confirm.sql`, далі `Seeding data from supabase/seed.sql`. Supabase MCP (лише читання):
+      4 міграції в історії, RLS увімкнено на всіх 5 таблицях `public`, Security Advisor — без зауважень
+- [x] Перша спроба `db-deploy` (push після merge https://github.com/maryan-qc/therapy-scheduling/pull/8) впала на кроці
+      Dry run — `failed to parse connection string`: рядок секрету був неправильний, у базу нічого не потрапило. Секрет
+      задано заново, повторний прогін зелений («Remote database is up to date») —
+      https://github.com/maryan-qc/therapy-scheduling/actions/runs/39631473516
+- [x] `npm run users:demo` (з `SUPABASE_SECRET_KEY` лише в локальному `.env.local`) → створено `admin@example.test`
+      (admin), `scheduler1@`, `scheduler2@` (scheduler), `therapist1@`, `therapist2@example.test` (therapist) за
+      `supabase/demo-users.json`
+- [x] Вхід на прод-URL через форму `/login`: `admin@example.test` і `scheduler1@example.test` → `/slots`,
+      `therapist1@example.test` → `/schedule` (змінні Vercel і адреси Auth працюють)
+- [x] Перевірка зрізу на справжній базі через REST API з publishable-ключем під демо-користувачами: анонім — 401;
+      терапевт не створює картку клієнта (403) і не утримує / не підтверджує (`HOLD_FORBIDDEN`, `CONFIRM_FORBIDDEN`);
+      планувальник: утримання `OK` → повторне `SLOT_UNAVAILABLE` → той самий клієнт в інший слот того самого часу
+      `CLIENT_BUSY` → підтвердження `OK` → повторне `ALREADY_CONFIRMED`; утримання бачить лише терапевт свого слоту
 - [x] CI на `main` зелений: `spec`, `app`, `conformance`, `db-check` (`db-deploy` без секрету — пропущено) —
       https://github.com/maryan-qc/therapy-scheduling/actions/runs/39322984542
 
@@ -81,8 +97,9 @@
       завис у стані «in_progress», і PR не зливався до перезапуску job; push у `main` напряму ruleset відхиляє
 - [x] Vercel створює preview для кожного PR (статус «Vercel Preview» у PR)
 - [x] **Squash and merge** → прод-деплой Vercel з `main` пройшов (Production, READY)
-- [ ] (З першою задачею, що має міграцію) `db-check` зелений — https://github.com/maryan-qc/therapy-scheduling/pull/6;
-      після merge `db-deploy` застосує міграції, щойно буде секрет — очікує
+- [x] (З першою задачею, що має міграцію) `db-check` зелений — https://github.com/maryan-qc/therapy-scheduling/pull/6 і
+      https://github.com/maryan-qc/therapy-scheduling/pull/7; міграції в прод застосував лише `db-deploy` з `main`
+      (прогони вище), не ноутбук і не Dashboard
 
 ## 8. Вимоги PM і специфікація
 
