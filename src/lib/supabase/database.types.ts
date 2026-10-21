@@ -1,7 +1,7 @@
 // Типи схеми бази. Оновлюйте разом із міграцією: готовий файл — у Summary прогону job db-check у CI
 // (supabase gen types typescript --local на одноразовій базі); або npm run db:types після npx supabase link на ваш проєкт.
-// Ця версія написана вручну за міграціями 20261012000000_profiles_and_roles.sql, 20261021150000_slot_hold_roles.sql і
-// 20261021150100_slot_holds.sql.
+// Ця версія написана вручну за міграціями 20261012000000_profiles_and_roles.sql, 20261021150000_slot_hold_roles.sql,
+// 20261021150100_slot_holds.sql і 20261021160000_hold_and_confirm.sql.
 
 export type Json =
   | string
@@ -168,7 +168,14 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      hold_slot: {
+        Args: { p_slot_id: string; p_client_id: string };
+        Returns: Json;
+      };
+      confirm_hold: {
+        Args: { p_hold_id: string };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;
