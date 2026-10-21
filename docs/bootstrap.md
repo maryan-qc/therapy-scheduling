@@ -81,10 +81,12 @@
       `supabase/demo-users.json`
 - [x] Вхід на прод-URL через форму `/login`: `admin@example.test` і `scheduler1@example.test` → `/slots`,
       `therapist1@example.test` → `/schedule` (змінні Vercel і адреси Auth працюють)
-- [x] Перевірка зрізу на справжній базі через REST API з publishable-ключем від імені демо-користувачів: анонім — 401;
+- [x] Перевірка зрізу на справжній базі через REST API з ключем `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` від імені
+      демо-користувачів: анонім — 401;
       терапевт не створює картку клієнта (403) і не утримує / не підтверджує (`HOLD_FORBIDDEN`, `CONFIRM_FORBIDDEN`);
       планувальник: утримання `OK` → повторне `SLOT_UNAVAILABLE` → той самий клієнт в інший слот того самого часу
-      `CLIENT_BUSY` → підтвердження `OK` → повторне `ALREADY_CONFIRMED`; утримання бачить лише терапевт свого слоту
+      `CLIENT_BUSY` → підтвердження `OK` → повторне `ALREADY_CONFIRMED`; терапевт бачить утримання лише власних слотів
+      (політика `holds_select`): `therapist2` — 1 рядок для свого слоту, `therapist1` — 0
 - [x] CI на `main` зелений: `spec`, `app`, `conformance`, `db-check` і `db-deploy` —
       https://github.com/maryan-qc/therapy-scheduling/actions/runs/39631473516 (перший прогін на `main`, ще без
       секрету й з пропущеним `db-deploy`, — https://github.com/maryan-qc/therapy-scheduling/actions/runs/39322984542)
