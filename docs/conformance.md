@@ -34,32 +34,32 @@
 | AC | Що перевіряє | Код | Тест | Статус |
 |---|---|---|---|---|
 | AC-HOLD-01 | слоти дня зі статусами вільний / «Held» / «Confirmed»; утримати можна лише вільний | `src/lib/holds/day-view.ts`, `src/lib/holds/status.ts`, `src/app/slots/page.tsx` | `tests/holds/day-view.test.ts` | реалізовано |
-| AC-HOLD-02 | утримання вільного слоту: «Held», клієнт, «Held until» +24 години | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-03 | утриманий слот не утримують за іншим клієнтом | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-04 | два одночасні утримання — рівно одне створено | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-05 | о 14:29 через добу утримання ще «Held» | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-06 | о 14:30 через добу утримання «Expired», слот вільний | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-07 | слот, що вже почався, не утримують | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-08 | терапевт не утримує слот | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-02 | утримання вільного слоту: «Held», клієнт, «Held until» +24 години | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-03 | утриманий слот не утримують за іншим клієнтом | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-04 | два одночасні утримання — рівно одне створено | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-05 | о 14:29 через добу утримання ще «Held» | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-06 | о 14:30 через добу утримання «Expired», слот вільний | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-07 | слот, що вже почався, не утримують | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-08 | терапевт не утримує слот | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-09 | терапевт бачить лише власний розклад | — | — | відкладено (чекає реалізації) |
 | AC-HOLD-10 | створення картки клієнта з ім'ям і email | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/holds/clients.test.ts` | реалізовано |
 | AC-HOLD-11 | порожнє ім'я клієнта відхилено | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/holds/clients.test.ts` | реалізовано |
-| AC-HOLD-12 | підтвердження утримання: «Confirmed», без «Held until», не прострочується | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-13 | прострочене утримання не підтверджують | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-14 | терапевт не підтверджує утримання | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-12 | підтвердження утримання: «Confirmed», без «Held until», не прострочується | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-13 | прострочене утримання не підтверджують | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-14 | терапевт не підтверджує утримання | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-15 | email без «@» відхилено | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/holds/clients.test.ts` | реалізовано |
 | AC-HOLD-16 | дублікат email клієнта відхилено | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/holds/clients.test.ts` | реалізовано |
-| AC-HOLD-17 | повторне утримання за тим самим клієнтом не продовжує «Held until» | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-17 | повторне утримання за тим самим клієнтом не продовжує «Held until» | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-18 | день без вільних слотів: повідомлення й усі слоти зі статусами | `src/lib/holds/day-view.ts`, `src/lib/holds/status.ts`, `src/app/slots/page.tsx` | `tests/holds/day-view.test.ts` | реалізовано |
-| AC-HOLD-19 | адміністратор утримує й підтверджує, як планувальник | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-19 | адміністратор утримує й підтверджує, як планувальник | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-20 | планувальник бачить прострочене утримання зі статусом «Expired» | — | — | відкладено (чекає реалізації) |
 | AC-HOLD-21 | терапевт не бачить простроченого утримання в розкладі | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-22 | утримання слоту, що вже почався, не підтверджують, лишається «Held» | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-23 | підтвердження о 09:59 перед слотом о 10:00 | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-22 | утримання слоту, що вже почався, не підтверджують, лишається «Held» | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-23 | підтвердження о 09:59 перед слотом о 10:00 | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-24 | день без жодного слоту — лише повідомлення | `src/lib/holds/day-view.ts`, `src/lib/holds/status.ts`, `src/app/slots/page.tsx` | `tests/holds/day-view.test.ts` | реалізовано |
-| AC-HOLD-25 | клієнт з утриманням на цей час в іншого терапевта — утримання не створюється | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-26 | прострочене утримання клієнта не заважає новому на той самий час | — | — | відкладено (чекає реалізації) |
-| AC-HOLD-27 | інший планувальник підтверджує утримання | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-25 | клієнт з утриманням на цей час в іншого терапевта — утримання не створюється | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-26 | прострочене утримання клієнта не заважає новому на той самий час | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-27 | інший планувальник підтверджує утримання | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-28 | прострочене утримання видно планувальнику за хвилину до початку слоту | — | — | відкладено (чекає реалізації) |
 | AC-HOLD-29 | прострочене утримання не видно з початком слоту | — | — | відкладено (чекає реалізації) |
 | AC-HOLD-30 | розклад терапевта — поточний тиждень пн–нд з усіма слотами | — | — | відкладено (чекає реалізації) |
@@ -68,4 +68,4 @@
 | AC-HOLD-33 | «No free slots on this day.», коли попереду немає вільних | `src/lib/holds/day-view.ts`, `src/lib/holds/status.ts`, `src/app/slots/page.tsx` | `tests/holds/day-view.test.ts` | реалізовано |
 | AC-HOLD-34 | дублікат email з іншим регістром і пробілами відхилено | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/holds/clients.test.ts` | реалізовано |
 | AC-HOLD-35 | email зберігається й показується малими літерами без пробілів | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/holds/clients.test.ts` | реалізовано |
-| AC-HOLD-36 | друге підтвердження того самого утримання відхилено | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-36 | друге підтвердження того самого утримання відхилено | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/holds/hold-confirm.test.ts` | реалізовано |

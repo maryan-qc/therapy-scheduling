@@ -21,7 +21,7 @@
 
 ## 2. Утримання й підтвердження (`task/hold-confirm`)
 
-- [ ] 2.1 Міграція `public.hold_slot` / `private.hold_slot_at` і `public.confirm_hold` / `private.confirm_hold_at`;
+- [x] 2.1 Міграція `public.hold_slot` / `private.hold_slot_at` і `public.confirm_hold` / `private.confirm_hold_at`;
   `rules.ts`, `messages.ts`; server actions `holdSlot`, `confirmHold`, кнопки «Hold» і «Confirm» на `/slots`; тести.
   Done when: AC-HOLD-02, AC-HOLD-03, AC-HOLD-04, AC-HOLD-05, AC-HOLD-06, AC-HOLD-07, AC-HOLD-08, AC-HOLD-12,
   AC-HOLD-13, AC-HOLD-14, AC-HOLD-17, AC-HOLD-19, AC-HOLD-22, AC-HOLD-23, AC-HOLD-25, AC-HOLD-26, AC-HOLD-27,

@@ -1,6 +1,7 @@
 import { Nav } from "@/app/_components/nav";
 import { CLIENT_MESSAGES, type ClientErrorCode } from "@/lib/holds/clients";
 import { buildDayView } from "@/lib/holds/day-view";
+import { CONFIRM_MESSAGES, HOLD_MESSAGES } from "@/lib/holds/messages";
 import {
   formatPracticeDateTime,
   formatPracticeTime,
@@ -11,12 +12,15 @@ import {
 } from "@/lib/holds/time";
 import { isStaff, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
-import { addClient } from "./actions";
+import { addClient, confirmHold, holdSlot } from "./actions";
 
 const MESSAGES: Record<string, string> = {
   ...(CLIENT_MESSAGES satisfies Record<ClientErrorCode, string>),
   CLIENT_FORBIDDEN: "Only schedulers and admins can create clients.",
   CLIENT_CREATED: "Client created.",
+  ...Object.fromEntries(Object.entries(HOLD_MESSAGES).map(([code, text]) => [`hold.${code}`, text])),
+  ...Object.fromEntries(Object.entries(CONFIRM_MESSAGES).map(([code, text]) => [`confirm.${code}`, text])),
+  "hold.CLIENT_REQUIRED": "Select a client to hold the slot.",
 };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -136,6 +140,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                   <th className="py-1">Status</th>
                   <th className="py-1">Client</th>
                   <th className="py-1">Held until</th>
+                  {staff ? <th className="py-1">Action</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -151,6 +156,48 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                     <td className="py-2">
                       {slot.hold?.heldUntil ? `Held until ${formatPracticeDateTime(slot.hold.heldUntil)}` : "—"}
                     </td>
+                    {staff ? (
+                      <td className="py-2">
+                        {slot.canHold ? (
+                          <form action={holdSlot} className="flex gap-2">
+                            <input type="hidden" name="back" value={back} />
+                            <input type="hidden" name="slot_id" value={slot.id} />
+                            <select
+                              name="client_id"
+                              defaultValue=""
+                              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700"
+                            >
+                              <option value="" disabled>
+                                Client…
+                              </option>
+                              {clients.map((client) => (
+                                <option key={client.id} value={client.id}>
+                                  {client.name} ({client.email})
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="submit"
+                              className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700"
+                            >
+                              Hold
+                            </button>
+                          </form>
+                        ) : null}
+                        {slot.status === "Held" && slot.hold ? (
+                          <form action={confirmHold}>
+                            <input type="hidden" name="back" value={back} />
+                            <input type="hidden" name="hold_id" value={slot.hold.id} />
+                            <button
+                              type="submit"
+                              className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700"
+                            >
+                              Confirm
+                            </button>
+                          </form>
+                        ) : null}
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
