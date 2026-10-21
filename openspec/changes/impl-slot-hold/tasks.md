@@ -6,16 +6,16 @@
 
 ## 1. Дані, слоти дня й картка клієнта (`task/day-slots`)
 
-- [ ] 1.1 Міграція ролей `admin` / `scheduler` / `therapist` (дані → default → constraint); `supabase/demo-users.json`
+- [x] 1.1 Міграція ролей `admin` / `scheduler` / `therapist` (дані → default → constraint); `supabase/demo-users.json`
   з п'ятьма синтетичними користувачами.
   Done when: `db-check` зелений; після merge `db-deploy` зелений і `npm run users:demo` ставить п'ять ролей.
-- [ ] 1.2 Міграція `therapists`, `slots`, `clients`, `holds` з RLS, `revoke all` + GRANT, політиками й демо-даними;
+- [x] 1.2 Міграція `therapists`, `slots`, `clients`, `holds` з RLS, `revoke all` + GRANT, політиками й демо-даними;
   `database.types.ts` за новою схемою.
   Done when: `db-check` зелений; `npm run typecheck` зелений з новими типами.
-- [ ] 1.3 `time.ts`, `status.ts`, `day-view.ts`; сторінка `/slots` (терапевт, дата, слоти дня зі статусами Free / Held /
+- [x] 1.3 `time.ts`, `status.ts`, `day-view.ts`; сторінка `/slots` (терапевт, дата, слоти дня зі статусами Free / Held /
   Confirmed / Past); перенаправлення з `/` за роллю; тести.
   Done when: AC-HOLD-01, AC-HOLD-18, AC-HOLD-24, AC-HOLD-32, AC-HOLD-33.
-- [ ] 1.4 `clients.ts` (`validateClient`, `normalizeEmail`), server action `createClient`, форма нового клієнта на
+- [x] 1.4 `clients.ts` (`validateClient`, `normalizeEmail`), server action `createClient`, форма нового клієнта на
   `/slots`; тести.
   Done when: AC-HOLD-10, AC-HOLD-11, AC-HOLD-15, AC-HOLD-16, AC-HOLD-34, AC-HOLD-35.
 
