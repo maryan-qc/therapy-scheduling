@@ -1,7 +1,7 @@
 # Дизайн-система: Therapy scheduling
 
 - **Джерело:** артефакт Claude Design типу Design System — https://claude.ai/artifact/4gmsBqWR4ZaqwwJKjLsXSd
-  (приватний; знімок — в описі PR дизайн-системи). Правила й токени перенесено агентом Claude Code у цей файл і
+  (приватний; знімок — `docs/img/ws7-claude-design-artifact.png` і в описі PR дизайн-системи). Правила й токени перенесено агентом Claude Code у цей файл і
   `src/app/globals.css`; промпт для артефакту — в описі того самого PR.
 - **Вхід від PM:** розділу «Вигляд і тон» у `requirements/product.md` на момент PR немає (знімок 2026-10-21), тому
   джерело — бачення продукту й ролі з `requirements/product.md` і бриф команди.
