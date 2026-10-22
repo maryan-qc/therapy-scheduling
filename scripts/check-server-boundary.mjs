@@ -50,7 +50,15 @@ function walk(dir, out = []) {
   for (const name of entries) {
     if (SKIP_DIRS.has(name)) continue;
     const full = join(dir, name);
-    if (statSync(full).isDirectory()) walk(full, out);
+    let st;
+    try {
+      st = statSync(full);
+    } catch (error) {
+      // Запис зник під час обходу чи бите посилання — шлях неперевірений, але решту перевіряємо.
+      report(relative(root, full), 0, `шлях не вдалося прочитати (${error.code ?? error.message}) — перевірка неповна`);
+      continue;
+    }
+    if (st.isDirectory()) walk(full, out);
     else if (EXT.test(name)) out.push(full);
   }
   return out;
@@ -61,9 +69,19 @@ const report = (file, line, message) => problems.push(`${file.split(sep).join("/
 
 // Імпорт, реекспорт, import() чи require() admin-клієнта — за нормалізованим шляхом модуля, а не за формою рядка:
 // `@/lib/supabase/admin`, `../supabase/admin` із src/lib/<тека>/, `./admin` із src/lib/supabase/ — усе це той самий файл.
-// Шукаємо в усьому тексті файлу: `\s` охоплює й перенос рядка після `from` чи `import(`.
+// Шукаємо в усьому тексті файлу; між токенами — пробіли, переноси рядків і коментарі (`import(/* … */ "…")`).
+// Межа правила: це регулярний вираз, а не парсер — шлях, складений рядками під час виконання, він не побачить;
+// таке ловлять рев'ю й тести, а не цей скрипт.
 const ADMIN_MODULE = normalize(ADMIN_FILE.replace(/\.ts$/, ""));
-const SPECIFIER = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)["']([^"']+)["']/gm;
+const GAP = String.raw`(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)*`;
+const SPECIFIER = new RegExp(
+  String.raw`(?:\bfrom${GAP}|\bimport${GAP}\(${GAP}|\brequire${GAP}\(${GAP}|^\s*import${GAP})["']([^"']+)["']`,
+  "gm",
+);
+// Директива модуля — лише в його пролозі (перед нею можуть бути коментарі); "use server" усередині функції робить
+// серверною лише цю функцію, а не весь файл.
+const PROLOGUE = String.raw`^(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)*`;
+const USE_SERVER_FILE = new RegExp(`${PROLOGUE}["']use server["']`);
 function adminImportLines(text, fileRel) {
   const lines = new Set();
   for (const m of text.matchAll(SPECIFIER)) {
@@ -83,7 +101,7 @@ for (const file of BASES.flatMap((b) => walk(join(root, b)))) {
   const lines = text.split(/\r?\n/);
   const isClient = /^\s*["']use client["']/m.test(text);
   const isServerFile =
-    /^\s*["']use server["']/m.test(text) || ["actions.ts", "route.ts"].includes(basename(file)) || rel === ADMIN_FILE;
+    USE_SERVER_FILE.test(text) || ["actions.ts", "route.ts"].includes(basename(file)) || rel === ADMIN_FILE;
 
   lines.forEach((line, i) => {
     if (/NEXT_PUBLIC_[A-Z0-9_]*(SECRET|SERVICE_ROLE)/.test(line)) {

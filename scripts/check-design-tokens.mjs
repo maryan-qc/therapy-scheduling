@@ -122,7 +122,14 @@ function walk(dir, out = []) {
   for (const name of entries) {
     if (SKIP_DIRS.has(name)) continue;
     const full = join(dir, name);
-    const st = statSync(full);
+    let st;
+    try {
+      st = statSync(full);
+    } catch (error) {
+      // Запис зник під час обходу чи бите посилання — шлях неперевірений, але решту перевіряємо.
+      unreadable.push(`${relative(root, full).split(sep).join("/")} (${error.code ?? error.message})`);
+      continue;
+    }
     if (st.isDirectory()) walk(full, out);
     else if (EXT.test(name)) out.push(full);
   }
@@ -153,7 +160,7 @@ if (asJson) {
   console.log(JSON.stringify({ ok, scanned: SCANNED, unreadable, findings }, null, 2));
 } else {
   if (!hasSrc) console.log(`check-design-tokens: теки src/ немає — перевіряю ${SCANNED.join(", ")}.`);
-  for (const dir of unreadable) console.log(`check-design-tokens: теку не вдалося прочитати — ${dir}; перевірка неповна.`);
+  for (const dir of unreadable) console.log(`check-design-tokens: шлях не вдалося прочитати — ${dir}; перевірка неповна.`);
   if (findings.length === 0 && unreadable.length === 0) {
     console.log(`check-design-tokens: OK — сирих кольорів поза ${where} немає.`);
   } else if (findings.length > 0) {
