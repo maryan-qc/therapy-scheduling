@@ -26,22 +26,25 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
   if (!isStaff(viewer.role)) redirect("/schedule");
   const now = new Date();
 
-  const { data: holdRows } = await viewer.supabase
-    .from("holds")
-    .select("id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  // Утримання, клієнти й терапевти одне від одного не залежать — паралельно; слоти — за id з утримань.
+  const [{ data: holdRows }, { data: clientRows }, { data: therapistRows }] = await Promise.all([
+    viewer.supabase
+      .from("holds")
+      .select("id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at")
+      .order("created_at", { ascending: false })
+      .limit(500),
+    viewer.supabase.from("clients").select("id, name, email"),
+    viewer.supabase.from("therapists").select("id, name, email"),
+  ]);
   const holds: HoldRow[] = holdRows ?? [];
+  const clients: ClientRow[] = clientRows ?? [];
+  const therapists: TherapistRow[] = therapistRows ?? [];
   const slotIds = [...new Set(holds.map((hold) => hold.slot_id))];
   const { data: slotRows } =
     slotIds.length > 0
       ? await viewer.supabase.from("slots").select("id, therapist_id, starts_at, ends_at").in("id", slotIds)
       : { data: [] };
   const slots: SlotRow[] = slotRows ?? [];
-  const { data: clientRows } = await viewer.supabase.from("clients").select("id, name, email");
-  const clients: ClientRow[] = clientRows ?? [];
-  const { data: therapistRows } = await viewer.supabase.from("therapists").select("id, name, email");
-  const therapists: TherapistRow[] = therapistRows ?? [];
 
   const items = buildHoldsList(holds, slots, clients, therapists, now);
   const errorCode = first(params.error);

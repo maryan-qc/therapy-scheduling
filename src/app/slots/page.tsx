@@ -41,11 +41,13 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
   const staff = isStaff(viewer.role);
 
   // RLS: планувальник і адміністратор бачать усіх терапевтів, терапевт — лише себе.
-  const { data: therapistRows } = await viewer.supabase
-    .from("therapists")
-    .select("id, name, email")
-    .order("name");
+  // Терапевти й клієнти одне від одного не залежать — один round trip до бази замість двох.
+  const [{ data: therapistRows }, { data: clientRows }] = await Promise.all([
+    viewer.supabase.from("therapists").select("id, name, email").order("name"),
+    viewer.supabase.from("clients").select("id, name, email").order("name"),
+  ]);
   const therapists: TherapistRow[] = therapistRows ?? [];
+  const clients: ClientRow[] = clientRows ?? [];
   const therapist = therapists.find((t) => t.id === first(params.therapist)) ?? therapists[0];
 
   const requestedDate = first(params.date);
@@ -76,8 +78,6 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
     }
   }
 
-  const { data: clientRows } = await viewer.supabase.from("clients").select("id, name, email").order("name");
-  const clients: ClientRow[] = clientRows ?? [];
   const view = buildDayView(slots, holds, clients, now);
 
   const back = `/slots?therapist=${therapist?.id ?? ""}&date=${date}`;
