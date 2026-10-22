@@ -1,26 +1,158 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Токени — з DESIGN.md (розділ 2). Темна тема — за системою (prefers-color-scheme), тож вбудований варіант dark:
+   Tailwind 4 теж слідує за системою; класового .dark і @custom-variant dark немає. */
 
 @theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+
+  --color-status-free: var(--status-free);
+  --color-status-free-foreground: var(--status-free-foreground);
+  --color-status-held: var(--status-held);
+  --color-status-held-foreground: var(--status-held-foreground);
+  --color-status-confirmed: var(--status-confirmed);
+  --color-status-confirmed-foreground: var(--status-confirmed-foreground);
+  --color-status-past: var(--status-past);
+  --color-status-past-foreground: var(--status-past-foreground);
+  --color-status-expired: var(--status-expired);
+  --color-status-expired-foreground: var(--status-expired-foreground);
+
+  /* --radius: 0.5rem → sm 4px · md 6px · lg 8px · xl 12px (DESIGN.md, розділ 4). */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-sm: var(--elevation-sm);
+  --shadow-lg: var(--elevation-lg);
+}
+
+@theme {
+  /* Підпис, опис, заголовки стовпців: 13/18 (DESIGN.md, розділ 3) → клас text-small. */
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.125rem;
+  /* Ширина вмісту сторінки 1200px → клас max-w-content. */
+  --container-content: 75rem;
+}
+
+:root {
+  --radius: 0.5rem;
+
+  --background: oklch(0.985 0.002 85);
+  --foreground: oklch(0.22 0.008 75);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.008 75);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.008 75);
+  --primary: oklch(0.32 0.045 262);
+  --primary-foreground: oklch(0.985 0.004 262);
+  --secondary: oklch(0.95 0.004 85);
+  --secondary-foreground: oklch(0.22 0.008 75);
+  --muted: oklch(0.96 0.004 85);
+  --muted-foreground: oklch(0.5 0.01 75);
+  --accent: oklch(0.945 0.005 85);
+  --accent-foreground: oklch(0.22 0.008 75);
+  --destructive: oklch(0.52 0.17 27);
+  --destructive-foreground: oklch(0.985 0.004 27);
+  --border: oklch(0.91 0.006 80);
+  --input: oklch(0.62 0.01 75);
+  --ring: oklch(0.52 0.12 258);
+  --overlay: oklch(0.22 0.008 75 / 0.4);
+
+  --status-free: oklch(0.955 0.035 155);
+  --status-free-foreground: oklch(0.42 0.09 155);
+  --status-held: oklch(0.955 0.045 85);
+  --status-held-foreground: oklch(0.45 0.09 65);
+  --status-confirmed: oklch(0.952 0.02 255);
+  --status-confirmed-foreground: oklch(0.44 0.12 258);
+  --status-past: oklch(0.945 0.003 85);
+  --status-past-foreground: oklch(0.47 0.008 75);
+  --status-expired: oklch(0.952 0.022 20);
+  --status-expired-foreground: oklch(0.48 0.15 25);
+
+  --elevation-sm: 0 1px 2px oklch(0.22 0.008 75 / 0.06);
+  --elevation-lg: 0 12px 32px -8px oklch(0.22 0.008 75 / 0.18), 0 2px 6px oklch(0.22 0.008 75 / 0.06);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: oklch(0.17 0.004 75);
+    --foreground: oklch(0.955 0.004 85);
+    --card: oklch(0.205 0.005 75);
+    --card-foreground: oklch(0.955 0.004 85);
+    --popover: oklch(0.225 0.005 75);
+    --popover-foreground: oklch(0.955 0.004 85);
+    --primary: oklch(0.9 0.02 262);
+    --primary-foreground: oklch(0.215 0.03 262);
+    --secondary: oklch(0.265 0.005 75);
+    --secondary-foreground: oklch(0.955 0.004 85);
+    --muted: oklch(0.245 0.005 75);
+    --muted-foreground: oklch(0.74 0.008 80);
+    --accent: oklch(0.275 0.006 75);
+    --accent-foreground: oklch(0.955 0.004 85);
+    --destructive: oklch(0.72 0.14 25);
+    --destructive-foreground: oklch(0.2 0.03 25);
+    --border: oklch(0.3 0.006 75);
+    --input: oklch(0.54 0.008 75);
+    --ring: oklch(0.74 0.11 258);
+    --overlay: oklch(0 0 0 / 0.6);
+
+    --status-free: oklch(0.285 0.045 155);
+    --status-free-foreground: oklch(0.87 0.09 155);
+    --status-held: oklch(0.3 0.045 75);
+    --status-held-foreground: oklch(0.88 0.09 80);
+    --status-confirmed: oklch(0.29 0.05 258);
+    --status-confirmed-foreground: oklch(0.87 0.06 255);
+    --status-past: oklch(0.255 0.004 75);
+    --status-past-foreground: oklch(0.76 0.006 80);
+    --status-expired: oklch(0.29 0.05 20);
+    --status-expired-foreground: oklch(0.86 0.07 20);
+
+    --elevation-sm: 0 1px 2px oklch(0 0 0 / 0.4);
+    --elevation-lg: 0 16px 40px -8px oklch(0 0 0 / 0.7);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    /* Без кольору межа в Tailwind 4 — колір тексту, а Table і Card ставлять border-b без кольору. */
+    /* Кільце фокусу — суцільне ring: виміряний контраст (≥ 3:1) діє лише без прозорості. */
+    @apply border-border outline-ring;
+  }
+  html {
+    /* Поля дати, select і скролбари теж темніють за системою. */
+    color-scheme: light dark;
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }

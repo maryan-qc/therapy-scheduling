@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Командний проєкт",
-  description: "Next.js + Supabase + OpenSpec",
+  title: "Therapy scheduling",
+  description: "Slot holds and therapist schedules for a therapy practice",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,33 +1,55 @@
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { isStaff, type Role } from "@/lib/holds/types";
 
-export function Nav({ email, role }: { email: string | null; role: Role | null }) {
+type Section = "/slots" | "/holds" | "/schedule";
+
+const ROLE_LABEL: Record<Role, string> = { admin: "Admin", scheduler: "Scheduler", therapist: "Therapist" };
+
+function NavLink({ href, current, children }: { href: Section; current?: Section; children: string }) {
+  const active = href === current;
   return (
-    <header className="flex flex-wrap items-center gap-4 border-b border-zinc-200 px-6 py-3 text-sm dark:border-zinc-800">
-      <span className="font-semibold">Therapy scheduling</span>
-      <nav className="flex gap-3">
-        <Link href="/slots" className="underline-offset-4 hover:underline">
-          Slots
-        </Link>
-        {isStaff(role) ? (
-          <Link href="/holds" className="underline-offset-4 hover:underline">
-            Holds
-          </Link>
-        ) : (
-          <Link href="/schedule" className="underline-offset-4 hover:underline">
-            My schedule
-          </Link>
-        )}
-      </nav>
-      <span className="ml-auto text-zinc-500" data-testid="viewer">
-        {email ?? "—"} · {role ?? "no role"}
-      </span>
-      <form action={signOut}>
-        <button type="submit" className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700">
-          Sign out
-        </button>
-      </form>
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={buttonVariants({ variant: active ? "secondary" : "ghost", size: "sm" })}
+    >
+      {children}
+    </Link>
+  );
+}
+
+export function Nav({ email, role, current }: { email: string | null; role: Role | null; current?: Section }) {
+  return (
+    <header className="border-b bg-background">
+      <div className="mx-auto flex h-14 w-full max-w-content items-center gap-4 px-6 text-sm">
+        <span className="font-semibold">Therapy scheduling</span>
+        <nav className="flex gap-1">
+          <NavLink href="/slots" current={current}>
+            Slots
+          </NavLink>
+          {isStaff(role) ? (
+            <NavLink href="/holds" current={current}>
+              Holds
+            </NavLink>
+          ) : (
+            <NavLink href="/schedule" current={current}>
+              My schedule
+            </NavLink>
+          )}
+        </nav>
+        <span className="ml-auto flex items-center gap-2 text-muted-foreground" data-testid="viewer">
+          <span className="truncate">{email ?? "—"}</span>
+          <Badge variant="outline">{role ? ROLE_LABEL[role] : "No role"}</Badge>
+        </span>
+        <form action={signOut}>
+          <Button type="submit" variant="ghost" size="sm">
+            Sign out
+          </Button>
+        </form>
+      </div>
     </header>
   );
 }

@@ -1,4 +1,13 @@
+import { ActionAlerts } from "@/app/_components/action-alerts";
 import { Nav } from "@/app/_components/nav";
+import { TimeZoneNote } from "@/app/_components/time-zone-note";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CLIENT_MESSAGES, type ClientErrorCode } from "@/lib/holds/clients";
 import { buildDayView } from "@/lib/holds/day-view";
 import { CONFIRM_MESSAGES, HOLD_MESSAGES } from "@/lib/holds/messages";
@@ -8,7 +17,6 @@ import {
   isValidDate,
   practiceDate,
   practiceDayRange,
-  PRACTICE_TIME_ZONE,
 } from "@/lib/holds/time";
 import { isStaff, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
@@ -78,158 +86,152 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
 
   return (
     <>
-      <Nav email={viewer.email} role={viewer.role} />
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-8">
-        <h1 className="text-2xl font-semibold">Therapist slots</h1>
+      <Nav email={viewer.email} role={viewer.role} current="/slots" />
+      <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-6 px-6 py-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl font-semibold tracking-tight">Therapist slots</h1>
+            <TimeZoneNote />
+          </div>
+          <form method="get" className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="therapist">Therapist</Label>
+              <NativeSelect id="therapist" name="therapist" defaultValue={therapist?.id}>
+                {therapists.map((t) => (
+                  <NativeSelectOption key={t.id} value={t.id}>
+                    {t.name}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="date">Date</Label>
+              <Input id="date" type="date" name="date" defaultValue={date} className="tabular-nums" />
+            </div>
+            <Button type="submit" variant="outline">
+              Show
+            </Button>
+          </form>
+        </div>
 
-        <form method="get" className="flex flex-wrap items-end gap-3 text-sm">
-          <label className="flex flex-col gap-1">
-            Therapist
-            <select
-              name="therapist"
-              defaultValue={therapist?.id}
-              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700"
-            >
-              {therapists.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1">
-            Date
-            <input
-              type="date"
-              name="date"
-              defaultValue={date}
-              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700"
-            />
-          </label>
-          <button type="submit" className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700">
-            Show
-          </button>
-          <span className="text-zinc-500">Time zone: {PRACTICE_TIME_ZONE}</span>
-        </form>
-
-        {errorCode && MESSAGES[errorCode] ? (
-          <p role="alert" className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-            {MESSAGES[errorCode]}
-          </p>
-        ) : null}
-        {okCode && MESSAGES[okCode] ? (
-          <p role="status" className="rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
-            {MESSAGES[okCode]}
-          </p>
-        ) : null}
+        <ActionAlerts
+          error={errorCode ? MESSAGES[errorCode] : undefined}
+          ok={okCode ? MESSAGES[okCode] : undefined}
+        />
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium">
+          <h2 className="text-base font-semibold tabular-nums">
             {therapist?.name ?? "No therapist"} · {date}
           </h2>
           {view.message ? (
-            <p data-testid="day-message" className="text-sm font-medium">
+            <p data-testid="day-message" className="text-sm text-muted-foreground">
               {view.message}
             </p>
           ) : null}
           {view.slots.length > 0 ? (
-            <table className="w-full text-left text-sm">
-              <thead className="text-zinc-500">
-                <tr>
-                  <th className="py-1">Time</th>
-                  <th className="py-1">Status</th>
-                  <th className="py-1">Client</th>
-                  <th className="py-1">Held until</th>
-                  {staff ? <th className="py-1">Action</th> : null}
-                </tr>
-              </thead>
-              <tbody>
-                {view.slots.map((slot) => (
-                  <tr key={slot.id} className="border-t border-zinc-200 dark:border-zinc-800">
-                    <td className="py-2">
-                      {formatPracticeTime(slot.startsAt)}–{formatPracticeTime(slot.endsAt)}
-                    </td>
-                    <td className="py-2" data-testid="slot-status">
-                      {slot.status}
-                    </td>
-                    <td className="py-2">{slot.hold ? `${slot.hold.clientName} (${slot.hold.clientEmail})` : "—"}</td>
-                    <td className="py-2">
-                      {slot.hold?.heldUntil ? `Held until ${formatPracticeDateTime(slot.hold.heldUntil)}` : "—"}
-                    </td>
-                    {staff ? (
-                      <td className="py-2">
-                        {slot.canHold ? (
-                          <form action={holdSlot} className="flex gap-2">
-                            <input type="hidden" name="back" value={back} />
-                            <input type="hidden" name="slot_id" value={slot.id} />
-                            <select
-                              name="client_id"
-                              defaultValue=""
-                              className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700"
-                            >
-                              <option value="" disabled>
-                                Client…
-                              </option>
-                              {clients.map((client) => (
-                                <option key={client.id} value={client.id}>
-                                  {client.name} ({client.email})
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="submit"
-                              className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700"
-                            >
-                              Hold
-                            </button>
-                          </form>
-                        ) : null}
-                        {slot.status === "Held" && slot.hold ? (
-                          <form action={confirmHold}>
-                            <input type="hidden" name="back" value={back} />
-                            <input type="hidden" name="hold_id" value={slot.hold.id} />
-                            <button
-                              type="submit"
-                              className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700"
-                            >
-                              Confirm
-                            </button>
-                          </form>
-                        ) : null}
-                      </td>
-                    ) : null}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Card className="gap-0 py-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Held until</TableHead>
+                    {staff ? <TableHead>Action</TableHead> : null}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {view.slots.map((slot) => (
+                    <TableRow key={slot.id} className={slot.status === "Past" ? "text-muted-foreground" : undefined}>
+                      <TableCell className="tabular-nums">
+                        {formatPracticeTime(slot.startsAt)}–{formatPracticeTime(slot.endsAt)}
+                      </TableCell>
+                      <TableCell data-testid="slot-status">
+                        <StatusBadge status={slot.status} />
+                      </TableCell>
+                      <TableCell>
+                        {slot.hold ? (
+                          `${slot.hold.clientName} (${slot.hold.clientEmail})`
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {slot.hold?.heldUntil ? (
+                          `Held until ${formatPracticeDateTime(slot.hold.heldUntil)}`
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      {staff ? (
+                        <TableCell>
+                          {slot.canHold ? (
+                            <form action={holdSlot} className="flex gap-2">
+                              <input type="hidden" name="back" value={back} />
+                              <input type="hidden" name="slot_id" value={slot.id} />
+                              <NativeSelect name="client_id" defaultValue="" size="sm" aria-label="Client">
+                                <NativeSelectOption value="" disabled>
+                                  Client…
+                                </NativeSelectOption>
+                                {clients.map((client) => (
+                                  <NativeSelectOption key={client.id} value={client.id}>
+                                    {client.name} ({client.email})
+                                  </NativeSelectOption>
+                                ))}
+                              </NativeSelect>
+                              <Button type="submit" variant="outline" size="sm">
+                                Hold
+                              </Button>
+                            </form>
+                          ) : null}
+                          {slot.status === "Held" && slot.hold ? (
+                            <form action={confirmHold}>
+                              <input type="hidden" name="back" value={back} />
+                              <input type="hidden" name="hold_id" value={slot.hold.id} />
+                              <Button type="submit" variant="outline" size="sm">
+                                Confirm
+                              </Button>
+                            </form>
+                          ) : null}
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           ) : null}
         </section>
 
         {staff ? (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-lg font-medium">Clients</h2>
-            <form action={addClient} className="flex flex-wrap items-end gap-3 text-sm">
-              <input type="hidden" name="back" value={back} />
-              <label className="flex flex-col gap-1">
-                Name
-                <input name="name" className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700" />
-              </label>
-              <label className="flex flex-col gap-1">
-                Email
-                <input name="email" className="rounded border border-zinc-300 px-2 py-1 dark:border-zinc-700" />
-              </label>
-              <button type="submit" className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700">
-                Create client
-              </button>
-            </form>
-            <ul className="text-sm" data-testid="clients">
-              {clients.map((client) => (
-                <li key={client.id}>
-                  {client.name} — {client.email}
-                </li>
-              ))}
-            </ul>
-          </section>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <h2>Clients</h2>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <form action={addClient} className="flex flex-wrap items-end gap-3">
+                <input type="hidden" name="back" value={back} />
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="client-name">Name</Label>
+                  <Input id="client-name" name="name" className="w-56" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="client-email">Email</Label>
+                  <Input id="client-email" name="email" className="w-64" />
+                </div>
+                <Button type="submit">Create client</Button>
+              </form>
+              <ul className="flex flex-col gap-1 text-sm" data-testid="clients">
+                {clients.map((client) => (
+                  <li key={client.id}>
+                    {client.name} <span className="text-muted-foreground">— {client.email}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
         ) : null}
       </main>
     </>

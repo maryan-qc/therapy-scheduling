@@ -1,6 +1,12 @@
 import { redirect } from "next/navigation";
+import { ActionAlerts } from "@/app/_components/action-alerts";
 import { Nav } from "@/app/_components/nav";
+import { TimeZoneNote } from "@/app/_components/time-zone-note";
 import { confirmHold } from "@/app/slots/actions";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CONFIRM_MESSAGES } from "@/lib/holds/messages";
 import { buildHoldsList } from "@/lib/holds/schedule";
 import { formatPracticeDateTime } from "@/lib/holds/time";
@@ -43,58 +49,66 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
 
   return (
     <>
-      <Nav email={viewer.email} role={viewer.role} />
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-8">
-        <h1 className="text-2xl font-semibold">Holds</h1>
-        {errorCode && MESSAGES[errorCode] ? (
-          <p role="alert" className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-            {MESSAGES[errorCode]}
-          </p>
-        ) : null}
-        {okCode && MESSAGES[okCode] ? (
-          <p role="status" className="rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
-            {MESSAGES[okCode]}
-          </p>
-        ) : null}
-        {items.length === 0 ? <p className="text-sm text-zinc-500">No holds.</p> : null}
-        <table className="w-full text-left text-sm">
-          <thead className="text-zinc-500">
-            <tr>
-              <th className="py-1">Slot</th>
-              <th className="py-1">Therapist</th>
-              <th className="py-1">Client</th>
-              <th className="py-1">Status</th>
-              <th className="py-1">Held until</th>
-              <th className="py-1">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.holdId} className="border-t border-zinc-200 dark:border-zinc-800">
-                <td className="py-2">{formatPracticeDateTime(item.slotStartsAt)}</td>
-                <td className="py-2">{item.therapistName}</td>
-                <td className="py-2">
-                  {item.clientName} ({item.clientEmail})
-                </td>
-                <td className="py-2" data-testid="hold-status">
-                  {item.status}
-                </td>
-                <td className="py-2">{item.heldUntil ? formatPracticeDateTime(item.heldUntil) : "—"}</td>
-                <td className="py-2">
-                  {item.status === "Held" ? (
-                    <form action={confirmHold}>
-                      <input type="hidden" name="back" value="/holds" />
-                      <input type="hidden" name="hold_id" value={item.holdId} />
-                      <button type="submit" className="rounded border border-zinc-300 px-3 py-1 dark:border-zinc-700">
-                        Confirm
-                      </button>
-                    </form>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <Nav email={viewer.email} role={viewer.role} current="/holds" />
+      <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-6 px-6 py-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight">Holds</h1>
+          <TimeZoneNote />
+        </div>
+        <ActionAlerts
+          error={errorCode ? MESSAGES[errorCode] : undefined}
+          ok={okCode ? MESSAGES[okCode] : undefined}
+        />
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No holds.</p>
+        ) : (
+          <Card className="gap-0 py-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Slot</TableHead>
+                  <TableHead>Therapist</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Held until</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.holdId}>
+                    <TableCell className="tabular-nums">{formatPracticeDateTime(item.slotStartsAt)}</TableCell>
+                    <TableCell>{item.therapistName}</TableCell>
+                    <TableCell>
+                      {item.clientName} ({item.clientEmail})
+                    </TableCell>
+                    <TableCell data-testid="hold-status">
+                      <StatusBadge status={item.status} />
+                    </TableCell>
+                    <TableCell className="tabular-nums">
+                      {item.heldUntil ? (
+                        formatPracticeDateTime(item.heldUntil)
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {item.status === "Held" ? (
+                        <form action={confirmHold}>
+                          <input type="hidden" name="back" value="/holds" />
+                          <input type="hidden" name="hold_id" value={item.holdId} />
+                          <Button type="submit" variant="outline" size="sm">
+                            Confirm
+                          </Button>
+                        </form>
+                      ) : null}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        )}
       </main>
     </>
   );
