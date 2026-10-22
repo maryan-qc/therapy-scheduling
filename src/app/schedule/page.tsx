@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Nav } from "@/app/_components/nav";
+import { TimeZoneNote } from "@/app/_components/time-zone-note";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { buildSchedule } from "@/lib/holds/schedule";
 import {
   addDays,
@@ -57,46 +62,67 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   }
 
   const days = therapist ? buildSchedule(therapist.id, week.monday, slots, holds, clients, now) : [];
+  const weekLink = buttonVariants({ variant: "outline", size: "sm" });
 
   return (
     <>
-      <Nav email={viewer.email} role={viewer.role} />
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 py-8">
-        <h1 className="text-2xl font-semibold">My schedule</h1>
-        {therapist ? null : <p className="text-sm">No therapist is linked to {viewer.email ?? "this user"}.</p>}
-        <div className="flex items-center gap-4 text-sm">
-          <Link href={`/schedule?week=${addDays(week.monday, -7)}`} className="underline">
-            ← Previous week
-          </Link>
-          <span className="font-medium" data-testid="week">
-            {week.monday} – {week.sunday}
-          </span>
-          <Link href={`/schedule?week=${addDays(week.monday, 7)}`} className="underline">
-            Next week →
-          </Link>
+      <Nav email={viewer.email} role={viewer.role} current="/schedule" />
+      <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-6 px-6 py-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl font-semibold tracking-tight">My schedule</h1>
+            <TimeZoneNote />
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <Link href={`/schedule?week=${addDays(week.monday, -7)}`} className={weekLink}>
+              ← Previous week
+            </Link>
+            <span className="font-medium tabular-nums" data-testid="week">
+              {week.monday} – {week.sunday}
+            </span>
+            <Link href={`/schedule?week=${addDays(week.monday, 7)}`} className={weekLink}>
+              Next week →
+            </Link>
+          </div>
         </div>
+        {therapist ? null : <p className="text-sm">No therapist is linked to {viewer.email ?? "this user"}.</p>}
         {days.map((day) => (
-          <section key={day.date} className="flex flex-col gap-1">
-            <h2 className="text-base font-medium">{day.date}</h2>
+          <section key={day.date} className="flex flex-col gap-2">
+            <h2 className="text-base font-semibold tabular-nums">{day.date}</h2>
             {day.slots.length === 0 ? (
-              <p className="text-sm text-zinc-500">No slots.</p>
+              <p className="text-sm text-muted-foreground">No slots.</p>
             ) : (
-              <ul className="text-sm">
-                {day.slots.map((slot) => (
-                  <li key={slot.id} className="flex gap-3 border-t border-zinc-200 py-1 dark:border-zinc-800">
-                    <span className="w-28">
-                      {formatPracticeTime(slot.startsAt)}–{formatPracticeTime(slot.endsAt)}
-                    </span>
-                    <span className="w-24" data-testid="slot-status">
-                      {slot.status}
-                    </span>
-                    <span>{slot.hold ? slot.hold.clientName : ""}</span>
-                    <span className="text-zinc-500">
-                      {slot.hold?.heldUntil ? `Held until ${formatPracticeDateTime(slot.hold.heldUntil)}` : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <Card className="gap-0 py-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-36">Time</TableHead>
+                      <TableHead className="w-36">Status</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Held until</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {day.slots.map((slot) => (
+                      <TableRow
+                        key={slot.id}
+                        className={slot.status === "Past" ? "text-muted-foreground" : undefined}
+                      >
+                        <TableCell className="tabular-nums">
+                          {formatPracticeTime(slot.startsAt)}–{formatPracticeTime(slot.endsAt)}
+                        </TableCell>
+                        <TableCell data-testid="slot-status">
+                          <StatusBadge status={slot.status} />
+                        </TableCell>
+                        <TableCell>{slot.hold ? slot.hold.clientName : ""}</TableCell>
+                        <TableCell className="text-muted-foreground tabular-nums">
+                          {slot.hold?.heldUntil ? `Held until ${formatPracticeDateTime(slot.hold.heldUntil)}` : ""}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
             )}
           </section>
         ))}

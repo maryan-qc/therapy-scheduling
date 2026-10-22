@@ -1,8 +1,15 @@
+import { CircleAlertIcon } from "lucide-react";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { login } from "./actions";
 
+// Мова інтерфейсу — англійська (припущення вимоги PM, requirements/2-planuvalnyk-utrymuie-slot-terapevta.md).
 const ERRORS: Record<string, string> = {
-  missing: "Вкажіть email і пароль.",
-  invalid: "Невірний email або пароль.",
+  missing: "Enter your email and password.",
+  invalid: "Incorrect email or password.",
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
@@ -10,41 +17,33 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const message = typeof error === "string" ? ERRORS[error] : undefined;
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
-      <h1 className="text-2xl font-semibold">Вхід</h1>
-      <form action={login} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Пароль
-          <input
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            className="rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </label>
-        {message ? (
-          <p role="alert" className="text-sm text-red-600">
-            {message}
-          </p>
-        ) : null}
-        <button
-          type="submit"
-          className="rounded bg-foreground px-4 py-2 font-medium text-background"
-        >
-          Увійти
-        </button>
-      </form>
+    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 py-16">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h1 className="text-xl font-semibold tracking-tight">Sign in</h1>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form action={login} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" autoComplete="email" required />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" autoComplete="current-password" required />
+            </div>
+            {message ? (
+              <Alert variant="destructive">
+                <CircleAlertIcon strokeWidth={1.5} aria-hidden="true" />
+                <AlertTitle>{message}</AlertTitle>
+              </Alert>
+            ) : null}
+            <Button type="submit">Sign in</Button>
+          </form>
+        </CardContent>
+      </Card>
     </main>
   );
 }
