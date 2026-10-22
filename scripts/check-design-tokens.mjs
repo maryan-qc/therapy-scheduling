@@ -108,11 +108,15 @@ function inlineStyleFindings(text) {
   return byLine;
 }
 
+// Нечитабельна тека не може мовчки дати «OK»: її файли лишилися б неперевіреними.
+const unreadable = [];
+
 function walk(dir, out = []) {
   let entries;
   try {
     entries = readdirSync(dir);
-  } catch {
+  } catch (error) {
+    unreadable.push(`${relative(root, dir).split(sep).join("/") || "."} (${error.code ?? error.message})`);
     return out;
   }
   for (const name of entries) {
@@ -144,16 +148,18 @@ for (const file of BASES.flatMap((b) => walk(join(root, b)))) {
 }
 
 const where = hasSrc ? "src/components/ui" : "components/ui";
+const ok = findings.length === 0 && unreadable.length === 0;
 if (asJson) {
-  console.log(JSON.stringify({ ok: findings.length === 0, scanned: SCANNED, findings }, null, 2));
+  console.log(JSON.stringify({ ok, scanned: SCANNED, unreadable, findings }, null, 2));
 } else {
   if (!hasSrc) console.log(`check-design-tokens: теки src/ немає — перевіряю ${SCANNED.join(", ")}.`);
-  if (findings.length === 0) {
+  for (const dir of unreadable) console.log(`check-design-tokens: теку не вдалося прочитати — ${dir}; перевірка неповна.`);
+  if (findings.length === 0 && unreadable.length === 0) {
     console.log(`check-design-tokens: OK — сирих кольорів поза ${where} немає.`);
-  } else {
+  } else if (findings.length > 0) {
     for (const f of findings) console.log(`${f.file}:${f.line}  [${f.rule}]  ${f.match}  — ${f.message}`);
     const files = new Set(findings.map((f) => f.file)).size;
     console.log(`\ncheck-design-tokens: ${findings.length} порушень у ${files} файлах. Правила — у DESIGN.md.`);
   }
 }
-process.exit(findings.length === 0 ? 0 : 1);
+process.exit(ok ? 0 : 1);

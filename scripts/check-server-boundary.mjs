@@ -61,17 +61,20 @@ const report = (file, line, message) => problems.push(`${file.split(sep).join("/
 
 // Імпорт, реекспорт, import() чи require() admin-клієнта — за нормалізованим шляхом модуля, а не за формою рядка:
 // `@/lib/supabase/admin`, `../supabase/admin` із src/lib/<тека>/, `./admin` із src/lib/supabase/ — усе це той самий файл.
+// Шукаємо в усьому тексті файлу: `\s` охоплює й перенос рядка після `from` чи `import(`.
 const ADMIN_MODULE = normalize(ADMIN_FILE.replace(/\.ts$/, ""));
-const SPECIFIER = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)["']([^"']+)["']/g;
-function importsAdmin(line, fileRel) {
-  for (const [, spec] of line.matchAll(SPECIFIER)) {
+const SPECIFIER = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)["']([^"']+)["']/gm;
+function adminImportLines(text, fileRel) {
+  const lines = new Set();
+  for (const m of text.matchAll(SPECIFIER)) {
+    const spec = m[1];
     let target;
     if (spec.startsWith("@/")) target = join(hasSrc ? "src" : "", spec.slice(2));
     else if (spec.startsWith(".")) target = relative(root, resolve(root, dirname(fileRel), spec));
     else continue;
-    if (normalize(target).replace(EXT, "") === ADMIN_MODULE) return true;
+    if (normalize(target).replace(EXT, "") === ADMIN_MODULE) lines.add(text.slice(0, m.index).split("\n").length);
   }
-  return false;
+  return lines;
 }
 
 for (const file of BASES.flatMap((b) => walk(join(root, b)))) {
@@ -89,19 +92,21 @@ for (const file of BASES.flatMap((b) => walk(join(root, b)))) {
     if (/SUPABASE_SECRET_KEY|SERVICE_ROLE_KEY/.test(line) && rel !== ADMIN_FILE) {
       report(rel, i + 1, `секретний ключ читається поза ${ADMIN_SHOWN}`);
     }
-    if (importsAdmin(line, rel) && rel !== ADMIN_FILE) {
-      if (isClient) report(rel, i + 1, 'admin-клієнт імпортовано у файлі з "use client"');
-      else if (!isServerFile) {
-        report(
-          rel,
-          i + 1,
-          'admin-клієнт імпортовано не з actions.ts / route.ts / "use server" — викликайте його з Server Action чи Route ' +
-            'Handler після перевірки ролі. Не додавайте "use server" у допоміжний модуль: кожен його експорт стане ' +
-            "публічним ендпойнтом",
-        );
-      }
-    }
   });
+
+  if (rel === ADMIN_FILE) continue;
+  for (const line of adminImportLines(text, rel)) {
+    if (isClient) report(rel, line, 'admin-клієнт імпортовано у файлі з "use client"');
+    else if (!isServerFile) {
+      report(
+        rel,
+        line,
+        'admin-клієнт імпортовано не з actions.ts / route.ts / "use server" — викликайте його з Server Action чи Route ' +
+          'Handler після перевірки ролі. Не додавайте "use server" у допоміжний модуль: кожен його експорт стане ' +
+          "публічним ендпойнтом",
+      );
+    }
+  }
 }
 
 const adminPath = join(root, ADMIN_FILE);
