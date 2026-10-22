@@ -78,10 +78,11 @@ const SPECIFIER = new RegExp(
   String.raw`(?:\bfrom${GAP}|\bimport${GAP}\(${GAP}|\brequire${GAP}\(${GAP}|^\s*import${GAP})["']([^"']+)["']`,
   "gm",
 );
-// Директива модуля — лише в його пролозі (перед нею можуть бути коментарі); "use server" усередині функції робить
-// серверною лише цю функцію, а не весь файл.
+// Директива модуля — лише в його пролозі (перед нею можуть бути коментарі) і лише як окрема інструкція: після рядка —
+// `;`, кінець рядка чи файлу. "use server" усередині функції чи як частина виразу (`"use server" + ""`) файл
+// серверним не робить.
 const PROLOGUE = String.raw`^(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)*`;
-const USE_SERVER_FILE = new RegExp(`${PROLOGUE}["']use server["']`);
+const USE_SERVER_FILE = new RegExp(String.raw`${PROLOGUE}["']use server["'][ \t]*(?:;|\r?\n|$)`);
 function adminImportLines(text, fileRel) {
   const lines = new Set();
   for (const m of text.matchAll(SPECIFIER)) {
