@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { login } from "./actions";
 
+// Мова інтерфейсу — англійська (припущення вимоги PM, requirements/2-planuvalnyk-utrymuie-slot-terapevta.md).
 const ERRORS: Record<string, string> = {
-  missing: "Вкажіть email і пароль.",
-  invalid: "Невірний email або пароль.",
+  missing: "Enter your email and password.",
+  invalid: "Incorrect email or password.",
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
@@ -20,7 +21,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       <Card>
         <CardHeader>
           <CardTitle>
-            <h1 className="text-xl font-semibold tracking-tight">Вхід</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Sign in</h1>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -30,7 +31,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
               <Input id="email" name="email" type="email" autoComplete="email" required />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Пароль</Label>
+              <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" autoComplete="current-password" required />
             </div>
             {message ? (
@@ -39,7 +40,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
                 <AlertTitle>{message}</AlertTitle>
               </Alert>
             ) : null}
-            <Button type="submit">Увійти</Button>
+            <Button type="submit">Sign in</Button>
           </form>
         </CardContent>
       </Card>
