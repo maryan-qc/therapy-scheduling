@@ -12,7 +12,7 @@
 // Код виходу: 0 — порушень немає, 1 — є порушення, 2 — немає чого перевіряти (ні src/, ні app/, components/, lib/).
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { basename, join, relative, sep } from "node:path";
+import { basename, dirname, join, normalize, relative, resolve, sep } from "node:path";
 
 const args = process.argv.slice(2);
 const rootIdx = args.indexOf("--root");
@@ -42,7 +42,9 @@ function walk(dir, out = []) {
   let entries;
   try {
     entries = readdirSync(dir);
-  } catch {
+  } catch (error) {
+    // Нечитабельна тека не може мовчки дати «OK»: її файли лишилися б неперевіреними.
+    report(relative(root, dir) || ".", 0, `теку не вдалося прочитати (${error.code ?? error.message}) — перевірка неповна`);
     return out;
   }
   for (const name of entries) {
@@ -56,6 +58,21 @@ function walk(dir, out = []) {
 
 const problems = [];
 const report = (file, line, message) => problems.push(`${file.split(sep).join("/")}:${line}  ${message}`);
+
+// Імпорт, реекспорт, import() чи require() admin-клієнта — за нормалізованим шляхом модуля, а не за формою рядка:
+// `@/lib/supabase/admin`, `../supabase/admin` із src/lib/<тека>/, `./admin` із src/lib/supabase/ — усе це той самий файл.
+const ADMIN_MODULE = normalize(ADMIN_FILE.replace(/\.ts$/, ""));
+const SPECIFIER = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)["']([^"']+)["']/g;
+function importsAdmin(line, fileRel) {
+  for (const [, spec] of line.matchAll(SPECIFIER)) {
+    let target;
+    if (spec.startsWith("@/")) target = join(hasSrc ? "src" : "", spec.slice(2));
+    else if (spec.startsWith(".")) target = relative(root, resolve(root, dirname(fileRel), spec));
+    else continue;
+    if (normalize(target).replace(EXT, "") === ADMIN_MODULE) return true;
+  }
+  return false;
+}
 
 for (const file of BASES.flatMap((b) => walk(join(root, b)))) {
   const rel = relative(root, file);
@@ -72,7 +89,7 @@ for (const file of BASES.flatMap((b) => walk(join(root, b)))) {
     if (/SUPABASE_SECRET_KEY|SERVICE_ROLE_KEY/.test(line) && rel !== ADMIN_FILE) {
       report(rel, i + 1, `секретний ключ читається поза ${ADMIN_SHOWN}`);
     }
-    if (/from\s+["'](@\/lib\/supabase\/admin|(\.\.\/)+lib\/supabase\/admin|\.\/admin)["']/.test(line) && rel !== ADMIN_FILE) {
+    if (importsAdmin(line, rel) && rel !== ADMIN_FILE) {
       if (isClient) report(rel, i + 1, 'admin-клієнт імпортовано у файлі з "use client"');
       else if (!isServerFile) {
         report(
