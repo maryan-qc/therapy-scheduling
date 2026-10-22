@@ -47,16 +47,19 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       .order("starts_at");
     slots = slotRows ?? [];
     if (slots.length > 0) {
-      const { data: holdRows } = await viewer.supabase
-        .from("holds")
-        .select("id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at")
-        .in(
-          "slot_id",
-          slots.map((slot) => slot.id),
-        )
-        .is("released_at", null);
+      // Утримання на слоти тижня й клієнти одне від одного не залежать — паралельно.
+      const [{ data: holdRows }, { data: clientRows }] = await Promise.all([
+        viewer.supabase
+          .from("holds")
+          .select("id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at")
+          .in(
+            "slot_id",
+            slots.map((slot) => slot.id),
+          )
+          .is("released_at", null),
+        viewer.supabase.from("clients").select("id, name, email"),
+      ]);
       holds = holdRows ?? [];
-      const { data: clientRows } = await viewer.supabase.from("clients").select("id, name, email");
       clients = clientRows ?? [];
     }
   }
