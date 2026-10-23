@@ -2,6 +2,9 @@
 
 export type Role = "admin" | "scheduler" | "therapist";
 
+/** Користувач увійшов, але ролі не має (AC-CARD-11; правило про ролі в матриці прав PM). */
+export const NO_ROLE_MESSAGE = "Your account has no access yet. Contact an administrator.";
+
 export interface TherapistRow {
   id: string;
   name: string;
