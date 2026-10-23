@@ -28,11 +28,19 @@ export interface HoldRow {
 export interface ClientRow {
   id: string;
   name: string;
-  email: string;
+  /** У дитини власного email немає — контакт є email опікуна (AC-CARD-02). */
+  email: string | null;
+  guardian_email?: string | null;
 }
 
 /** Клієнт у розкладі терапевта: лише ім'я, без email (AC-HOLD-40). */
 export type ClientName = Pick<ClientRow, "id" | "name">;
+
+/** Контакт поруч з ім'ям клієнта: email дорослого або email опікуна дитини (AC-CARD-02). */
+export function clientContact(client: Partial<Pick<ClientRow, "email" | "guardian_email">>): string {
+  if (client.email) return client.email;
+  return client.guardian_email ? `guardian: ${client.guardian_email}` : "";
+}
 
 export function isStaff(role: Role | null | undefined): boolean {
   return role === "scheduler" || role === "admin";

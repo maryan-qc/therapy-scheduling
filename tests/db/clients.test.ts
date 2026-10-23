@@ -72,6 +72,33 @@ describe("картка клієнта в базі (openspec/specs/clients)", () 
     expect(await emails()).toEqual(["client1@example.test"]);
   });
 
+  it("AC-HOLD-39: client3@example, client3@@example.test, @example.test, «client 3@example.test» — клієнта не створено", async () => {
+    for (const email of ["client3@example", "client3@@example.test", "@example.test", "client 3@example.test"]) {
+      expect(await addClient("Client Three", email)).toBe("Enter the client's name and a valid email.");
+      // Друга лінія — check clients_email_format з тим самим правилом PM.
+      await expect(
+        t.asUser(scheduler1, "insert into public.clients (name, email) values ('Client Three', $1)", [email]),
+      ).rejects.toThrow(/clients_email_format/);
+    }
+    expect(await emails()).toEqual(["client1@example.test"]);
+  });
+
+  it("AC-HOLD-41: «   » — не створено; « Client Four » — у картці «Client Four»", async () => {
+    expect(await addClient("   ", "client5@example.test")).toBe("Enter the client's name and a valid email.");
+    expect(await addClient(" Client Four ", "client4@example.test")).toBeNull();
+
+    const [row] = await t.asUser<{ name: string }>(
+      scheduler1,
+      "select name from public.clients where email = 'client4@example.test'",
+    );
+    expect(row.name).toBe("Client Four");
+    expect(await emails()).toEqual(["client1@example.test", "client4@example.test"]);
+    // База не прийме ім'я з пробілами по краях в обхід форми: check clients_name_trimmed.
+    await expect(
+      t.asUser(scheduler1, "insert into public.clients (name, email) values (' Client Five ', 'client5@example.test')"),
+    ).rejects.toThrow(/clients_name_trimmed/);
+  });
+
   it("AC-HOLD-35: « Client3@Example.TEST » зберігається й показується як client3@example.test", async () => {
     expect(await addClient("Client Three", " Client3@Example.TEST ")).toBeNull();
     expect(await emails()).toEqual(["client1@example.test", "client3@example.test"]);

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { isStaff, type Role } from "@/lib/holds/types";
 
-type Section = "/slots" | "/holds" | "/schedule";
+type Section = "/slots" | "/holds" | "/schedule" | "/clients";
 
 const ROLE_LABEL: Record<Role, string> = { admin: "Admin", scheduler: "Scheduler", therapist: "Therapist" };
 
@@ -39,6 +39,11 @@ export function Nav({ email, role, current }: { email: string | null; role: Role
               My schedule
             </NavLink>
           )}
+          {role ? (
+            <NavLink href="/clients" current={current}>
+              {isStaff(role) ? "Clients" : "My clients"}
+            </NavLink>
+          ) : null}
         </nav>
         <span className="ml-auto flex items-center gap-2 text-muted-foreground" data-testid="viewer">
           <span className="truncate">{email ?? "—"}</span>

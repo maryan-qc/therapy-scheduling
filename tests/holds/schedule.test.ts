@@ -43,7 +43,7 @@ describe("розклад терапевта (openspec/specs/slot-holds)", () => 
 
     expect(shown.status).toBe("Held");
     expect(shown.hold?.clientName).toBe("client1");
-    expect(shown.hold).not.toHaveProperty("clientEmail");
+    expect(shown.hold).not.toHaveProperty("clientContact");
     expect(JSON.stringify(days)).not.toContain(client1.email);
   });
 

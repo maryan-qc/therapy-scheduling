@@ -43,7 +43,9 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
         .order("id")
         .range(from, to),
     ),
-    allRows((from, to) => viewer.supabase.from("clients").select("id, name, email").order("id").range(from, to)),
+    allRows((from, to) =>
+      viewer.supabase.from("clients").select("id, name, email, guardian_email").order("id").range(from, to),
+    ),
     allRows((from, to) => viewer.supabase.from("therapists").select("id, name, email").order("id").range(from, to)),
   ]);
   const holds: HoldRow[] = rows.map((row) => ({
@@ -96,7 +98,7 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
                     <TableCell className="tabular-nums">{formatPracticeDateTime(item.slotStartsAt)}</TableCell>
                     <TableCell>{item.therapistName}</TableCell>
                     <TableCell>
-                      {item.clientName} ({item.clientEmail})
+                      {item.clientName} ({item.clientContact})
                     </TableCell>
                     <TableCell data-testid="hold-status">
                       <StatusBadge status={item.status} />

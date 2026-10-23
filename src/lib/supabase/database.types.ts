@@ -92,21 +92,36 @@ export type Database = {
         Row: {
           id: string;
           name: string;
-          email: string;
+          email: string | null;
+          client_type: string;
+          date_of_birth: string | null;
+          session_language: string | null;
+          guardian_name: string | null;
+          guardian_email: string | null;
           created_by: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
-          email: string;
+          email?: string | null;
+          client_type?: string;
+          date_of_birth?: string | null;
+          session_language?: string | null;
+          guardian_name?: string | null;
+          guardian_email?: string | null;
           created_by?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           name?: string;
-          email?: string;
+          email?: string | null;
+          client_type?: string;
+          date_of_birth?: string | null;
+          session_language?: string | null;
+          guardian_name?: string | null;
+          guardian_email?: string | null;
           created_by?: string | null;
           created_at?: string;
         };
