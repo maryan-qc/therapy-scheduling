@@ -5,6 +5,10 @@
 `npm run typecheck`, `npm test`, `npm run build`, `npm run ac:coverage`, `npm run spec:check`, `npm run check:design`,
 `npm run check:boundary`; рядки AC задачі в `docs/conformance.md` — «реалізовано».
 
+Мутаційний коміт у CI живе лише в гілці PR: тест падає в job `app` (PGlite), міграцію застосовує лише `db-check` на
+одноразовій базі. `db-deploy` працює тільки з `main` після squash-merge, коли мутацію вже відкочено (`git revert`), тож
+послаблена політика до робочої бази не потрапляє. Застосованих міграцій мутація не торкається.
+
 ## 1. Картка клієнта з анкети (`task/client-cards`)
 
 - [ ] 1.1 Міграція `…_client_cards.sql`: колонки картки, `clients_contact_by_type`, правило email PM (і для опікуна),
