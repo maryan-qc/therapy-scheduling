@@ -3,10 +3,10 @@
 import { buildDayView, type DaySlot } from "./day-view";
 import { hasStarted, holdStatus, type HoldStatus } from "./status";
 import { addDays, practiceDate } from "./time";
-import type { ClientName, ClientRow, HoldRow, SlotRow, TherapistRow } from "./types";
+import { clientContact, type ClientName, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "./types";
 
 /** Слот у розкладі терапевта: в утриманні — ім'я клієнта без email (AC-HOLD-40). */
-export type ScheduleSlot = Omit<DaySlot, "hold"> & { hold?: Omit<NonNullable<DaySlot["hold"]>, "clientEmail"> };
+export type ScheduleSlot = Omit<DaySlot, "hold"> & { hold?: Omit<NonNullable<DaySlot["hold"]>, "clientContact"> };
 
 export interface ScheduleDay {
   date: string;
@@ -40,7 +40,7 @@ export interface HoldListItem {
   holdId: string;
   status: HoldStatus;
   clientName: string;
-  clientEmail: string;
+  clientContact: string;
   therapistName: string;
   slotStartsAt: string;
   heldUntil: string | null;
@@ -81,7 +81,7 @@ export function buildHoldsList(
           holdId: hold.id,
           status,
           clientName: client?.name ?? "—",
-          clientEmail: client?.email ?? "",
+          clientContact: client ? clientContact(client) : "",
           therapistName: therapistById.get(slot.therapist_id)?.name ?? "—",
           slotStartsAt: slot.starts_at,
           heldUntil: status === "Held" ? hold.expires_at : null,

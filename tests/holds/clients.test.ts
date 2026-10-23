@@ -30,6 +30,22 @@ describe("картка клієнта — перевірка форми (openspe
     expect(input).toEqual({ ok: true, name: "Client One", email: "client1@example.test" });
   });
 
+  it("AC-HOLD-39: client3@example, client3@@example.test, @example.test, «client 3@example.test» — клієнта не створено", () => {
+    for (const email of ["client3@example", "client3@@example.test", "@example.test", "client 3@example.test"]) {
+      expect(validateClient("Client Three", email)).toEqual({ ok: false, code: "CLIENT_INVALID" });
+    }
+    expect(CLIENT_MESSAGES.CLIENT_INVALID).toBe("Enter the client's name and a valid email.");
+  });
+
+  it("AC-HOLD-41: ім'я «   » — не створено; « Client Four » — створено як «Client Four»", () => {
+    expect(validateClient("   ", "client5@example.test")).toEqual({ ok: false, code: "CLIENT_INVALID" });
+    expect(validateClient(" Client Four ", "client4@example.test")).toEqual({
+      ok: true,
+      name: "Client Four",
+      email: "client4@example.test",
+    });
+  });
+
   it("AC-HOLD-35: « Client3@Example.TEST » зберігається й показується як client3@example.test", () => {
     expect(normalizeEmail(" Client3@Example.TEST ")).toBe("client3@example.test");
     expect(validateClient("Client Three", " Client3@Example.TEST ")).toEqual({

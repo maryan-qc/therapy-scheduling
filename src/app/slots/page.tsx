@@ -18,7 +18,7 @@ import {
   practiceDate,
   practiceDayRange,
 } from "@/lib/holds/time";
-import { isStaff, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
+import { clientContact, isStaff, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
 import { addClient, confirmHold, holdSlot } from "./actions";
 
@@ -44,7 +44,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
   // Терапевти й клієнти одне від одного не залежать — один round trip до бази замість двох.
   const [{ data: therapistRows }, { data: clientRows }] = await Promise.all([
     viewer.supabase.from("therapists").select("id, name, email").order("name"),
-    viewer.supabase.from("clients").select("id, name, email").order("name"),
+    viewer.supabase.from("clients").select("id, name, email, guardian_email").order("name"),
   ]);
   const therapists: TherapistRow[] = therapistRows ?? [];
   const clients: ClientRow[] = clientRows ?? [];
@@ -151,7 +151,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                       </TableCell>
                       <TableCell>
                         {slot.hold ? (
-                          `${slot.hold.clientName} (${slot.hold.clientEmail})`
+                          `${slot.hold.clientName} (${slot.hold.clientContact})`
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -175,7 +175,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                                 </NativeSelectOption>
                                 {clients.map((client) => (
                                   <NativeSelectOption key={client.id} value={client.id}>
-                                    {client.name} ({client.email})
+                                    {client.name} ({clientContact(client)})
                                   </NativeSelectOption>
                                 ))}
                               </NativeSelect>
@@ -226,7 +226,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
               <ul className="flex flex-col gap-1 text-sm" data-testid="clients">
                 {clients.map((client) => (
                   <li key={client.id}>
-                    {client.name} <span className="text-muted-foreground">— {client.email}</span>
+                    {client.name} <span className="text-muted-foreground">— {clientContact(client)}</span>
                   </li>
                 ))}
               </ul>

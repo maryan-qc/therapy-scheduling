@@ -71,18 +71,18 @@
 | AC-HOLD-36 | друге підтвердження того самого утримання відхилено | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-37 | прострочене утримання знову утримують за тим самим клієнтом, старий «Expired» зникає зі списку | `src/lib/holds/schedule.ts` (`buildHoldsList`), `src/app/holds/page.tsx`, `supabase/migrations/20261021160000_hold_and_confirm.sql` | `tests/holds/schedule.test.ts`, `tests/db/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-38 | у списку утримань лише «Held» і «Expired» за часом слоту | `src/lib/holds/schedule.ts` (`buildHoldsList`), `src/app/holds/page.tsx` | `tests/holds/schedule.test.ts` | реалізовано |
-| AC-HOLD-39 | інші некоректні email відхилено (без крапки після «@», два «@», порожня частина, пробіл) | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-39 | інші некоректні email відхилено (без крапки після «@», два «@», порожня частина, пробіл) | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261023104436_client_cards.sql` (`clients_email_format`) | `tests/holds/clients.test.ts`, `tests/db/clients.test.ts` | реалізовано |
 | AC-HOLD-40 | у розкладі терапевта ім'я клієнта без email | `src/lib/holds/schedule.ts` (`buildSchedule`), `src/app/schedule/page.tsx` | `tests/holds/schedule.test.ts` | реалізовано |
-| AC-HOLD-41 | ім'я лише з пробілів відхилено, пробіли по краях прибрано | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-41 | ім'я лише з пробілів відхилено, пробіли по краях прибрано | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261023104436_client_cards.sql` (`clients_name_trimmed`) | `tests/holds/clients.test.ts`, `tests/db/clients.test.ts`, `tests/clients/card.test.ts` | реалізовано |
 | AC-HOLD-42 | утримання «Held» зникає зі списку з початком слоту | `src/lib/holds/schedule.ts` (`buildHoldsList`), `src/app/holds/page.tsx` | `tests/holds/schedule.test.ts` | реалізовано |
-| AC-CARD-01 | картка дорослого: тип «Adult», ім'я, email, дата народження, мова; клієнта можна вибрати під час утримання | — | — | відкладено (чекає реалізації) |
-| AC-CARD-02 | картка дитини з опікуном; під час утримання — email опікуна | — | — | відкладено (чекає реалізації) |
-| AC-CARD-03 | порожнє ім'я чи email опікуна — картку не створено, дані лишаються у формі | — | — | відкладено (чекає реалізації) |
+| AC-CARD-01 | картка дорослого: тип «Adult», ім'я, email, дата народження, мова; клієнта можна вибрати під час утримання | `src/lib/clients/card.ts`, `src/app/clients/actions.ts`, `src/app/clients/new/card-form.tsx`, `src/app/clients/[id]/page.tsx`, `supabase/migrations/20261023104436_client_cards.sql` | `tests/clients/card.test.ts`, `tests/db/client-cards.test.ts` | реалізовано |
+| AC-CARD-02 | картка дитини з опікуном; під час утримання — email опікуна | `src/lib/clients/card.ts`, `src/app/clients/actions.ts`, `src/lib/holds/types.ts` (`clientContact`), `src/app/slots/page.tsx`, `supabase/migrations/20261023104436_client_cards.sql` | `tests/clients/card.test.ts`, `tests/db/client-cards.test.ts` | реалізовано |
+| AC-CARD-03 | порожнє ім'я чи email опікуна — картку не створено, дані лишаються у формі | `src/lib/clients/card.ts`, `src/app/clients/new/card-form.tsx`, `supabase/migrations/20261023104436_client_cards.sql` (`clients_contact_by_type`) | `tests/clients/card.test.ts`, `tests/db/client-cards.test.ts` | реалізовано |
 | AC-CARD-04 | терапевт бачить картки лише своїх клієнтів («Held» або «Confirmed») | — | — | відкладено (чекає реалізації) |
 | AC-CARD-05 | терапевт не бачить картки чужого клієнта | — | — | відкладено (чекає реалізації) |
-| AC-CARD-06 | терапевт не створює картку клієнта | — | — | відкладено (чекає реалізації) |
+| AC-CARD-06 | терапевт не створює картку клієнта | `src/lib/clients/card.ts` (`cardRoleError`), `src/app/clients/actions.ts`, `src/app/clients/new/page.tsx`, `supabase/migrations/20261021150100_slot_holds.sql` (`clients_insert_staff`) | `tests/clients/card.test.ts`, `tests/db/client-cards.test.ts` | реалізовано |
 | AC-CARD-07 | без входу — лише сторінка входу, без даних клієнтів | — | — | відкладено (чекає реалізації) |
 | AC-CARD-08 | після прострочення утримання клієнт більше не свій для терапевта | — | — | відкладено (чекає реалізації) |
 | AC-CARD-09 | порожній список своїх клієнтів терапевта — повідомлення | — | — | відкладено (чекає реалізації) |
-| AC-CARD-10 | планувальник і адміністратор бачать усі картки й дані опікуна | — | — | відкладено (чекає реалізації) |
+| AC-CARD-10 | планувальник і адміністратор бачать усі картки й дані опікуна | `src/app/clients/page.tsx`, `supabase/migrations/20261023084029_therapist_sees_active_holds_only.sql` (`clients_select`) | `tests/db/client-cards.test.ts` | реалізовано |
 | AC-CARD-11 | користувач без ролі бачить лише повідомлення про відсутність доступу | — | — | відкладено (чекає реалізації) |

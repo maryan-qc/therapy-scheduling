@@ -1,6 +1,6 @@
 // Слоти терапевта на день для планувальника (openspec/specs/slot-holds: «Перегляд слотів дня», «День без вільних слотів»).
 import { activeHold, slotStatus, type SlotStatus } from "./status";
-import type { ClientName, ClientRow, HoldRow, SlotRow } from "./types";
+import { clientContact, type ClientName, type ClientRow, type HoldRow, type SlotRow } from "./types";
 
 export const NO_FREE_SLOTS = "No free slots on this day.";
 
@@ -14,7 +14,8 @@ export interface DaySlot {
   hold?: {
     id: string;
     clientName: string;
-    clientEmail: string;
+    /** Email дорослого або email опікуна дитини (AC-CARD-02). */
+    clientContact: string;
     /** «Held until» — лише для «Held»; у «Confirmed» його більше не показано. */
     heldUntil: string | null;
   };
@@ -30,7 +31,7 @@ export function buildDayView(
   slots: readonly SlotRow[],
   holds: readonly HoldRow[],
   // Розклад терапевта передає клієнтів без email (AC-HOLD-40).
-  clients: readonly (ClientName & Partial<Pick<ClientRow, "email">>)[],
+  clients: readonly (ClientName & Partial<Pick<ClientRow, "email" | "guardian_email">>)[],
   now: Date,
 ): DayView {
   const clientById = new Map(clients.map((client) => [client.id, client]));
@@ -51,7 +52,7 @@ export function buildDayView(
           ? {
               id: active.id,
               clientName: client?.name ?? "—",
-              clientEmail: client?.email ?? "",
+              clientContact: client ? clientContact(client) : "",
               heldUntil: status === "Held" ? active.expires_at : null,
             }
           : undefined,

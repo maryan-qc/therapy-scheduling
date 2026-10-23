@@ -10,8 +10,14 @@ export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
-// Власне припущення (docs/spec-reading.md): рівно один «@», непорожні частини до й після нього, без пробілів.
-const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+$/;
+// Правило PM (AC-HOLD-39): рівно один «@», непорожня частина до нього, крапка в частині після «@», без пробілів.
+// Те саме правило — check-обмеження clients_email_format і clients_guardian_email_format у базі.
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]*\.[^@\s]*$/;
+
+/** Email після normalizeEmail коректний за правилом PM (і для email опікуна, AC-CARD-03). */
+export function isValidEmail(email: string): boolean {
+  return EMAIL_PATTERN.test(email);
+}
 
 export type ClientInput =
   | { ok: true; name: string; email: string }
@@ -20,7 +26,7 @@ export type ClientInput =
 export function validateClient(rawName: string, rawEmail: string): ClientInput {
   const name = rawName.trim();
   const email = normalizeEmail(rawEmail);
-  if (!name || !EMAIL_PATTERN.test(email)) return { ok: false, code: "CLIENT_INVALID" };
+  if (!name || !isValidEmail(email)) return { ok: false, code: "CLIENT_INVALID" };
   return { ok: true, name, email };
 }
 
