@@ -11,15 +11,15 @@
 
 ## 1. Картка клієнта з анкети (`task/client-cards`)
 
-- [ ] 1.1 Міграція `…_client_cards.sql`: колонки картки, `clients_contact_by_type`, правило email PM (і для опікуна),
+- [x] 1.1 Міграція `…_client_cards.sql`: колонки картки, `clients_contact_by_type`, правило email PM (і для опікуна),
   ім'я без пробілів по краях, тригер дати народження, колонковий `grant insert`; `database.types.ts`.
   Done when: `db-check` зелений; після merge — зелений `db-deploy`.
-- [ ] 1.2 `src/lib/clients/card.ts` (`validateClientCard`, повідомлення), дія `createClientCard`, сторінки `/clients`
+- [x] 1.2 `src/lib/clients/card.ts` (`validateClientCard`, повідомлення), дія `createClientCard`, сторінки `/clients`
   («Clients» для планувальника й адміністратора, «My clients» з порожнім станом для терапевта), `/clients/new`,
   `/clients/[id]` (з відмовою для чужого й неіснуючого клієнта); вибір клієнта на `/slots` з email опікуна; пункт у
   навігації.
   Done when: AC-CARD-01, AC-CARD-02, AC-CARD-10, AC-HOLD-39, AC-HOLD-41.
-- [ ] 1.3 Тести відмов: AC-CARD-03 (чиста функція + check бази для дитини без опікуна), AC-CARD-06 (перевірка ролі в
+- [x] 1.3 Тести відмов: AC-CARD-03 (чиста функція + check бази для дитини без опікуна), AC-CARD-06 (перевірка ролі в
   дії + RLS `insert` від therapist1: відмова й кількість карток та сама), AC-HOLD-39, AC-HOLD-41 (функція + check бази).
   Done when: AC-CARD-03, AC-CARD-06.
 - [ ] 1.4 Мутаційна перевірка: локально — кожен відмовний AC задачі (таблиця в описі PR); у CI — червоний прогін для
