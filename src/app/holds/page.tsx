@@ -11,6 +11,7 @@ import { CONFIRM_MESSAGES } from "@/lib/holds/messages";
 import { buildHoldsList } from "@/lib/holds/schedule";
 import { formatPracticeDateTime } from "@/lib/holds/time";
 import { isStaff, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
+import { allRows } from "@/lib/supabase/all-rows";
 import { requireViewer } from "@/lib/supabase/viewer";
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -28,18 +29,23 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
 
   // Утримання, клієнти й терапевти одне від одного не залежать — паралельно. База віддає лише утримання слотів, що ще
   // не почались (AC-HOLD-29, AC-HOLD-42), разом зі слотом; підтверджені не відкидаємо тут: за ними buildHoldsList
-  // ховає старе «Expired» того самого клієнта (AC-HOLD-37), а потім і самі відкидає (AC-HOLD-38).
-  const [{ data: holdRows }, { data: clientRows }, { data: therapistRows }] = await Promise.all([
-    viewer.supabase
-      .from("holds")
-      .select(
-        "id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at, slots!inner(id, therapist_id, starts_at, ends_at)",
-      )
-      .gt("slots.starts_at", now.toISOString()),
+  // ховає старе «Expired» того самого клієнта (AC-HOLD-37), а потім і самі відкидає (AC-HOLD-38). Тому набір має бути
+  // повним — читаємо всі сторінки Data API.
+  const [rows, { data: clientRows }, { data: therapistRows }] = await Promise.all([
+    allRows((from, to) =>
+      viewer.supabase
+        .from("holds")
+        .select(
+          "id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at, slots!inner(id, therapist_id, starts_at, ends_at)",
+        )
+        .gt("slots.starts_at", now.toISOString())
+        .order("created_at")
+        .order("id")
+        .range(from, to),
+    ),
     viewer.supabase.from("clients").select("id, name, email"),
     viewer.supabase.from("therapists").select("id, name, email"),
   ]);
-  const rows = holdRows ?? [];
   const holds: HoldRow[] = rows.map((row) => ({
     id: row.id,
     slot_id: row.slot_id,
