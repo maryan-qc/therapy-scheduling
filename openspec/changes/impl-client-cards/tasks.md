@@ -20,6 +20,8 @@
   Done when: AC-CARD-03, AC-CARD-06.
 - [ ] 1.4 Мутаційна перевірка: локально — кожен відмовний AC задачі (таблиця в описі PR); у CI — червоний прогін для
   AC-CARD-06 (`clients_insert_staff` тимчасово `with check (true)` у новій міграції), потім revert.
+  Done when: AC-CARD-01, AC-CARD-02, AC-CARD-03, AC-CARD-06, AC-CARD-10, AC-HOLD-39, AC-HOLD-41 — «реалізовано», червоний
+  прогін AC-CARD-06 — в описі PR.
 
 ## 2. Доступ терапевта до своїх клієнтів і користувач без ролі (`task/client-access`)
 
@@ -36,6 +38,8 @@
   Done when: AC-CARD-05, AC-CARD-07, AC-CARD-08, AC-CARD-11.
 - [ ] 2.4 Мутаційна перевірка: локально — кожен відмовний AC; у CI — червоний прогін для AC-CARD-11 (без умови ролі в
   `current_therapist_id()` у новій міграції), потім revert.
+  Done when: AC-CARD-04, AC-CARD-05, AC-CARD-07, AC-CARD-08, AC-CARD-09, AC-CARD-11 — «реалізовано», червоний прогін
+  AC-CARD-11 — в описі PR.
 
 ## 3. Список утримань і розклад за уточненнями PM (`task/holds-list`)
 
@@ -52,4 +56,5 @@
   червоний прогін job «Секретний ключ лише на сервері» з навмисним порушенням, потім revert.
 - [ ] 4.2 Знімки за ролями `docs/img/ws7-role-<роль>-<сторінка>.png` (головна сторінка зрізу й одна відмова на роль);
   рядки `docs/conformance.md` для всіх AC зрізу; archive `impl-client-cards`.
-  Done when: `npm run ac:coverage` — 53 AC, кожен «реалізовано» або «відкладено» з причиною.
+  Done when: AC-CARD-01…AC-CARD-11, AC-HOLD-37…AC-HOLD-42 — «реалізовано» в `docs/conformance.md` (`npm run ac:coverage`
+  — 53 AC без «відкладено» без причини).
