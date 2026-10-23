@@ -32,9 +32,11 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const viewer = await requireViewer();
   const staff = isStaff(viewer.role);
-  const { data } = UUID.test(id)
+  // Некоректний id — картки немає; помилка запиту — сторінка помилки, а не «не знайдено» чи «немає доступу».
+  const { data, error } = UUID.test(id)
     ? await viewer.supabase.from("clients").select(CARD_COLUMNS).eq("id", id).maybeSingle()
-    : { data: null };
+    : { data: null, error: null };
+  if (error) throw error;
   const client: ClientCardRow | null = data;
 
   return (

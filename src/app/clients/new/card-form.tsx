@@ -30,6 +30,8 @@ const ERROR_FIELDS: Record<CardErrorCode, FieldName[]> = {
   LANGUAGE: ["language"],
   GUARDIAN_INVALID: ["guardianName", "guardianEmail"],
   CLIENT_DUPLICATE: ["email"],
+  CARD_DATA_INVALID: [],
+  SAVE_FAILED: [],
 };
 
 const INITIAL: CardFormState = { errors: [], values: EMPTY_CARD_FORM };

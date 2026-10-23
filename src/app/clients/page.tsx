@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CARD_COLUMNS, clientTypeLabel, NO_CLIENTS_YET, NOT_PROVIDED, type ClientCardRow } from "@/lib/clients/card";
 import { isStaff } from "@/lib/holds/types";
+import { allRows } from "@/lib/supabase/all-rows";
 import { requireViewer } from "@/lib/supabase/viewer";
 
 function Value({ children }: { children: string | null }) {
@@ -16,8 +17,9 @@ function Value({ children }: { children: string | null }) {
 export default async function ClientsPage() {
   const viewer = await requireViewer();
   const staff = isStaff(viewer.role);
-  const { data } = await viewer.supabase.from("clients").select(CARD_COLUMNS).order("name");
-  const clients: ClientCardRow[] = data ?? [];
+  const clients: ClientCardRow[] = await allRows((from, to) =>
+    viewer.supabase.from("clients").select(CARD_COLUMNS).order("name").order("id").range(from, to),
+  );
 
   return (
     <>

@@ -24,7 +24,9 @@ export type CardErrorCode =
   | "BIRTH_DATE"
   | "LANGUAGE"
   | "GUARDIAN_INVALID"
-  | "CLIENT_DUPLICATE";
+  | "CLIENT_DUPLICATE"
+  | "CARD_DATA_INVALID"
+  | "SAVE_FAILED";
 
 export const CARD_MESSAGES: Record<CardErrorCode, string> = {
   CARD_FORBIDDEN: "Only schedulers and admins can create client cards.", // AC-CARD-06
@@ -35,6 +37,9 @@ export const CARD_MESSAGES: Record<CardErrorCode, string> = {
   LANGUAGE: "Select a session language.", // Q5, робочий варіант A
   GUARDIAN_INVALID: "Enter the guardian's name and a valid email.", // AC-CARD-03
   CLIENT_DUPLICATE: DUPLICATE_CLIENT_MESSAGE, // AC-HOLD-16, AC-HOLD-34
+  // Власні тексти: форма вже перевірила поля, тож ці відповіді бази — рідкісний випадок, і PM текстів для них не дала.
+  CARD_DATA_INVALID: "Check the client card fields and try again.", // 23514 — check-обмеження чи тригер дати
+  SAVE_FAILED: "The client card was not saved. Try again.", // інша помилка запиту
 };
 
 export const CLIENT_NOT_FOUND = "Client not found."; // Q7, робочий варіант A
@@ -143,9 +148,13 @@ export function validateClientCard(form: CardForm, today: string): CardInput {
   };
 }
 
-/** Помилка Postgres під час insert → код: 23505 — дублікат email (AC-HOLD-16), 42501 — RLS чи GRANT (AC-CARD-06). */
+/**
+ * Помилка Postgres під час insert → код: 23505 — дублікат email (AC-HOLD-16), 42501 — RLS чи GRANT (AC-CARD-06),
+ * 23514 — check-обмеження чи тригер дати народження (дані картки), інше — збій збереження.
+ */
 export function cardErrorCode(postgresCode: string | undefined): CardErrorCode {
   if (postgresCode === "23505") return "CLIENT_DUPLICATE";
   if (postgresCode === "42501") return "CARD_FORBIDDEN";
-  return "CLIENT_INVALID";
+  if (postgresCode === "23514") return "CARD_DATA_INVALID";
+  return "SAVE_FAILED";
 }

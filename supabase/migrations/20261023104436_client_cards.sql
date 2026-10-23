@@ -22,6 +22,11 @@ alter table public.clients alter column email drop not null;
 -- Коректний email (правило PM): рівно один «@», непорожня частина до нього, крапка в частині після «@», без пробілів.
 alter table public.clients drop constraint clients_email_format;
 
+-- Ім'я без пробілів по краях (AC-HOLD-41): форма зрізу 1 уже обрізала його, але про всяк випадок вирівнюємо наявні
+-- рядки до нового обмеження. Наявні email правилу PM відповідають (перевірено на проді читанням від імені
+-- scheduler1: 0 рядків без крапки після «@»); автоматично «виправляти» email не можна, тож тут лише перевірка.
+update public.clients set name = btrim(name) where name <> btrim(name);
+
 alter table public.clients
   add constraint clients_type_check check (client_type in ('adult', 'child')),
   add constraint clients_language_check check (session_language in ('English', 'Spanish')),
