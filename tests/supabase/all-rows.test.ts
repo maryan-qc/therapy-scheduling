@@ -32,7 +32,7 @@ describe("усі рядки запиту сторінками", () => {
     expect(query.ranges).toHaveLength(3);
   });
 
-  it("помилка запиту — виняток, а не неповний список", async () => {
+  it("AC-HOLD-38: помилка запиту — виняток, а не неповний список", async () => {
     const failing = () => Promise.resolve({ data: null, error: new Error("boom") });
 
     await expect(allRows(failing, 2)).rejects.toThrow("boom");

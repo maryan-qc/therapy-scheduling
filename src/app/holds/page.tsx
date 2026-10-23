@@ -30,8 +30,8 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
   // Утримання, клієнти й терапевти одне від одного не залежать — паралельно. База віддає лише утримання слотів, що ще
   // не почались (AC-HOLD-29, AC-HOLD-42), разом зі слотом; підтверджені не відкидаємо тут: за ними buildHoldsList
   // ховає старе «Expired» того самого клієнта (AC-HOLD-37), а потім і самі відкидає (AC-HOLD-38). Тому набір має бути
-  // повним — читаємо всі сторінки Data API.
-  const [rows, { data: clientRows }, { data: therapistRows }] = await Promise.all([
+  // повним — читаємо всі сторінки Data API; довідники клієнтів і терапевтів — так само.
+  const [rows, clientRows, therapistRows] = await Promise.all([
     allRows((from, to) =>
       viewer.supabase
         .from("holds")
@@ -43,8 +43,8 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
         .order("id")
         .range(from, to),
     ),
-    viewer.supabase.from("clients").select("id, name, email"),
-    viewer.supabase.from("therapists").select("id, name, email"),
+    allRows((from, to) => viewer.supabase.from("clients").select("id, name, email").order("id").range(from, to)),
+    allRows((from, to) => viewer.supabase.from("therapists").select("id, name, email").order("id").range(from, to)),
   ]);
   const holds: HoldRow[] = rows.map((row) => ({
     id: row.id,
@@ -56,8 +56,8 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
     released_at: row.released_at,
   }));
   const slots: SlotRow[] = rows.map((row) => row.slots);
-  const clients: ClientRow[] = clientRows ?? [];
-  const therapists: TherapistRow[] = therapistRows ?? [];
+  const clients: ClientRow[] = clientRows;
+  const therapists: TherapistRow[] = therapistRows;
 
   const items = buildHoldsList(holds, slots, clients, therapists, now);
   const errorCode = first(params.error);
