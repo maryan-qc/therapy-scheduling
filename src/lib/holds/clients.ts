@@ -24,13 +24,10 @@ export function validateClient(rawName: string, rawEmail: string): ClientInput {
   return { ok: true, name, email };
 }
 
-/** Дублікат — без урахування регістру й пробілів по краях (AC-HOLD-16, AC-HOLD-34). */
-export function isDuplicateEmail(rawEmail: string, existingEmails: readonly string[]): boolean {
-  const email = normalizeEmail(rawEmail);
-  return existingEmails.some((existing) => normalizeEmail(existing) === email);
-}
-
-/** Помилка Postgres під час insert → код повідомлення: 23505 — unique (дублікат), 23514 — check. */
+/**
+ * Помилка Postgres під час insert → код повідомлення: 23505 — unique (дублікат, AC-HOLD-16, AC-HOLD-34: email уже
+ * нормалізовано, тож регістр і пробіли не допоможуть), 23514 — check.
+ */
 export function clientErrorCode(postgresCode: string | undefined): ClientErrorCode {
   return postgresCode === "23505" ? "CLIENT_DUPLICATE" : "CLIENT_INVALID";
 }
