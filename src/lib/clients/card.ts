@@ -158,3 +158,6 @@ export function cardErrorCode(postgresCode: string | undefined): CardErrorCode {
   if (postgresCode === "23514") return "CARD_DATA_INVALID";
   return "SAVE_FAILED";
 }
+
+// VIOLATION (тимчасово, буде revert): секретний ключ у модулі, який імпортує клієнтський компонент card-form.tsx.
+export const hasSecretKey = () => Boolean(process.env.SUPABASE_SECRET_KEY);
