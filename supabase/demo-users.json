@@ -5,6 +5,11 @@
     "role": "admin"
   },
   {
+    "email": "admin1@example.test",
+    "full_name": "Admin One",
+    "role": "admin"
+  },
+  {
     "email": "scheduler1@example.test",
     "full_name": "Scheduler One",
     "role": "scheduler"
@@ -22,6 +27,26 @@
   {
     "email": "therapist2@example.test",
     "full_name": "Therapist Two",
+    "role": "therapist"
+  },
+  {
+    "email": "newuser1@example.test",
+    "full_name": "New User One",
+    "role": null
+  },
+  {
+    "email": "pm-admin@example.test",
+    "full_name": "PM Admin",
+    "role": "admin"
+  },
+  {
+    "email": "pm-scheduler@example.test",
+    "full_name": "PM Scheduler",
+    "role": "scheduler"
+  },
+  {
+    "email": "pm-therapist@example.test",
+    "full_name": "PM Therapist",
     "role": "therapist"
   }
 ]
