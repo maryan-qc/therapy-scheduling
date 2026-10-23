@@ -31,5 +31,6 @@ as $$
   select t.id
   from public.therapists as t
   join public.profiles as p on p.email = t.email
-  where p.id = (select auth.uid()); -- MUTATION (тимчасово, буде revert): без умови ролі — AC-CARD-11 має впасти.
+  where p.id = (select auth.uid())
+    and p.role = 'therapist';
 $$;
