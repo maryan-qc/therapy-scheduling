@@ -3,7 +3,7 @@ import { buildDayView } from "@/lib/holds/day-view";
 import { buildHoldsList, buildSchedule } from "@/lib/holds/schedule";
 import { addDays, formatPracticeDateTime, practiceWeekRange } from "@/lib/holds/time";
 import type { TherapistRow } from "@/lib/holds/types";
-import { at, client1, client2, hold, now, slot } from "./fixtures";
+import { at, client1, client2, client3, client4, hold, now, slot } from "./fixtures";
 
 const therapists: TherapistRow[] = [
   { id: "therapist-1", name: "Therapist One", email: "therapist1@example.test" },
@@ -31,6 +31,20 @@ describe("розклад терапевта (openspec/specs/slot-holds)", () => 
     expect(all[0].hold?.clientName).toBe("client1");
     expect(formatPracticeDateTime(all[0].hold!.heldUntil!)).toBe("2026-11-05 08:00");
     expect(all.some((s) => s.id === "t2")).toBe(false);
+  });
+
+  it("AC-HOLD-40: в утриманні therapist1 показано ім'я client1, але не його email", () => {
+    const slots = [slot("t1", "2026-11-05", "10:00")];
+    const holds = [hold("h1", "t1", at("2026-11-04", "08:00"))];
+
+    // Навіть якщо email потрапив у вхідні дані, розклад його не віддає; сторінка /schedule читає лише id і name.
+    const days = buildSchedule("therapist-1", "2026-11-02", slots, holds, [client1], now("2026-11-04", "09:00"));
+    const shown = days.flatMap((day) => day.slots).find((s) => s.id === "t1")!;
+
+    expect(shown.status).toBe("Held");
+    expect(shown.hold?.clientName).toBe("client1");
+    expect(shown.hold).not.toHaveProperty("clientEmail");
+    expect(JSON.stringify(days)).not.toContain(client1.email);
   });
 
   it("AC-HOLD-21: 2026-11-03 о 15:00 прострочене утримання за client1 у розкладі не показано, слот вільний", () => {
@@ -113,5 +127,51 @@ describe("список утримань планувальника (openspec/spe
 
     expect(buildHoldsList(holds, slots, [client1], therapists, now("2026-11-05", "10:00"))).toEqual([]);
     expect(buildHoldsList(holds, slots, [client1], therapists, now("2026-11-05", "12:00"))).toEqual([]);
+  });
+
+  it("AC-HOLD-37: 2026-11-03 о 15:00 слот знову утримано за client1 — у списку нове «Held» до 2026-11-04 15:00, без старого «Expired»", () => {
+    const slots = [slot("s", "2026-11-05", "10:00")];
+    // Функція бази звільняє прострочене утримання (released_at) і створює нове в ту саму мить.
+    const holds = [
+      hold("old", "s", at("2026-11-02", "14:30"), { releasedAt: at("2026-11-03", "15:00") }),
+      hold("new", "s", at("2026-11-03", "15:00")),
+    ];
+
+    const list = buildHoldsList(holds, slots, [client1], therapists, now("2026-11-03", "15:00"));
+
+    expect(list.map((item) => [item.holdId, item.clientName, item.status])).toEqual([["new", "client1", "Held"]]);
+    expect(formatPracticeDateTime(list[0].heldUntil!)).toBe("2026-11-04 15:00");
+  });
+
+  it("AC-HOLD-38: 2026-11-03 о 15:00 — лише client2 («Held», 2026-11-04 11:00), потім client1 («Expired», 2026-11-05 10:00)", () => {
+    const slots = [
+      slot("c1", "2026-11-05", "10:00", "therapist-1"),
+      slot("c2", "2026-11-04", "11:00", "therapist-2"),
+      slot("c3", "2026-11-04", "12:00", "therapist-1"),
+      slot("c4", "2026-11-02", "10:00", "therapist-2"),
+    ];
+    const holds = [
+      hold("h1", "c1", at("2026-11-02", "14:30"), { clientId: client1.id }),
+      hold("h2", "c2", at("2026-11-03", "10:00"), { clientId: client2.id }),
+      hold("h3", "c3", at("2026-11-03", "09:00"), { clientId: client3.id, confirmedAt: at("2026-11-03", "09:30") }),
+      hold("h4", "c4", at("2026-11-01", "09:00"), { clientId: client4.id, confirmedAt: at("2026-11-01", "09:30") }),
+    ];
+
+    const list = buildHoldsList(holds, slots, [client1, client2, client3, client4], therapists, now("2026-11-03", "15:00"));
+
+    expect(list.map((item) => [item.clientName, formatPracticeDateTime(item.slotStartsAt), item.status])).toEqual([
+      ["client2", "2026-11-04 11:00", "Held"],
+      ["client1", "2026-11-05 10:00", "Expired"],
+    ]);
+  });
+
+  it("AC-HOLD-42: о 09:59 «Held» client2 на слот 10:00 у списку, з 10:00 — уже ні", () => {
+    const slots = [slot("s", "2026-11-03", "10:00")];
+    const holds = [hold("h", "s", at("2026-11-02", "14:30"), { clientId: client2.id })];
+    const list = (time: string) => buildHoldsList(holds, slots, [client2], therapists, now("2026-11-03", time));
+
+    expect(list("09:59").map((item) => [item.clientName, item.status])).toEqual([["client2", "Held"]]);
+    expect(list("10:00")).toEqual([]);
+    expect(list("10:30")).toEqual([]);
   });
 });

@@ -8,6 +8,8 @@ export const now = (date: string, time: string) => practiceInstant(date, time);
 
 export const client1: ClientRow = { id: "client-1", name: "client1", email: "client1@example.test" };
 export const client2: ClientRow = { id: "client-2", name: "client2", email: "client2@example.test" };
+export const client3: ClientRow = { id: "client-3", name: "client3", email: "client3@example.test" };
+export const client4: ClientRow = { id: "client-4", name: "client4", email: "client4@example.test" };
 
 export function slot(id: string, date: string, time: string, therapistId = "therapist-1"): SlotRow {
   const startsAt = practiceInstant(date, time);
@@ -24,7 +26,7 @@ export function hold(
   id: string,
   slotId: string,
   createdAt: string,
-  options: { clientId?: string; confirmedAt?: string } = {},
+  options: { clientId?: string; confirmedAt?: string; releasedAt?: string } = {},
 ): HoldRow {
   return {
     id,
@@ -33,6 +35,6 @@ export function hold(
     created_at: createdAt,
     expires_at: new Date(new Date(createdAt).getTime() + 1440 * 60_000).toISOString(),
     confirmed_at: options.confirmedAt ?? null,
-    released_at: null,
+    released_at: options.releasedAt ?? null,
   };
 }

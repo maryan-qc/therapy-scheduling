@@ -15,7 +15,7 @@ import {
   practiceDate,
   practiceWeekRange,
 } from "@/lib/holds/time";
-import { isStaff, type ClientRow, type HoldRow, type SlotRow } from "@/lib/holds/types";
+import { isStaff, type ClientName, type HoldRow, type SlotRow } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -36,7 +36,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
 
   let slots: SlotRow[] = [];
   let holds: HoldRow[] = [];
-  let clients: ClientRow[] = [];
+  let clients: ClientName[] = [];
   if (therapist) {
     const { data: slotRows } = await viewer.supabase
       .from("slots")
@@ -57,7 +57,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             slots.map((slot) => slot.id),
           )
           .is("released_at", null),
-        viewer.supabase.from("clients").select("id, name, email"),
+        // У розкладі — лише ім'я клієнта, email терапевт тут не бачить (AC-HOLD-40).
+        viewer.supabase.from("clients").select("id, name"),
       ]);
       holds = holdRows ?? [];
       clients = clientRows ?? [];

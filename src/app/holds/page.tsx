@@ -11,6 +11,7 @@ import { CONFIRM_MESSAGES } from "@/lib/holds/messages";
 import { buildHoldsList } from "@/lib/holds/schedule";
 import { formatPracticeDateTime } from "@/lib/holds/time";
 import { isStaff, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
+import { allRows } from "@/lib/supabase/all-rows";
 import { requireViewer } from "@/lib/supabase/viewer";
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -18,33 +19,45 @@ const MESSAGES = Object.fromEntries(
   Object.entries(CONFIRM_MESSAGES).map(([code, text]) => [`confirm.${code}`, text]),
 ) as Record<string, string>;
 
-// Утримання для планувальника й адміністратора: Held / Confirmed / Expired; прострочене — лише до початку слоту
-// (AC-HOLD-20, AC-HOLD-28, AC-HOLD-29).
+// Список утримань планувальника й адміністратора: лише Held і Expired, слот яких ще не почався, за часом слоту
+// (AC-HOLD-20, AC-HOLD-28, AC-HOLD-29, AC-HOLD-37, AC-HOLD-38, AC-HOLD-42).
 export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
   const params = await searchParams;
   const viewer = await requireViewer();
   if (!isStaff(viewer.role)) redirect("/schedule");
   const now = new Date();
 
-  // Утримання, клієнти й терапевти одне від одного не залежать — паралельно; слоти — за id з утримань.
-  const [{ data: holdRows }, { data: clientRows }, { data: therapistRows }] = await Promise.all([
-    viewer.supabase
-      .from("holds")
-      .select("id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
-    viewer.supabase.from("clients").select("id, name, email"),
-    viewer.supabase.from("therapists").select("id, name, email"),
+  // Утримання, клієнти й терапевти одне від одного не залежать — паралельно. База віддає лише утримання слотів, що ще
+  // не почались (AC-HOLD-29, AC-HOLD-42), разом зі слотом; підтверджені не відкидаємо тут: за ними buildHoldsList
+  // ховає старе «Expired» того самого клієнта (AC-HOLD-37), а потім і самі відкидає (AC-HOLD-38). Тому набір має бути
+  // повним — читаємо всі сторінки Data API; довідники клієнтів і терапевтів — так само.
+  const [rows, clientRows, therapistRows] = await Promise.all([
+    allRows((from, to) =>
+      viewer.supabase
+        .from("holds")
+        .select(
+          "id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at, slots!inner(id, therapist_id, starts_at, ends_at)",
+        )
+        .gt("slots.starts_at", now.toISOString())
+        .order("created_at")
+        .order("id")
+        .range(from, to),
+    ),
+    allRows((from, to) => viewer.supabase.from("clients").select("id, name, email").order("id").range(from, to)),
+    allRows((from, to) => viewer.supabase.from("therapists").select("id, name, email").order("id").range(from, to)),
   ]);
-  const holds: HoldRow[] = holdRows ?? [];
-  const clients: ClientRow[] = clientRows ?? [];
-  const therapists: TherapistRow[] = therapistRows ?? [];
-  const slotIds = [...new Set(holds.map((hold) => hold.slot_id))];
-  const { data: slotRows } =
-    slotIds.length > 0
-      ? await viewer.supabase.from("slots").select("id, therapist_id, starts_at, ends_at").in("id", slotIds)
-      : { data: [] };
-  const slots: SlotRow[] = slotRows ?? [];
+  const holds: HoldRow[] = rows.map((row) => ({
+    id: row.id,
+    slot_id: row.slot_id,
+    client_id: row.client_id,
+    created_at: row.created_at,
+    expires_at: row.expires_at,
+    confirmed_at: row.confirmed_at,
+    released_at: row.released_at,
+  }));
+  const slots: SlotRow[] = rows.map((row) => row.slots);
+  const clients: ClientRow[] = clientRows;
+  const therapists: TherapistRow[] = therapistRows;
 
   const items = buildHoldsList(holds, slots, clients, therapists, now);
   const errorCode = first(params.error);
