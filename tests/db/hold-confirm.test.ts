@@ -216,6 +216,44 @@ describe("утримання слоту — функція бази private.hold
   });
 });
 
+describe("публічні обгортки, які викликає застосунок — rpc(\"hold_slot\") / rpc(\"confirm_hold\")", () => {
+  // Обгортки передають now(), тож беремо слот, що ще не почався відносно реального часу (сид — до 2026-12-31).
+  it("AC-HOLD-02: public.hold_slot від імені планувальника — утримання на 1440 хвилин від now()", async () => {
+    const slot = await slotId("therapist1@example.test", "2026-12-30", "16:00");
+
+    const [{ r }] = await t.asUser<{ r: Result }>(scheduler1, "select public.hold_slot($1, $2) as r", [slot, client1]);
+
+    expect(r.code).toBe("OK");
+    const [row] = await holdsOf(slot);
+    expect(new Date(row.expires_at).getTime() - new Date(row.created_at).getTime()).toBe(1440 * 60_000);
+    expect(row.created_by).toBe(scheduler1);
+  });
+
+  it("AC-HOLD-12: public.confirm_hold від імені планувальника — утримання підтверджено", async () => {
+    const slot = await slotId("therapist1@example.test", "2026-12-30", "16:00");
+    const [{ r: held }] = await t.asUser<{ r: Result }>(scheduler1, "select public.hold_slot($1, $2) as r", [
+      slot,
+      client1,
+    ]);
+
+    const [{ r }] = await t.asUser<{ r: Result }>(scheduler2, "select public.confirm_hold($1) as r", [held.hold_id]);
+
+    expect(r.code).toBe("OK");
+    expect((await holdsOf(slot))[0].confirmed_by).toBe(scheduler2);
+  });
+
+  it("AC-HOLD-08: відвідувач без входу не викликає ні публічних, ні приватних функцій утримання й підтвердження", async () => {
+    const slot = await slotId("therapist1@example.test", "2026-12-30", "16:00");
+
+    await expect(t.asAnon("select public.hold_slot($1, $2)", [slot, client1])).rejects.toThrow(/permission denied/);
+    await expect(t.asAnon("select public.confirm_hold($1)", [slot])).rejects.toThrow(/permission denied/);
+    await expect(
+      t.asAnon("select private.hold_slot_at($1, $2, now())", [slot, client1]),
+    ).rejects.toThrow(/permission denied/);
+    expect(await holdsOf(slot)).toHaveLength(0);
+  });
+});
+
 describe("підтвердження утримання — функція бази private.confirm_hold_at", () => {
   async function heldSlot(createdAt: string, by = scheduler1) {
     const slot = await slotId("therapist1@example.test", "2026-11-05", "10:00");
