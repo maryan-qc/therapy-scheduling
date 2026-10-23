@@ -29,14 +29,14 @@
 
 ## 2. Доступ терапевта до своїх клієнтів і користувач без ролі (`task/client-access`)
 
-- [ ] 2.1 Міграція `…_users_without_role.sql` (drop-first: constraint → дані → default → constraint; `role` може бути
+- [x] 2.1 Міграція `…_users_without_role.sql` (drop-first: constraint → дані → default → constraint; `role` може бути
   `null`; `current_therapist_id()` лише для ролі `therapist`); `…_pm_therapist_seed.sql`; `demo-users.json` (admin1,
   newuser1 без ролі, pm-admin, pm-scheduler, pm-therapist) і `create-demo-users.mjs` з `"role": null`.
   Done when: `db-check` і `db-deploy` зелені; `npm run users:demo` створює акаунти.
-- [ ] 2.2 `requireViewer` без ролі → `/` лише з повідомленням AC-CARD-11; тести бази для списку й картки терапевта
+- [x] 2.2 `requireViewer` без ролі → `/` лише з повідомленням AC-CARD-11; тести бази для списку й картки терапевта
   (свої клієнти, порожній стан).
   Done when: AC-CARD-04, AC-CARD-09, AC-CARD-11.
-- [ ] 2.3 Тести відмов (PGlite, `asUser` / `asAnon`, дані не змінились — `asService`): AC-CARD-05 (чужий клієнт: 0
+- [x] 2.3 Тести відмов (PGlite, `asUser` / `asAnon`, дані не змінились — `asService`): AC-CARD-05 (чужий клієнт: 0
   рядків, `update` — permission denied), AC-CARD-07 (`anon`: permission denied на `select` і `insert`), AC-CARD-08
   (прострочене утримання — клієнт зникає), AC-CARD-11 (без ролі: 0 рядків, `insert` відхилено, терапевтом не стає).
   Done when: AC-CARD-05, AC-CARD-07, AC-CARD-08, AC-CARD-11.
@@ -56,7 +56,7 @@
 
 ## 4. Завершення зрізу (в останньому PR задачі)
 
-- [ ] 4.1 ADR `docs/decisions/0001-client-access-by-rls.md` з розділом «Як перевіряємо»; доказ `check:boundary` —
+- [x] 4.1 ADR `docs/decisions/0001-client-access-by-rls.md` з розділом «Як перевіряємо»; доказ `check:boundary` —
   червоний прогін job «Секретний ключ лише на сервері» з навмисним порушенням, потім revert.
 - [ ] 4.2 Знімки за ролями `docs/img/ws7-role-<роль>-<сторінка>.png` (головна сторінка зрізу й одна відмова на роль);
   рядки `docs/conformance.md` для всіх AC зрізу; archive `impl-client-cards`.
