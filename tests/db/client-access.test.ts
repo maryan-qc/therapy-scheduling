@@ -143,10 +143,13 @@ describe("картки клієнтів для терапевта (RLS clients_s
 });
 
 describe("без входу й без ролі", () => {
-  it("AC-CARD-07: відвідувач без входу (anon) не читає й не створює карток, картки не змінились", async () => {
+  it("AC-CARD-07: відвідувач без входу (anon) не читає карток і утримань, не створює карток, картки не змінились", async () => {
+    await holdFor(t1At10, client6, 1);
     const before = await snapshot();
 
+    // Сторінки /clients, /clients/[id] і /holds перенаправляють на /login (proxy і requireViewer); база — друга лінія.
     await expect(t.asAnon("select id from public.clients")).rejects.toThrow(/permission denied/);
+    await expect(t.asAnon("select id from public.holds")).rejects.toThrow(/permission denied/);
     await expect(
       t.asAnon("insert into public.clients (name, email) values ('Anon', 'anon@example.test')"),
     ).rejects.toThrow(/permission denied/);
