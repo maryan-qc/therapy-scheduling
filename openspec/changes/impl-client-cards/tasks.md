@@ -40,7 +40,7 @@
   рядків, `update` — permission denied), AC-CARD-07 (`anon`: permission denied на `select` і `insert`), AC-CARD-08
   (прострочене утримання — клієнт зникає), AC-CARD-11 (без ролі: 0 рядків, `insert` відхилено, терапевтом не стає).
   Done when: AC-CARD-05, AC-CARD-07, AC-CARD-08, AC-CARD-11.
-- [ ] 2.4 Мутаційна перевірка: локально — кожен відмовний AC; у CI — червоний прогін для AC-CARD-11 (без умови ролі в
+- [x] 2.4 Мутаційна перевірка: локально — кожен відмовний AC; у CI — червоний прогін для AC-CARD-11 (без умови ролі в
   `current_therapist_id()` у новій міграції), потім revert.
   Done when: AC-CARD-04, AC-CARD-05, AC-CARD-07, AC-CARD-08, AC-CARD-09, AC-CARD-11 — «реалізовано», червоний прогін
   AC-CARD-11 — в описі PR.
