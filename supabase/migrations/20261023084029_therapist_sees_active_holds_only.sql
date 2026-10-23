@@ -23,11 +23,9 @@ as $$
   );
 $$;
 
-drop policy holds_select on public.holds;
-
-create policy holds_select
+-- alter, а не drop + create: політика лишається тією самою (for select, permissive), змінюється лише умова.
+alter policy holds_select
   on public.holds
-  for select
   to authenticated
   using (
     (select private.is_staff())
