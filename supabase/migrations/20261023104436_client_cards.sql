@@ -71,3 +71,6 @@ create trigger clients_birth_date_not_in_future
 -- Колонковий grant: id, created_by і created_at користувач не передає (AC-CARD-01, AC-CARD-02).
 grant insert (name, email, client_type, date_of_birth, session_language, guardian_name, guardian_email)
   on table public.clients to authenticated;
+
+-- MUTATION (тимчасово, буде revert): будь-хто з authenticated створює картку — AC-CARD-06 має впасти.
+alter policy clients_insert_staff on public.clients to authenticated with check (true);
