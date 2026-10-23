@@ -26,25 +26,32 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
   if (!isStaff(viewer.role)) redirect("/schedule");
   const now = new Date();
 
-  // Утримання, клієнти й терапевти одне від одного не залежать — паралельно; слоти — за id з утримань.
+  // Утримання, клієнти й терапевти одне від одного не залежать — паралельно. База віддає лише утримання слотів, що ще
+  // не почались (AC-HOLD-29, AC-HOLD-42), разом зі слотом; підтверджені не відкидаємо тут: за ними buildHoldsList
+  // ховає старе «Expired» того самого клієнта (AC-HOLD-37), а потім і самі відкидає (AC-HOLD-38).
   const [{ data: holdRows }, { data: clientRows }, { data: therapistRows }] = await Promise.all([
     viewer.supabase
       .from("holds")
-      .select("id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at")
-      .order("created_at", { ascending: false })
-      .limit(500),
+      .select(
+        "id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at, slots!inner(id, therapist_id, starts_at, ends_at)",
+      )
+      .gt("slots.starts_at", now.toISOString()),
     viewer.supabase.from("clients").select("id, name, email"),
     viewer.supabase.from("therapists").select("id, name, email"),
   ]);
-  const holds: HoldRow[] = holdRows ?? [];
+  const rows = holdRows ?? [];
+  const holds: HoldRow[] = rows.map((row) => ({
+    id: row.id,
+    slot_id: row.slot_id,
+    client_id: row.client_id,
+    created_at: row.created_at,
+    expires_at: row.expires_at,
+    confirmed_at: row.confirmed_at,
+    released_at: row.released_at,
+  }));
+  const slots: SlotRow[] = rows.map((row) => row.slots);
   const clients: ClientRow[] = clientRows ?? [];
   const therapists: TherapistRow[] = therapistRows ?? [];
-  const slotIds = [...new Set(holds.map((hold) => hold.slot_id))];
-  const { data: slotRows } =
-    slotIds.length > 0
-      ? await viewer.supabase.from("slots").select("id, therapist_id, starts_at, ends_at").in("id", slotIds)
-      : { data: [] };
-  const slots: SlotRow[] = slotRows ?? [];
 
   const items = buildHoldsList(holds, slots, clients, therapists, now);
   const errorCode = first(params.error);
