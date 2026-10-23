@@ -1,6 +1,6 @@
 // Слоти терапевта на день для планувальника (openspec/specs/slot-holds: «Перегляд слотів дня», «День без вільних слотів»).
 import { activeHold, slotStatus, type SlotStatus } from "./status";
-import type { ClientRow, HoldRow, SlotRow } from "./types";
+import type { ClientName, ClientRow, HoldRow, SlotRow } from "./types";
 
 export const NO_FREE_SLOTS = "No free slots on this day.";
 
@@ -29,7 +29,8 @@ export interface DayView {
 export function buildDayView(
   slots: readonly SlotRow[],
   holds: readonly HoldRow[],
-  clients: readonly ClientRow[],
+  // Розклад терапевта передає клієнтів без email (AC-HOLD-40).
+  clients: readonly (ClientName & Partial<Pick<ClientRow, "email">>)[],
   now: Date,
 ): DayView {
   const clientById = new Map(clients.map((client) => [client.id, client]));

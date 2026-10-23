@@ -31,6 +31,9 @@ export interface ClientRow {
   email: string;
 }
 
+/** Клієнт у розкладі терапевта: лише ім'я, без email (AC-HOLD-40). */
+export type ClientName = Pick<ClientRow, "id" | "name">;
+
 export function isStaff(role: Role | null | undefined): boolean {
   return role === "scheduler" || role === "admin";
 }

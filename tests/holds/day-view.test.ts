@@ -3,14 +3,14 @@ import { buildDayView, NO_FREE_SLOTS } from "@/lib/holds/day-view";
 import { at, client1, client2, hold, now, slot } from "./fixtures";
 
 describe("слоти дня (openspec/specs/slot-holds)", () => {
-  it("AC-HOLD-01: 10:00 вільний, 11:00 «Held», 12:00 «Confirmed», утримати можна лише 10:00", () => {
+  it("AC-HOLD-01: зараз 2026-11-02 09:00 — 10:00 вільний, 11:00 «Held», 12:00 «Confirmed», утримати можна лише 10:00", () => {
     const slots = [slot("s10", "2026-11-03", "10:00"), slot("s11", "2026-11-03", "11:00"), slot("s12", "2026-11-03", "12:00")];
     const holds = [
-      hold("h11", "s11", at("2026-11-02", "14:30")),
-      hold("h12", "s12", at("2026-11-02", "14:00"), { clientId: client2.id, confirmedAt: at("2026-11-02", "14:10") }),
+      hold("h11", "s11", at("2026-11-01", "14:30")),
+      hold("h12", "s12", at("2026-11-01", "14:00"), { clientId: client2.id, confirmedAt: at("2026-11-01", "14:10") }),
     ];
 
-    const view = buildDayView(slots, holds, [client1, client2], now("2026-11-02", "15:00"));
+    const view = buildDayView(slots, holds, [client1, client2], now("2026-11-02", "09:00"));
 
     expect(view.slots.map((s) => s.status)).toEqual(["Free", "Held", "Confirmed"]);
     expect(view.slots.map((s) => s.canHold)).toEqual([true, false, false]);

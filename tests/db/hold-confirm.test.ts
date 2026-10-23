@@ -6,8 +6,9 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildDayView } from "@/lib/holds/day-view";
 import { CONFIRM_MESSAGES, HOLD_MESSAGES } from "@/lib/holds/messages";
+import { buildHoldsList } from "@/lib/holds/schedule";
 import { formatPracticeDateTime, practiceDayRange } from "@/lib/holds/time";
-import type { ClientRow, HoldRow, SlotRow } from "@/lib/holds/types";
+import type { ClientRow, HoldRow, SlotRow, TherapistRow } from "@/lib/holds/types";
 import { at } from "../holds/fixtures";
 import { createTestDb, type TestDb } from "./supabase-pglite";
 
@@ -79,6 +80,23 @@ async function dayView(userId: string, therapistEmail: string, date: string, now
   ).map((r) => iso<HoldRow>(r));
   const clients = await t.asUser<ClientRow>(userId, "select id, name, email from public.clients");
   return buildDayView(slots, holds, clients, new Date(nowAt));
+}
+
+/** Список утримань так, як його бачить планувальник на /holds: рядки з бази під його RLS → buildHoldsList. */
+async function holdsList(userId: string, nowAt: string) {
+  const holds = (await t.asUser<Record<string, unknown>>(userId, "select * from public.holds")).map((r) =>
+    iso<HoldRow>(r),
+  );
+  const slots = (
+    await t.asUser<Record<string, unknown>>(
+      userId,
+      "select id, therapist_id, starts_at, ends_at from public.slots where id = any($1::uuid[])",
+      [holds.map((h) => h.slot_id)],
+    )
+  ).map((r) => iso<SlotRow>(r));
+  const clients = await t.asUser<ClientRow>(userId, "select id, name, email from public.clients");
+  const therapists = await t.asUser<TherapistRow>(userId, "select id, name, email from public.therapists");
+  return buildHoldsList(holds, slots, clients, therapists, new Date(nowAt));
 }
 
 beforeAll(async () => {
@@ -168,6 +186,23 @@ describe("утримання слоту — функція бази private.hold
     expect(expired.client_id).toBe(client1);
     expect(expired.released_at).not.toBeNull(); // прострочене звільнила та сама функція
     expect(fresh.client_id).toBe(client2);
+  });
+
+  it("AC-HOLD-37: 2026-11-03 о 15:00 прострочений слот знову утримано за client1 — «Held until 2026-11-04 15:00», старого «Expired» у списку немає", async () => {
+    const slot = await slotId("therapist1@example.test", "2026-11-05", "10:00");
+    await hold(scheduler1, slot, client1, at("2026-11-02", "14:30"));
+    expect((await holdsList(scheduler1, at("2026-11-03", "14:59"))).map((i) => [i.clientName, i.status])).toEqual([
+      ["client1", "Expired"],
+    ]);
+
+    expect((await hold(scheduler2, slot, client1, at("2026-11-03", "15:00"))).code).toBe("OK");
+
+    const [, fresh] = await holdsOf(slot);
+    expect(fresh.client_id).toBe(client1);
+    expect(formatPracticeDateTime(fresh.expires_at)).toBe("2026-11-04 15:00");
+    const list = await holdsList(scheduler1, at("2026-11-03", "15:00"));
+    expect(list.map((i) => [i.holdId, i.clientName, i.status])).toEqual([[fresh.id, "client1", "Held"]]);
+    expect(`Held until ${formatPracticeDateTime(list[0].heldUntil!)}`).toBe("Held until 2026-11-04 15:00");
   });
 
   it("AC-HOLD-07: слот 10:00 о 10:05 — «This slot has already started and cannot be held.»", async () => {

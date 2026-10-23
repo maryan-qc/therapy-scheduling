@@ -18,8 +18,8 @@ const MESSAGES = Object.fromEntries(
   Object.entries(CONFIRM_MESSAGES).map(([code, text]) => [`confirm.${code}`, text]),
 ) as Record<string, string>;
 
-// Утримання для планувальника й адміністратора: Held / Confirmed / Expired; прострочене — лише до початку слоту
-// (AC-HOLD-20, AC-HOLD-28, AC-HOLD-29).
+// Список утримань планувальника й адміністратора: лише Held і Expired, слот яких ще не почався, за часом слоту
+// (AC-HOLD-20, AC-HOLD-28, AC-HOLD-29, AC-HOLD-37, AC-HOLD-38, AC-HOLD-42).
 export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
   const params = await searchParams;
   const viewer = await requireViewer();
