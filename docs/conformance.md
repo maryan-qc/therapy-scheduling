@@ -69,3 +69,9 @@
 | AC-HOLD-34 | дублікат email з іншим регістром і пробілами відхилено | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/db/clients.test.ts`, `tests/holds/clients.test.ts` | реалізовано |
 | AC-HOLD-35 | email зберігається й показується малими літерами без пробілів | `src/lib/holds/clients.ts`, `src/app/slots/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/db/clients.test.ts`, `tests/holds/clients.test.ts` | реалізовано |
 | AC-HOLD-36 | друге підтвердження того самого утримання відхилено | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-37 | прострочене утримання знову утримують за тим самим клієнтом, старий «Expired» зникає зі списку | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-38 | у списку утримань лише «Held» і «Expired» за часом слоту | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-39 | інші некоректні email відхилено (без крапки після «@», два «@», порожня частина, пробіл) | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-40 | у розкладі терапевта ім'я клієнта без email | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-41 | ім'я лише з пробілів відхилено, пробіли по краях прибрано | — | — | відкладено (чекає реалізації) |
+| AC-HOLD-42 | утримання «Held» зникає зі списку з початком слоту | — | — | відкладено (чекає реалізації) |
