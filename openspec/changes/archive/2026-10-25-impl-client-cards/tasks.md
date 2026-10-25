@@ -58,7 +58,7 @@
 
 - [x] 4.1 ADR `docs/decisions/0001-client-access-by-rls.md` з розділом «Як перевіряємо»; доказ `check:boundary` —
   червоний прогін job «Секретний ключ лише на сервері» з навмисним порушенням, потім revert.
-- [ ] 4.2 Знімки за ролями `docs/img/ws7-role-<роль>-<сторінка>.png` (головна сторінка зрізу й одна відмова на роль);
+- [x] 4.2 Знімки за ролями `docs/img/ws7-role-<роль>-<сторінка>.png` (головна сторінка зрізу й одна відмова на роль);
   рядки `docs/conformance.md` для всіх AC зрізу; archive `impl-client-cards`.
   Done when: AC-CARD-01…AC-CARD-11, AC-HOLD-37…AC-HOLD-42 — «реалізовано» в `docs/conformance.md` (`npm run ac:coverage`
   — 53 AC без «відкладено» без причини).
