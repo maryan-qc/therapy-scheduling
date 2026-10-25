@@ -38,5 +38,14 @@ describe("scripts/create-demo-users.mjs — пароль з «#» у .env.local"
     const { out } = runScript("create-demo-users.mjs", project('DEMO_USER_PASSWORD="abcd1234!@#"'), env("abcd1234!@#"));
 
     expect(out).not.toContain(GUARD);
+    expect(out).toContain("demo-users.json"); // дійшов до наступного кроку — читання списку користувачів
+  });
+
+  it("діє останній запис: другий DEMO_USER_PASSWORD без лапок із «#» — теж зупинка", () => {
+    const dir = project('DEMO_USER_PASSWORD="abcd1234!@#"\nDEMO_USER_PASSWORD=abcd1234!@#');
+    const { code, out } = runScript("create-demo-users.mjs", dir, env("abcd1234!@"));
+
+    expect(code).toBe(1);
+    expect(out).toContain(GUARD);
   });
 });

@@ -39,7 +39,8 @@ const envFile = path.join(process.cwd(), ".env.local");
 if (existsSync(envFile)) {
   const line = readFileSync(envFile, "utf8")
     .split(/\r?\n/)
-    .find((l) => /^\s*(?:export\s+)?DEMO_USER_PASSWORD\s*=/.test(l));
+    .filter((l) => /^\s*(?:export\s+)?DEMO_USER_PASSWORD\s*=/.test(l))
+    .at(-1); // як і node --env-file: діє останній запис
   const raw = (line ?? "").replace(/^[^=]*=\s*/, "");
   if (!/^["'`]/.test(raw) && raw.includes("#")) {
     console.error(
