@@ -10,7 +10,7 @@
 // Чому скрипт, а не реєстрація: вбудований SMTP Supabase надсилає 2 листи/год і лише членам команди проєкту в Supabase,
 // тому email-підтвердження в навчальних проєктах вимкнено, а користувачів створюємо тут (email_confirm: true).
 // Скрипт ніколи не друкує значення ключів і паролів.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
@@ -32,6 +32,22 @@ if (missing.length) {
 if (password.length < 8) {
   console.error("DEMO_USER_PASSWORD має бути не коротшим за 8 символів.");
   process.exit(1);
+}
+// `node --env-file` читає «#» у значенні без лапок як початок коментаря: DEMO_USER_PASSWORD=abc#def дає «abc». Тоді
+// акаунти отримали б інший пароль, ніж записаний у файлі й переданий людям. Зупиняємось, а не мовчки обрізаємо.
+const envFile = path.join(process.cwd(), ".env.local");
+if (existsSync(envFile)) {
+  const line = readFileSync(envFile, "utf8")
+    .split(/\r?\n/)
+    .filter((l) => /^\s*(?:export\s+)?DEMO_USER_PASSWORD\s*=/.test(l))
+    .at(-1); // як і node --env-file: діє останній запис
+  const raw = (line ?? "").replace(/^[^=]*=\s*/, "");
+  if (!/^["'`]/.test(raw) && raw.includes("#")) {
+    console.error(
+      'DEMO_USER_PASSWORD у .env.local містить «#» без лапок — node --env-file відкине все від «#», і пароль акаунтів буде коротший. Візьміть значення в подвійні лапки: DEMO_USER_PASSWORD="…".',
+    );
+    process.exit(1);
+  }
 }
 
 const file = path.join(process.cwd(), "supabase", "demo-users.json");
@@ -110,4 +126,4 @@ if (failed) {
   );
   process.exit(1);
 }
-console.log(`\nГотово, користувачів: ${users.length}. Пароль — значення DEMO_USER_PASSWORD (у консоль не виводимо).`);
+console.log(`\nГотово, користувачів: ${users.length}. Пароль — значення DEMO_USER_PASSWORD, ${password.length} символів (сам пароль у консоль не виводимо).`);
