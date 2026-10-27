@@ -1,0 +1,122 @@
+# Дельта: client-cards
+
+## ADDED Requirements
+
+### Requirement: Дублікат картки дитини
+
+IF вже є картка дитини з тим самим ім'ям (без урахування великих і малих літер та пробілів на початку й у кінці), датою народження й email опікуна, THEN the system SHALL не створювати ще одну картку, залишити введені дані у формі й показати повідомлення «A client with these details already exists.»; діти з одним опікуном і різними іменами створюються.
+
+#### Scenario: AC-CARD-13 Дублікат картки дитини
+
+- **GIVEN** є картка client7 з типом «Child», ім'ям «Client Seven», датою народження 2015-03-02 і email опікуна guardian7@example.test
+- **WHEN** scheduler2 створює картку з типом «Child», ім'ям « client seven », датою народження 2015-03-02, мовою сеансів «English», ім'ям опікуна «Guardian Seven» і email опікуна guardian7@example.test
+- **THEN** другу картку не створено, scheduler2 бачить повідомлення «A client with these details already exists.»
+- **AND** введені дані лишаються у формі
+
+### Requirement: Картка, якої немає
+
+IF картки клієнта, на яку веде посилання, не існує, THEN the system SHALL показати планувальнику й адміністратору повідомлення «This client card doesn't exist.», терапевту — «You don't have access to this client.», як для чужої картки, і не показувати жодних даних клієнтів.
+
+#### Scenario: AC-CARD-16 Посилання на картку, якої немає
+
+- **GIVEN** картки клієнта, на яку веде посилання, не існує
+- **WHEN** scheduler1, а потім therapist1 відкриває це посилання
+- **THEN** scheduler1 бачить повідомлення «This client card doesn't exist.», therapist1 — «You don't have access to this client.»
+- **AND** жоден із них не бачить жодних даних клієнтів
+
+## MODIFIED Requirements
+
+### Requirement: Картка дитини з опікуном
+
+WHEN планувальник або адміністратор створює картку з типом «Child», ім'ям, датою народження не пізніше за сьогодні, мовою сеансів «English» або «Spanish», ім'ям і коректним email опікуна, the system SHALL створити картку без власного email дитини, показати в ній дані дитини й опікуна, а під час утримання слоту дозволити знайти дитину за її ім'ям або за email опікуна й показувати біля неї email опікуна.
+
+#### Scenario: AC-CARD-02 Картка дитини з опікуном
+
+- **GIVEN** опікуна з email guardian7@example.test ще не вказано в жодній картці
+- **WHEN** scheduler1 створює картку з типом «Child», ім'ям «Client Seven», датою народження 2015-03-02, мовою сеансів «Spanish», ім'ям опікуна «Guardian Seven» і email опікуна guardian7@example.test
+- **THEN** картку створено, у ній показано дані дитини й опікуна
+- **AND** під час утримання слоту client7 можна знайти за email опікуна guardian7@example.test, і біля client7 показано email опікуна
+
+### Requirement: Обов'язкові поля картки
+
+IF під час створення картки тип не вибрано, обов'язкове поле порожнє, дата народження пізніша за сьогодні або email некоректний, THEN the system SHALL не створювати картку, залишити всі введені дані у формі й одразу показати біля кожного поля з проблемою його повідомлення з «Припущень» PM — для імені та email опікуна «Enter the guardian's name and a valid email.»
+
+#### Scenario: AC-CARD-03 Порожнє ім'я чи email опікуна
+
+- **GIVEN** scheduler1 заповнює картку з типом «Child», ім'ям «Client Eight», датою народження 2016-01-10 і мовою «English»
+- **WHEN** ім'я або email опікуна залишено порожнім і scheduler1 зберігає картку
+- **THEN** картку не створено, scheduler1 бачить повідомлення «Enter the guardian's name and a valid email.»
+- **AND** всі введені дані лишаються у формі
+
+#### Scenario: AC-CARD-12 Кілька помилок у формі одразу
+
+- **GIVEN** сьогодні 2026-11-03
+- **WHEN** scheduler1 створює картку з типом «Child», порожнім ім'ям, датою народження 2026-11-04, без мови сеансів, з ім'ям опікуна «Guardian Eight» і email опікуна guardian8@example.test
+- **THEN** картку не створено, scheduler1 одразу бачить три повідомлення біля відповідних полів — «Enter the client's name.», «Enter a date of birth that is not in the future.» і «Select a session language.»
+- **AND** всі введені дані лишаються у формі
+
+### Requirement: Хто створює картки
+
+IF користувач з роллю `therapist` відкриває форму нової картки клієнта за прямим посиланням або пробує створити картку в обхід цієї сторінки, THEN the system SHALL не показувати йому форми, одразу показати повідомлення «Only schedulers and admins can create client cards.», не створювати картку й не змінювати кількість карток клієнтів.
+
+#### Scenario: AC-CARD-06 Терапевт пробує створити картку
+
+- **GIVEN** therapist1 увійшов у застосунок
+- **WHEN** він відкриває форму нової картки клієнта за прямим посиланням
+- **THEN** форму не показано, therapist1 одразу бачить повідомлення «Only schedulers and admins can create client cards.»
+- **AND** кількість карток клієнтів не змінилася
+
+### Requirement: Список своїх клієнтів терапевта
+
+WHEN терапевт відкриває список своїх клієнтів, the system SHALL показати з усіма даними анкети картки лише тих клієнтів, у кого з ним є утримання «Held», слот якого ще не почався, або сеанс «Confirmed» (зокрема минулий), а якщо таких немає — повідомлення «No clients yet. Clients appear here when a scheduler holds a slot with you.»
+
+#### Scenario: AC-CARD-04 Терапевт бачить картки своїх клієнтів
+
+- **GIVEN** зараз 2026-11-02 12:00, client6 має утримання зі статусом «Held» у therapist1 на 2026-11-05 о 10:00, client7 — сеанс зі статусом «Confirmed» у therapist1 2026-11-04 о 10:00, а client9 — утримання зі статусом «Held» у therapist2 на 2026-11-05 об 11:00
+- **WHEN** therapist1 відкриває список своїх клієнтів
+- **THEN** він бачить картки client6 і client7 з усіма даними анкети (для client7 — з даними опікуна)
+- **AND** не бачить client9
+
+#### Scenario: AC-CARD-09 У терапевта ще немає своїх клієнтів
+
+- **GIVEN** therapist2 не має жодного утримання зі статусом «Held» і жодного сеансу зі статусом «Confirmed»
+- **WHEN** therapist2 відкриває список своїх клієнтів
+- **THEN** він бачить повідомлення «No clients yet. Clients appear here when a scheduler holds a slot with you.»
+- **AND** жодної картки
+
+#### Scenario: AC-CARD-14 «Held» — лише до початку слоту, минулий сеанс — без обмеження
+
+- **GIVEN** слот therapist1 2026-11-03 о 10:00 утримано за client6 2026-11-02 о 14:30 зі статусом «Held», client7 мав сеанс зі статусом «Confirmed» у therapist1 2026-11-02 о 10:00, і інших утримань чи сеансів client6 і client7 з therapist1 немає
+- **WHEN** therapist1 відкриває список своїх клієнтів 2026-11-03 о 09:59, а потім о 10:00 або пізніше
+- **THEN** о 09:59 він бачить картки client6 і client7, а з 10:00 — лише картку client7
+- **AND** за прямим посиланням на картку client6 therapist1 бачить повідомлення «You don't have access to this client.» і жодних даних client6
+
+### Requirement: Усі картки для планувальника й адміністратора
+
+WHEN планувальник або адміністратор відкриває список клієнтів, the system SHALL показати картки всіх клієнтів, а в картці дитини — дані опікуна; картки, створені за вимогою зрізу 1 (лише ім'я та email), — з типом «Adult» і «Not provided» у відсутніх полях; якщо жодної картки ще немає — замість списку повідомлення «No clients yet. Create a client card from an intake form.», а форма нової картки доступна, як завжди.
+
+#### Scenario: AC-CARD-10 Планувальник і адміністратор бачать усі картки
+
+- **GIVEN** існують картки client6, client7 і client9
+- **WHEN** scheduler2 або admin1 відкриває список клієнтів
+- **THEN** кожен із них бачить усі три картки
+- **AND** в картці client7 — дані опікуна
+
+#### Scenario: AC-CARD-15 Карток ще немає
+
+- **GIVEN** у практиці ще немає жодної картки клієнта
+- **WHEN** scheduler1 або admin1 відкриває список клієнтів
+- **THEN** замість списку він бачить повідомлення «No clients yet. Create a client card from an intake form.»
+- **AND** форма нової картки доступна, як завжди
+
+### Requirement: Користувач без ролі
+
+IF користувач увійшов, але не має ролі, THEN the system SHALL показувати йому лише повідомлення «Your account has no access yet. Contact an administrator.» і дію «Sign out», не показувати жодних інших посилань і даних клієнтів і не змінювати жодної картки.
+
+#### Scenario: AC-CARD-11 Користувач без ролі
+
+- **GIVEN** користувач newuser1@example.test увійшов, але не має ролі
+- **WHEN** він відкриває застосунок або картку client6 за прямим посиланням
+- **THEN** він бачить лише повідомлення «Your account has no access yet. Contact an administrator.» і дію «Sign out»
+- **AND** жодних даних клієнтів не показано
+- **AND** жодна картка не змінилася
