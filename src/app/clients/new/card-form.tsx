@@ -30,8 +30,8 @@ const ERROR_FIELD: Partial<Record<CardErrorCode, FieldName>> = {
   GUARDIAN_INVALID: "guardianEmail",
   CLIENT_DUPLICATE: "email",
 };
-// Поля, які ще підсвічує помилка, показана біля іншого поля: одне повідомлення PM на пару «ім'я та email» — для
-// дорослого під ім'ям, для опікуна — під email опікуна, останнім полем пари.
+// Друге поле пари «ім'я та email»: повідомлення PM одне на пару, тож його видно під обома полями — користувач бачить
+// причину біля кожного поля, яке треба виправити.
 const ALSO_INVALID: Partial<Record<CardErrorCode, FieldName[]>> = {
   CLIENT_INVALID: ["email"],
   GUARDIAN_INVALID: ["guardianName"],
@@ -60,23 +60,16 @@ export function ClientCardForm({ today }: { today: string }) {
   const [values, setValues] = useState<CardForm>(EMPTY_CARD_FORM);
 
   const fieldError = (field: FieldName) => {
-    const code = state.errors.find((candidate) => ERROR_FIELD[candidate] === field);
+    const code = state.errors.find(
+      (candidate) => ERROR_FIELD[candidate] === field || ALSO_INVALID[candidate]?.includes(field),
+    );
     return code ? CARD_MESSAGES[code] : undefined;
-  };
-  const invalid = (field: FieldName) =>
-    state.errors.some((code) => ERROR_FIELD[code] === field || ALSO_INVALID[code]?.includes(field));
-  const describedBy = (field: FieldName) => {
-    const own = state.errors.find((code) => ERROR_FIELD[code] === field);
-    const other = state.errors.find((code) => ALSO_INVALID[code]?.includes(field));
-    if (own) return `card-${field}-error`;
-    if (other) return `card-${ERROR_FIELD[other]}-error`;
-    return undefined;
   };
   const fieldProps = (field: FieldName) => ({
     id: `card-${field}`,
     value: values[field],
-    "aria-invalid": invalid(field) || undefined,
-    "aria-describedby": describedBy(field),
+    "aria-invalid": fieldError(field) ? true : undefined,
+    "aria-describedby": fieldError(field) ? `card-${field}-error` : undefined,
   });
   const set = (field: FieldName) => (event: { target: { value: string } }) =>
     setValues((current) => ({ ...current, [field]: event.target.value }));
@@ -138,7 +131,7 @@ export function ClientCardForm({ today }: { today: string }) {
           ) : null}
           {values.type === "child" ? (
             <>
-              <Field id="card-guardianName" label="Guardian name">
+              <Field id="card-guardianName" label="Guardian name" error={fieldError("guardianName")}>
                 <Input
                   name="guardian_name"
                   autoComplete="off"
