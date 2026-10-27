@@ -2,7 +2,7 @@
 
 import { CircleAlertIcon } from "lucide-react";
 import Link from "next/link";
-import { startTransition, useActionState, useState, type FormEvent } from "react";
+import { startTransition, useActionState, useState, type FormEvent, type ReactNode } from "react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,42 +20,60 @@ import { createClientCard, type CardFormState } from "../actions";
 
 type FieldName = keyof CardForm;
 
-// Яке поле підсвічує кожна помилка (aria-invalid + aria-describedby на текст помилки).
-const ERROR_FIELDS: Record<CardErrorCode, FieldName[]> = {
-  CARD_FORBIDDEN: [],
-  TYPE_INVALID: ["type"],
-  CLIENT_INVALID: ["name", "email"],
-  CHILD_NAME: ["name"],
-  BIRTH_DATE: ["dateOfBirth"],
-  LANGUAGE: ["language"],
-  GUARDIAN_INVALID: ["guardianName", "guardianEmail"],
-  CLIENT_DUPLICATE: ["email"],
-  CARD_DATA_INVALID: [],
-  SAVE_FAILED: [],
+// Біля якого поля показати помилку (AC-CARD-12); решта — угорі форми (відмова ролі, дублікат дитини, збій збереження).
+const ERROR_FIELD: Partial<Record<CardErrorCode, FieldName>> = {
+  TYPE_INVALID: "type",
+  CLIENT_INVALID: "name",
+  CHILD_NAME: "name",
+  BIRTH_DATE: "dateOfBirth",
+  LANGUAGE: "language",
+  GUARDIAN_INVALID: "guardianEmail",
+  CLIENT_DUPLICATE: "email",
+};
+// Друге поле пари «ім'я та email»: повідомлення PM одне на пару, тож його видно під обома полями — користувач бачить
+// причину біля кожного поля, яке треба виправити.
+const ALSO_INVALID: Partial<Record<CardErrorCode, FieldName[]>> = {
+  CLIENT_INVALID: ["email"],
+  GUARDIAN_INVALID: ["guardianName"],
 };
 
 const INITIAL: CardFormState = { errors: [], values: EMPTY_CARD_FORM };
 
-// Форма картки: значення керовані станом, тож якщо картку не створено, усе введене лишається у формі (AC-CARD-03).
-// Дорослий — email; дитина — ім'я та email опікуна (AC-CARD-01, AC-CARD-02).
+function Field({ id, label, error, children }: { id: string; label: string; error?: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      {children}
+      {error ? (
+        <p id={`${id}-error`} className="text-small text-destructive" data-testid="field-error">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+// Форма картки: значення керовані станом, тож якщо картку не створено, усе введене лишається у формі (AC-CARD-03,
+// AC-CARD-12, AC-CARD-13). Дорослий — email; дитина — ім'я та email опікуна (AC-CARD-01, AC-CARD-02).
 export function ClientCardForm({ today }: { today: string }) {
   const [state, formAction, pending] = useActionState(createClientCard, INITIAL);
   const [values, setValues] = useState<CardForm>(EMPTY_CARD_FORM);
-  const child = values.type === "child";
 
-  const invalid = (field: FieldName) => state.errors.some((code) => ERROR_FIELDS[code].includes(field));
-  const describedBy = (field: FieldName) =>
-    state.errors
-      .filter((code) => ERROR_FIELDS[code].includes(field))
-      .map((code) => `card-error-${code}`)
-      .join(" ") || undefined;
+  const fieldError = (field: FieldName) => {
+    const code = state.errors.find(
+      (candidate) => ERROR_FIELD[candidate] === field || ALSO_INVALID[candidate]?.includes(field),
+    );
+    return code ? CARD_MESSAGES[code] : undefined;
+  };
   const fieldProps = (field: FieldName) => ({
+    id: `card-${field}`,
     value: values[field],
-    "aria-invalid": invalid(field) || undefined,
-    "aria-describedby": describedBy(field),
+    "aria-invalid": fieldError(field) ? true : undefined,
+    "aria-describedby": fieldError(field) ? `card-${field}-error` : undefined,
   });
   const set = (field: FieldName) => (event: { target: { value: string } }) =>
     setValues((current) => ({ ...current, [field]: event.target.value }));
+  const formErrors = state.errors.filter((code) => !ERROR_FIELD[code]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -67,32 +85,27 @@ export function ClientCardForm({ today }: { today: string }) {
     <Card className="max-w-2xl">
       <CardContent>
         <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-          {state.errors.length > 0 ? (
+          {formErrors.length > 0 ? (
             <Alert variant="destructive">
               <CircleAlertIcon strokeWidth={1.5} aria-hidden="true" />
-              {state.errors.map((code) => (
-                <AlertTitle key={code} id={`card-error-${code}`}>
-                  {CARD_MESSAGES[code]}
-                </AlertTitle>
+              {formErrors.map((code) => (
+                <AlertTitle key={code}>{CARD_MESSAGES[code]}</AlertTitle>
               ))}
             </Alert>
           ) : null}
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="card-type">Client type</Label>
-            <NativeSelect id="card-type" name="type" onChange={set("type")} {...fieldProps("type")}>
+          <Field id="card-type" label="Client type" error={fieldError("type")}>
+            <NativeSelect name="type" onChange={set("type")} {...fieldProps("type")}>
+              <NativeSelectOption value="">Select…</NativeSelectOption>
               <NativeSelectOption value="adult">Adult</NativeSelectOption>
               <NativeSelectOption value="child">Child</NativeSelectOption>
             </NativeSelect>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="card-name">Name</Label>
-            <Input id="card-name" name="name" autoComplete="off" onChange={set("name")} {...fieldProps("name")} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="card-dob">Date of birth</Label>
+          </Field>
+          <Field id="card-name" label="Name" error={fieldError("name")}>
+            <Input name="name" autoComplete="off" onChange={set("name")} {...fieldProps("name")} />
+          </Field>
+          <Field id="card-dateOfBirth" label="Date of birth" error={fieldError("dateOfBirth")}>
             <Input
-              id="card-dob"
               name="date_of_birth"
               type="date"
               max={today}
@@ -100,15 +113,9 @@ export function ClientCardForm({ today }: { today: string }) {
               onChange={set("dateOfBirth")}
               {...fieldProps("dateOfBirth")}
             />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="card-language">Session language</Label>
-            <NativeSelect
-              id="card-language"
-              name="session_language"
-              onChange={set("language")}
-              {...fieldProps("language")}
-            >
+          </Field>
+          <Field id="card-language" label="Session language" error={fieldError("language")}>
+            <NativeSelect name="session_language" onChange={set("language")} {...fieldProps("language")}>
               <NativeSelectOption value="">Select…</NativeSelectOption>
               {SESSION_LANGUAGES.map((language) => (
                 <NativeSelectOption key={language} value={language}>
@@ -116,44 +123,33 @@ export function ClientCardForm({ today }: { today: string }) {
                 </NativeSelectOption>
               ))}
             </NativeSelect>
-          </div>
-          {child ? (
+          </Field>
+          {values.type === "adult" ? (
+            <Field id="card-email" label="Email" error={fieldError("email")}>
+              <Input name="email" type="email" autoComplete="off" onChange={set("email")} {...fieldProps("email")} />
+            </Field>
+          ) : null}
+          {values.type === "child" ? (
             <>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="card-guardian-name">Guardian name</Label>
+              <Field id="card-guardianName" label="Guardian name" error={fieldError("guardianName")}>
                 <Input
-                  id="card-guardian-name"
                   name="guardian_name"
                   autoComplete="off"
                   onChange={set("guardianName")}
                   {...fieldProps("guardianName")}
                 />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="card-guardian-email">Guardian email</Label>
+              </Field>
+              <Field id="card-guardianEmail" label="Guardian email" error={fieldError("guardianEmail")}>
                 <Input
-                  id="card-guardian-email"
                   name="guardian_email"
                   type="email"
                   autoComplete="off"
                   onChange={set("guardianEmail")}
                   {...fieldProps("guardianEmail")}
                 />
-              </div>
+              </Field>
             </>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="card-email">Email</Label>
-              <Input
-                id="card-email"
-                name="email"
-                type="email"
-                autoComplete="off"
-                onChange={set("email")}
-                {...fieldProps("email")}
-              />
-            </div>
-          )}
+          ) : null}
 
           <div className="flex items-center gap-2">
             <Button type="submit" disabled={pending}>

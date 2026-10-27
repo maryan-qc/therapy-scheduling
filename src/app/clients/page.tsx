@@ -3,7 +3,14 @@ import { Nav } from "@/app/_components/nav";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CARD_COLUMNS, clientTypeLabel, NO_CLIENTS_YET, NOT_PROVIDED, type ClientCardRow } from "@/lib/clients/card";
+import {
+  CARD_COLUMNS,
+  clientTypeLabel,
+  NO_CARDS_YET,
+  NO_CLIENTS_YET,
+  NOT_PROVIDED,
+  type ClientCardRow,
+} from "@/lib/clients/card";
 import { isStaff } from "@/lib/holds/types";
 import { allRows } from "@/lib/supabase/all-rows";
 import { requireViewer } from "@/lib/supabase/viewer";
@@ -13,7 +20,7 @@ function Value({ children }: { children: string | null }) {
 }
 
 // Картки клієнтів: планувальник і адміністратор бачать усі (AC-CARD-10), терапевт — лише своїх клієнтів з усіма даними
-// анкети (AC-CARD-04, AC-CARD-08) або порожній стан (AC-CARD-09). Рядки фільтрує RLS (clients_select), не сторінка.
+// анкети (AC-CARD-04, AC-CARD-08, AC-CARD-14) або порожній стан (AC-CARD-09; для персоналу — AC-CARD-15). Рядки фільтрує RLS (clients_select), не сторінка.
 export default async function ClientsPage() {
   const viewer = await requireViewer();
   const staff = isStaff(viewer.role);
@@ -35,7 +42,7 @@ export default async function ClientsPage() {
         </div>
         {clients.length === 0 ? (
           <p className="text-sm text-muted-foreground" data-testid="clients-empty">
-            {staff ? "No client cards yet." : NO_CLIENTS_YET}
+            {staff ? NO_CARDS_YET : NO_CLIENTS_YET}
           </p>
         ) : (
           <Card className="gap-0 py-0">

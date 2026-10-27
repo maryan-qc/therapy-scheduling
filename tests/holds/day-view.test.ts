@@ -30,7 +30,7 @@ describe("слоти дня (openspec/specs/slot-holds)", () => {
     expect(view.slots.map((s) => s.status)).toEqual(["Held", "Confirmed"]);
   });
 
-  it("AC-HOLD-24: день без жодного слоту — лише повідомлення", () => {
+  it("AC-HOLD-24: субота 2026-11-07 без жодного слоту — лише повідомлення", () => {
     const view = buildDayView([], [], [], now("2026-11-05", "09:00"));
 
     expect(view.message).toBe(NO_FREE_SLOTS);

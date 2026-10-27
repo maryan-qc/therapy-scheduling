@@ -1,14 +1,15 @@
+import Link from "next/link";
 import { ActionAlerts } from "@/app/_components/action-alerts";
 import { Nav } from "@/app/_components/nav";
 import { TimeZoneNote } from "@/app/_components/time-zone-note";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CLIENT_MESSAGES, type ClientErrorCode } from "@/lib/holds/clients";
+import { matchesClient } from "@/lib/clients/search";
 import { buildDayView } from "@/lib/holds/day-view";
 import { CONFIRM_MESSAGES, HOLD_MESSAGES } from "@/lib/holds/messages";
 import {
@@ -18,14 +19,19 @@ import {
   practiceDate,
   practiceDayRange,
 } from "@/lib/holds/time";
-import { clientContact, isStaff, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
+import {
+  clientContact,
+  staffPageError,
+  type ClientRow,
+  type HoldRow,
+  type SlotRow,
+  type TherapistRow,
+} from "@/lib/holds/types";
+import { allRows } from "@/lib/supabase/all-rows";
 import { requireViewer } from "@/lib/supabase/viewer";
-import { addClient, confirmHold, holdSlot } from "./actions";
+import { confirmHold, holdSlot } from "./actions";
 
 const MESSAGES: Record<string, string> = {
-  ...(CLIENT_MESSAGES satisfies Record<ClientErrorCode, string>),
-  CLIENT_FORBIDDEN: "Only schedulers and admins can create clients.",
-  CLIENT_CREATED: "Client created.",
   ...Object.fromEntries(Object.entries(HOLD_MESSAGES).map(([code, text]) => [`hold.${code}`, text])),
   ...Object.fromEntries(Object.entries(CONFIRM_MESSAGES).map(([code, text]) => [`confirm.${code}`, text])),
   "hold.CLIENT_REQUIRED": "Select a client to hold the slot.",
@@ -33,21 +39,38 @@ const MESSAGES: Record<string, string> = {
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
-// Слоти терапевта на день зі статусами (AC-HOLD-01, 18, 24, 32, 33) і картки клієнтів (AC-HOLD-10, 11, 15, 16, 34, 35).
+// Слоти терапевта на день зі статусами (AC-HOLD-01, 18, 24, 32, 33) для планувальника й адміністратора; терапевт
+// бачить лише відмову, без запитів до бази (AC-HOLD-44). Картки клієнтів створюють лише повною формою /clients/new
+// (Sofiia-pm/therapy-scheduling-spec#20); тут — пошук клієнта для утримання за ім'ям чи email, дитини — і за email
+// опікуна (AC-CARD-02).
 export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
   const params = await searchParams;
   const viewer = await requireViewer();
   const now = new Date();
-  const staff = isStaff(viewer.role);
+  const refusal = staffPageError(viewer.role);
+  if (refusal) {
+    return (
+      <>
+        <Nav email={viewer.email} role={viewer.role} current="/slots" />
+        <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-6 px-6 py-6">
+          <h1 className="text-xl font-semibold tracking-tight">Therapist slots</h1>
+          <ActionAlerts error={refusal} />
+        </main>
+      </>
+    );
+  }
 
-  // RLS: планувальник і адміністратор бачать усіх терапевтів, терапевт — лише себе.
-  // Терапевти й клієнти одне від одного не залежать — один round trip до бази замість двох.
-  const [{ data: therapistRows }, { data: clientRows }] = await Promise.all([
+  // Терапевти й клієнти одне від одного не залежать — паралельно. Довідник клієнтів — повний (усі сторінки Data API):
+  // з нього утримані слоти беруть ім'я й контакт; пошук звужує лише список для нового утримання.
+  const [{ data: therapistRows }, allClients] = await Promise.all([
     viewer.supabase.from("therapists").select("id, name, email").order("name"),
-    viewer.supabase.from("clients").select("id, name, email, guardian_email").order("name"),
+    allRows<ClientRow>((from, to) =>
+      viewer.supabase.from("clients").select("id, name, email, guardian_email").order("name").order("id").range(from, to),
+    ),
   ]);
   const therapists: TherapistRow[] = therapistRows ?? [];
-  const clients: ClientRow[] = clientRows ?? [];
+  const clientQuery = first(params.client)?.trim() ?? "";
+  const clients: ClientRow[] = allClients.filter((client) => matchesClient(client, clientQuery));
   const therapist = therapists.find((t) => t.id === first(params.therapist)) ?? therapists[0];
 
   const requestedDate = first(params.date);
@@ -78,9 +101,9 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
     }
   }
 
-  const view = buildDayView(slots, holds, clients, now);
+  const view = buildDayView(slots, holds, allClients, now);
 
-  const back = `/slots?therapist=${therapist?.id ?? ""}&date=${date}`;
+  const back = `/slots?${new URLSearchParams({ therapist: therapist?.id ?? "", date, client: clientQuery }).toString()}`;
   const errorCode = first(params.error);
   const okCode = first(params.ok);
 
@@ -108,11 +131,30 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
               <Label htmlFor="date">Date</Label>
               <Input id="date" type="date" name="date" defaultValue={date} className="tabular-nums" />
             </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="client">Find client</Label>
+              <Input
+                id="client"
+                name="client"
+                defaultValue={clientQuery}
+                placeholder="Name or email"
+                className="w-56"
+                aria-describedby="client-hint"
+              />
+            </div>
             <Button type="submit" variant="outline">
               Show
             </Button>
           </form>
         </div>
+        <p id="client-hint" className="-mt-4 text-small text-muted-foreground">
+          {clientQuery
+            ? `Clients matching «${clientQuery}»: ${clients.length}. `
+            : "Find a client by name or email; a child — also by the guardian's email. "}
+          <Link href="/clients/new" className="underline underline-offset-3 hover:text-foreground">
+            New client card
+          </Link>
+        </p>
 
         <ActionAlerts
           error={errorCode ? MESSAGES[errorCode] : undefined}
@@ -137,7 +179,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                     <TableHead>Status</TableHead>
                     <TableHead>Client</TableHead>
                     <TableHead>Held until</TableHead>
-                    {staff ? <TableHead>Action</TableHead> : null}
+                    <TableHead>Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -163,8 +205,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      {staff ? (
-                        <TableCell>
+                      <TableCell>
                           {slot.canHold ? (
                             <form action={holdSlot} className="flex gap-2">
                               <input type="hidden" name="back" value={back} />
@@ -193,8 +234,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                               </Button>
                             </form>
                           ) : null}
-                        </TableCell>
-                      ) : null}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -203,36 +243,6 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
           ) : null}
         </section>
 
-        {staff ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <h2>Clients</h2>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <form action={addClient} className="flex flex-wrap items-end gap-3">
-                <input type="hidden" name="back" value={back} />
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="client-name">Name</Label>
-                  <Input id="client-name" name="name" className="w-56" />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="client-email">Email</Label>
-                  <Input id="client-email" name="email" className="w-64" />
-                </div>
-                <Button type="submit">Create client</Button>
-              </form>
-              <ul className="flex flex-col gap-1 text-sm" data-testid="clients">
-                {clients.map((client) => (
-                  <li key={client.id}>
-                    {client.name} <span className="text-muted-foreground">— {clientContact(client)}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        ) : null}
       </main>
     </>
   );

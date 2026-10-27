@@ -25,26 +25,29 @@ export type CardErrorCode =
   | "LANGUAGE"
   | "GUARDIAN_INVALID"
   | "CLIENT_DUPLICATE"
+  | "CHILD_DUPLICATE"
   | "CARD_DATA_INVALID"
   | "SAVE_FAILED";
 
 export const CARD_MESSAGES: Record<CardErrorCode, string> = {
   CARD_FORBIDDEN: "Only schedulers and admins can create client cards.", // AC-CARD-06
-  TYPE_INVALID: "Select a client type.", // власне: форма завжди надсилає тип, лише підроблений запит — без нього
+  TYPE_INVALID: "Select a client type.", // тип не вибрано — припущення PM (#19)
   CLIENT_INVALID: INVALID_CLIENT_MESSAGE, // ім'я та email дорослого (AC-HOLD-11, 15, 39, 41)
-  CHILD_NAME: "Enter the client's name.", // Q5, робочий варіант A
-  BIRTH_DATE: "Enter a date of birth that is not in the future.", // Q5, робочий варіант A
-  LANGUAGE: "Select a session language.", // Q5, робочий варіант A
+  CHILD_NAME: "Enter the client's name.", // ім'я дитини чи ім'я, коли тип ще не вибрано (AC-CARD-12)
+  BIRTH_DATE: "Enter a date of birth that is not in the future.", // AC-CARD-12
+  LANGUAGE: "Select a session language.", // AC-CARD-12
   GUARDIAN_INVALID: "Enter the guardian's name and a valid email.", // AC-CARD-03
   CLIENT_DUPLICATE: DUPLICATE_CLIENT_MESSAGE, // AC-HOLD-16, AC-HOLD-34
+  CHILD_DUPLICATE: "A client with these details already exists.", // AC-CARD-13
   // Власні тексти: форма вже перевірила поля, тож ці відповіді бази — рідкісний випадок, і PM текстів для них не дала.
   CARD_DATA_INVALID: "Check the client card fields and try again.", // 23514 — check-обмеження чи тригер дати
   SAVE_FAILED: "The client card was not saved. Try again.", // інша помилка запиту
 };
 
-export const CLIENT_NOT_FOUND = "Client not found."; // Q7, робочий варіант A
-export const NO_ACCESS_TO_CLIENT = "You don't have access to this client."; // AC-CARD-05, AC-CARD-08
+export const CARD_NOT_FOUND = "This client card doesn't exist."; // AC-CARD-16 — планувальник і адміністратор
+export const NO_ACCESS_TO_CLIENT = "You don't have access to this client."; // AC-CARD-05, 08, 14, 16 — терапевт
 export const NO_CLIENTS_YET = "No clients yet. Clients appear here when a scheduler holds a slot with you."; // AC-CARD-09
+export const NO_CARDS_YET = "No clients yet. Create a client card from an intake form."; // AC-CARD-15
 
 /** Картка так, як її читають сторінки /clients і /clients/[id] (рядки фільтрує RLS clients_select). */
 export const CARD_COLUMNS =
@@ -76,8 +79,9 @@ export interface CardForm {
   guardianEmail: string;
 }
 
+// Тип вибирає планувальник: за замовчуванням не вибрано (припущення PM, «Select a client type.»).
 export const EMPTY_CARD_FORM: CardForm = {
-  type: "adult",
+  type: "",
   name: "",
   dateOfBirth: "",
   language: "",
@@ -114,13 +118,20 @@ function isBirthDate(value: string, today: string): boolean {
 }
 
 /**
- * Перевірка картки на сервері. Помилки — у порядку полів форми, усі одразу (Q5, робочий варіант A). Ім'я та імена
- * опікуна — без пробілів по краях, email — малими літерами без пробілів (AC-HOLD-35, AC-HOLD-41).
+ * Перевірка картки на сервері. Помилки — у порядку полів форми, усі одразу (AC-CARD-12). Ім'я та імена опікуна — без
+ * пробілів по краях, email — малими літерами без пробілів (AC-HOLD-35, AC-HOLD-41). Тип не вибрано — «Select a client
+ * type.» разом з помилками спільних полів (ім'я, дата народження, мова).
  */
 export function validateClientCard(form: CardForm, today: string): CardInput {
-  if (form.type !== "adult" && form.type !== "child") return { ok: false, errors: ["TYPE_INVALID"] };
-  const type: ClientType = form.type;
   const name = form.name.trim();
+  if (form.type !== "adult" && form.type !== "child") {
+    const errors: CardErrorCode[] = ["TYPE_INVALID"];
+    if (!name) errors.push("CHILD_NAME");
+    if (!isBirthDate(form.dateOfBirth, today)) errors.push("BIRTH_DATE");
+    if (!SESSION_LANGUAGES.some((candidate) => candidate === form.language)) errors.push("LANGUAGE");
+    return { ok: false, errors };
+  }
+  const type: ClientType = form.type;
   const email = normalizeEmail(form.email);
   const guardianName = form.guardianName.trim();
   const guardianEmail = normalizeEmail(form.guardianEmail);
@@ -149,11 +160,12 @@ export function validateClientCard(form: CardForm, today: string): CardInput {
 }
 
 /**
- * Помилка Postgres під час insert → код: 23505 — дублікат email (AC-HOLD-16), 42501 — RLS чи GRANT (AC-CARD-06),
- * 23514 — check-обмеження чи тригер дати народження (дані картки), інше — збій збереження.
+ * Помилка Postgres під час insert → код: 23505 — дублікат (індекс clients_child_card_key — картка дитини, AC-CARD-13;
+ * інакше email дорослого, AC-HOLD-16), 42501 — RLS чи GRANT (AC-CARD-06), 23514 — check-обмеження чи тригер дати
+ * народження (дані картки), інше — збій збереження.
  */
-export function cardErrorCode(postgresCode: string | undefined): CardErrorCode {
-  if (postgresCode === "23505") return "CLIENT_DUPLICATE";
+export function cardErrorCode(postgresCode: string | undefined, message = ""): CardErrorCode {
+  if (postgresCode === "23505") return message.includes("clients_child_card_key") ? "CHILD_DUPLICATE" : "CLIENT_DUPLICATE";
   if (postgresCode === "42501") return "CARD_FORBIDDEN";
   if (postgresCode === "23514") return "CARD_DATA_INVALID";
   return "SAVE_FAILED";

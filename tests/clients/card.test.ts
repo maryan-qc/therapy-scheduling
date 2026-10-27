@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   CARD_MESSAGES,
+  CARD_NOT_FOUND,
   cardErrorCode,
   cardRoleError,
   EMPTY_CARD_FORM,
+  NO_ACCESS_TO_CLIENT,
+  NO_CARDS_YET,
+  NO_CLIENTS_YET,
   validateClientCard,
   type CardForm,
 } from "@/lib/clients/card";
@@ -108,9 +112,9 @@ describe("картка клієнта — перевірка форми (openspe
   });
 });
 
-// Робочий варіант A питання Q5 (docs/spec-reading.md): окреме повідомлення на кожну проблему, усі одразу.
-describe("картка клієнта — інші обов'язкові поля (Q5, робочий варіант)", () => {
-  it("дитина без імені, з датою народження пізніше за сьогодні й без мови — три повідомлення в порядку полів", () => {
+// Рішення PM на Q5 (Sofiia-pm/therapy-scheduling-spec#21): окреме повідомлення на кожну проблему, усі одразу.
+describe("картка клієнта — обов'язкові поля (openspec/specs/client-cards)", () => {
+  it("AC-CARD-12: сьогодні 2026-11-03 — дитина без імені, з датою 2026-11-04, без мови: три повідомлення одразу", () => {
     const input = validateClientCard(
       { ...clientSeven, name: "   ", dateOfBirth: "2026-11-04", language: "" },
       TODAY,
@@ -122,7 +126,7 @@ describe("картка клієнта — інші обов'язкові пол�
     expect(CARD_MESSAGES.LANGUAGE).toBe("Select a session language.");
   });
 
-  it("дата народження сьогодні — приймається; неіснуюча дата чи порожня — ні", () => {
+  it("AC-CARD-12: дата народження, що дорівнює сьогоднішній, коректна; неіснуюча чи порожня — ні", () => {
     expect(validateClientCard({ ...clientSix, dateOfBirth: TODAY }, TODAY).ok).toBe(true);
     expect(validateClientCard({ ...clientSix, dateOfBirth: "2026-02-30" }, TODAY)).toEqual({
       ok: false,
@@ -131,7 +135,32 @@ describe("картка клієнта — інші обов'язкові пол�
     expect(validateClientCard({ ...clientSix, dateOfBirth: "" }, TODAY)).toEqual({ ok: false, errors: ["BIRTH_DATE"] });
   });
 
-  it("підроблений тип клієнта — «Select a client type.»", () => {
+  it("AC-CARD-12: тип клієнта не вибрано — «Select a client type.» разом з іншими помилками спільних полів", () => {
     expect(validateClientCard({ ...clientSix, type: "couple" }, TODAY)).toEqual({ ok: false, errors: ["TYPE_INVALID"] });
+    expect(validateClientCard({ ...EMPTY_CARD_FORM }, TODAY)).toEqual({
+      ok: false,
+      errors: ["TYPE_INVALID", "CHILD_NAME", "BIRTH_DATE", "LANGUAGE"],
+    });
+    expect(EMPTY_CARD_FORM.type).toBe(""); // тип вибирає планувальник, за замовчуванням не вибрано
+    expect(CARD_MESSAGES.TYPE_INVALID).toBe("Select a client type.");
+  });
+
+  it("AC-CARD-13: дублікат картки дитини (індекс clients_child_card_key) — «A client with these details already exists.»", () => {
+    const message = 'duplicate key value violates unique constraint "clients_child_card_key"';
+    expect(cardErrorCode("23505", message)).toBe("CHILD_DUPLICATE");
+    expect(CARD_MESSAGES.CHILD_DUPLICATE).toBe("A client with these details already exists.");
+    // ім'я дублікату порівнюється без пробілів по краях і регістру: форма обрізає, індекс — lower(name)
+    const input = validateClientCard({ ...clientSeven, name: " client seven ", language: "English" }, TODAY);
+    expect(input.ok && input.row.name).toBe("client seven");
+  });
+
+  it("AC-CARD-15: карток ще немає — для планувальника й адміністратора свій текст, для терапевта — AC-CARD-09", () => {
+    expect(NO_CARDS_YET).toBe("No clients yet. Create a client card from an intake form.");
+    expect(NO_CLIENTS_YET).toBe("No clients yet. Clients appear here when a scheduler holds a slot with you.");
+  });
+
+  it("AC-CARD-16: картки немає — планувальник «This client card doesn't exist.», терапевт — як для чужої", () => {
+    expect(CARD_NOT_FOUND).toBe("This client card doesn't exist.");
+    expect(NO_ACCESS_TO_CLIENT).toBe("You don't have access to this client.");
   });
 });

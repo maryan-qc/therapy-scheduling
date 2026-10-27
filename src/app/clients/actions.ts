@@ -36,7 +36,7 @@ export async function createClientCard(_previous: CardFormState, formData: FormD
   if (!input.ok) return { errors: input.errors, values };
 
   const { data, error } = await viewer.supabase.from("clients").insert(input.row).select("id").single();
-  if (error || !data) return { errors: [cardErrorCode(error?.code)], values };
+  if (error || !data) return { errors: [cardErrorCode(error?.code, error?.message)], values };
 
   revalidatePath("/clients");
   revalidatePath("/slots");

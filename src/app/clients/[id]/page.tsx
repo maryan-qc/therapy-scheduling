@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CARD_COLUMNS,
-  CLIENT_NOT_FOUND,
+  CARD_NOT_FOUND,
   clientTypeLabel,
   NO_ACCESS_TO_CLIENT,
   NOT_PROVIDED,
@@ -26,8 +26,8 @@ function Field({ label, value }: { label: string; value: string | null }) {
 }
 
 // Картка клієнта. Чужу картку терапевту не віддає база (RLS clients_select), тож для нього чужа й неіснуюча картка
-// виглядають однаково — «You don't have access to this client.» без жодних даних (AC-CARD-05, AC-CARD-08, Q7);
-// планувальнику й адміністратору неіснуюча — «Client not found.» (Q7). Запису тут немає: картка не змінюється.
+// виглядають однаково — «You don't have access to this client.» без жодних даних (AC-CARD-05, 08, 14, 16);
+// планувальнику й адміністратору неіснуюча — «This client card doesn't exist.» (AC-CARD-16). Запису тут немає.
 export default async function ClientCardPage({ params, searchParams }: PageProps<"/clients/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const viewer = await requireViewer();
@@ -74,7 +74,7 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
             </Card>
           </>
         ) : (
-          <ActionAlerts error={staff ? CLIENT_NOT_FOUND : NO_ACCESS_TO_CLIENT} />
+          <ActionAlerts error={staff ? CARD_NOT_FOUND : NO_ACCESS_TO_CLIENT} />
         )}
       </main>
     </>
