@@ -6,6 +6,22 @@
 -- дата народження й той самий email опікуна (уже малими літерами — clients_guardian_email_normalized). Близнюки з
 -- одним опікуном і різними іменами — різні картки. Помилка — 23505 з назвою індексу, за нею застосунок показує
 -- «A client with these details already exists.».
+-- Наявні дублікати не видаляємо й не об'єднуємо автоматично: якщо вони є, міграція зупиняється з поясненням (на проді
+-- 27.10 — одна картка дитини, дублікатів немає).
+do $$
+begin
+  if exists (
+    select 1
+    from public.clients
+    where client_type = 'child'
+    group by lower(name), date_of_birth, guardian_email
+    having count(*) > 1
+  ) then
+    raise exception 'clients: є дублікати карток дітей (ім''я, дата народження, email опікуна) — усуньте їх вручну перед індексом clients_child_card_key';
+  end if;
+end;
+$$;
+
 create unique index clients_child_card_key
   on public.clients (lower(name), date_of_birth, guardian_email)
   where client_type = 'child';

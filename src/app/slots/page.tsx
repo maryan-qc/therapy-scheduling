@@ -27,6 +27,7 @@ import {
   type SlotRow,
   type TherapistRow,
 } from "@/lib/holds/types";
+import { allRows } from "@/lib/supabase/all-rows";
 import { requireViewer } from "@/lib/supabase/viewer";
 import { confirmHold, holdSlot } from "./actions";
 
@@ -59,15 +60,17 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
     );
   }
 
-  // RLS: планувальник і адміністратор бачать усіх терапевтів, терапевт — лише себе.
-  // Терапевти й клієнти одне від одного не залежать — один round trip до бази замість двох.
-  const [{ data: therapistRows }, { data: clientRows }] = await Promise.all([
+  // Терапевти й клієнти одне від одного не залежать — паралельно. Довідник клієнтів — повний (усі сторінки Data API):
+  // з нього утримані слоти беруть ім'я й контакт; пошук звужує лише список для нового утримання.
+  const [{ data: therapistRows }, allClients] = await Promise.all([
     viewer.supabase.from("therapists").select("id, name, email").order("name"),
-    viewer.supabase.from("clients").select("id, name, email, guardian_email").order("name"),
+    allRows<ClientRow>((from, to) =>
+      viewer.supabase.from("clients").select("id, name, email, guardian_email").order("name").order("id").range(from, to),
+    ),
   ]);
   const therapists: TherapistRow[] = therapistRows ?? [];
   const clientQuery = first(params.client)?.trim() ?? "";
-  const clients: ClientRow[] = (clientRows ?? []).filter((client) => matchesClient(client, clientQuery));
+  const clients: ClientRow[] = allClients.filter((client) => matchesClient(client, clientQuery));
   const therapist = therapists.find((t) => t.id === first(params.therapist)) ?? therapists[0];
 
   const requestedDate = first(params.date);
@@ -98,7 +101,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
     }
   }
 
-  const view = buildDayView(slots, holds, clients, now);
+  const view = buildDayView(slots, holds, allClients, now);
 
   const back = `/slots?${new URLSearchParams({ therapist: therapist?.id ?? "", date, client: clientQuery }).toString()}`;
   const errorCode = first(params.error);
