@@ -27,13 +27,15 @@ export function Nav({ email, role, current }: { email: string | null; role: Role
       <div className="mx-auto flex h-14 w-full max-w-content items-center gap-4 px-6 text-sm">
         <span className="font-semibold">Therapy scheduling</span>
         <nav className="flex gap-1">
-          <NavLink href="/slots" current={current}>
-            Slots
-          </NavLink>
           {isStaff(role) ? (
-            <NavLink href="/holds" current={current}>
-              Holds
-            </NavLink>
+            <>
+              <NavLink href="/slots" current={current}>
+                Slots
+              </NavLink>
+              <NavLink href="/holds" current={current}>
+                Holds
+              </NavLink>
+            </>
           ) : (
             <NavLink href="/schedule" current={current}>
               My schedule

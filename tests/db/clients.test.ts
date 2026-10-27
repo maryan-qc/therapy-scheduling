@@ -1,22 +1,30 @@
-// Картка клієнта тим самим шляхом, що й дія addClient (src/app/slots/actions.ts): validateClient → insert у
-// public.clients від імені планувальника (RLS, колонковий grant) → код помилки Postgres → повідомлення PM.
-// Дублікат ловить unique на clients.email, а формат — check-обмеження таблиці (друга лінія після validateClient).
+// Ім'я та email клієнта тим самим шляхом, що й дія createClientCard (src/app/clients/actions.ts): після зрізу 2 —
+// лише повна форма картки (Sofiia-pm/therapy-scheduling-spec#20), решта полів заповнена правильно. validateClientCard →
+// insert у public.clients від імені планувальника (RLS, колонковий grant) → код помилки Postgres → повідомлення PM.
+// Дублікат ловить unique на clients.email, а формат — check-обмеження таблиці (друга лінія після форми).
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { CLIENT_MESSAGES, clientErrorCode, validateClient } from "@/lib/holds/clients";
+import { CARD_MESSAGES, cardErrorCode, validateClientCard } from "@/lib/clients/card";
 import { createTestDb, type TestDb } from "./supabase-pglite";
 
 let t: TestDb;
 let scheduler1: string;
 
-/** Як addClient: перевірка форми, потім insert планувальником; повертає повідомлення PM або null при успіху. */
+/** Як createClientCard для дорослого: форма, потім insert планувальником; повідомлення PM або null при успіху. */
 async function addClient(name: string, email: string): Promise<string | null> {
-  const input = validateClient(name, email);
-  if (!input.ok) return CLIENT_MESSAGES[input.code];
+  const form = { type: "adult", name, email, dateOfBirth: "1990-05-14", language: "English", guardianName: "", guardianEmail: "" };
+  const input = validateClientCard(form, "2026-11-03");
+  if (!input.ok) return input.errors.map((code) => CARD_MESSAGES[code]).join(" ");
+  const r = input.row;
   try {
-    await t.asUser(scheduler1, "insert into public.clients (name, email) values ($1, $2)", [input.name, input.email]);
+    await t.asUser(
+      scheduler1,
+      "insert into public.clients (client_type, name, email, date_of_birth, session_language) values ($1, $2, $3, $4, $5)",
+      [r.client_type, r.name, r.email, r.date_of_birth, r.session_language],
+    );
     return null;
   } catch (error) {
-    return CLIENT_MESSAGES[clientErrorCode((error as { code?: string }).code)];
+    const { code, message } = error as { code?: string; message?: string };
+    return CARD_MESSAGES[cardErrorCode(code, message)];
   }
 }
 

@@ -3,7 +3,14 @@
 // clients_insert_staff, колонковий grant, check-обмеження й тригер міграції 20261023104436_client_cards.sql) →
 // код помилки Postgres → повідомлення. Читання — під RLS clients_select того, хто відкриває список.
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { CARD_MESSAGES, cardErrorCode, cardRoleError, validateClientCard, type CardForm } from "@/lib/clients/card";
+import {
+  CARD_MESSAGES,
+  cardErrorCode,
+  cardRoleError,
+  NO_CARDS_YET,
+  validateClientCard,
+  type CardForm,
+} from "@/lib/clients/card";
 import type { Role } from "@/lib/holds/types";
 import { at } from "../holds/fixtures";
 import { createTestDb, type TestDb } from "./supabase-pglite";
@@ -60,7 +67,8 @@ async function createCard(userId: string, role: Role, form: CardForm): Promise<{
     ]);
     return { id: row.id };
   } catch (error) {
-    return { message: CARD_MESSAGES[cardErrorCode((error as { code?: string }).code)] };
+    const { code, message } = error as { code?: string; message?: string };
+    return { message: CARD_MESSAGES[cardErrorCode(code, message)] };
   }
 }
 
@@ -177,6 +185,25 @@ describe("картка клієнта з анкети в базі (openspec/spec
         guardian_email: "guardian7@example.test",
       });
     }
+  });
+});
+
+describe("уточнення PM 26.10 (openspec/specs/client-cards)", () => {
+  it("AC-CARD-13: scheduler2 створює дитину « client seven » з тією ж датою й email опікуна — дублікат, картку не створено", async () => {
+    await createCard(scheduler1, "scheduler", clientSeven);
+
+    const again = await createCard(scheduler2, "scheduler", { ...clientSeven, name: " client seven ", language: "English" });
+    expect(again.message).toBe("A client with these details already exists.");
+    expect(await cardCount()).toBe(1);
+    // Близнюки з тим самим опікуном і датою, але з іншим ім'ям — створюються.
+    expect((await createCard(scheduler2, "scheduler", { ...clientSeven, name: "Client Seventeen" })).id).toBeDefined();
+    expect(await cardCount()).toBe(2);
+  });
+
+  it("AC-CARD-15: карток ще немає — планувальник і адміністратор отримують порожній список (сторінка — NO_CARDS_YET)", async () => {
+    expect(await cardsSeenBy(scheduler1)).toEqual([]);
+    expect(await cardsSeenBy(admin)).toEqual([]);
+    expect(NO_CARDS_YET).toBe("No clients yet. Create a client card from an intake form.");
   });
 });
 

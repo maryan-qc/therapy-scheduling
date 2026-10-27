@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { ActionAlerts } from "@/app/_components/action-alerts";
 import { Nav } from "@/app/_components/nav";
 import { TimeZoneNote } from "@/app/_components/time-zone-note";
@@ -10,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CONFIRM_MESSAGES } from "@/lib/holds/messages";
 import { buildHoldsList } from "@/lib/holds/schedule";
 import { formatPracticeDateTime } from "@/lib/holds/time";
-import { isStaff, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
+import { staffPageError, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
 import { allRows } from "@/lib/supabase/all-rows";
 import { requireViewer } from "@/lib/supabase/viewer";
 
@@ -24,7 +23,19 @@ const MESSAGES = Object.fromEntries(
 export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
   const params = await searchParams;
   const viewer = await requireViewer();
-  if (!isStaff(viewer.role)) redirect("/schedule");
+  // Терапевт за прямим посиланням бачить лише відмову, без запитів до бази (AC-HOLD-44).
+  const refusal = staffPageError(viewer.role);
+  if (refusal) {
+    return (
+      <>
+        <Nav email={viewer.email} role={viewer.role} current="/holds" />
+        <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-6 px-6 py-6">
+          <h1 className="text-xl font-semibold tracking-tight">Holds</h1>
+          <ActionAlerts error={refusal} />
+        </main>
+      </>
+    );
+  }
   const now = new Date();
 
   // Утримання, клієнти й терапевти одне від одного не залежать — паралельно. База віддає лише утримання слотів, що ще

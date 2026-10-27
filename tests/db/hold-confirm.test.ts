@@ -205,6 +205,13 @@ describe("утримання слоту — функція бази private.hold
     expect(`Held until ${formatPracticeDateTime(list[0].heldUntil!)}`).toBe("Held until 2026-11-04 15:00");
   });
 
+  it("AC-HOLD-24: у суботу 2026-11-07 у therapist1 немає слотів — лише «No free slots on this day.»", async () => {
+    const view = await dayView(scheduler1, "therapist1@example.test", "2026-11-07", at("2026-11-05", "09:00"));
+
+    expect(view.slots).toEqual([]);
+    expect(view.message).toBe("No free slots on this day.");
+  });
+
   it("AC-HOLD-07: слот 10:00 о 10:05 — «This slot has already started and cannot be held.»", async () => {
     const slot = await slotId("therapist1@example.test", "2026-11-05", "10:00");
 

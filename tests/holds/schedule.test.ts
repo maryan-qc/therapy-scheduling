@@ -165,6 +165,26 @@ describe("список утримань планувальника (openspec/spe
     ]);
   });
 
+  it("AC-HOLD-43: о 15:00 — client2 «Held» і client1 «Expired» на тому самому слоті; client1 зникає лише з початком слоту", () => {
+    const slots = [slot("s", "2026-11-05", "10:00")];
+    // Функція бази звільнила прострочене утримання client1 о 14:45, коли слот утримали за client2.
+    const holds = [
+      hold("h1", "s", at("2026-11-02", "14:30"), { clientId: client1.id, releasedAt: at("2026-11-03", "14:45") }),
+      hold("h2", "s", at("2026-11-03", "14:45"), { clientId: client2.id }),
+    ];
+    const list = (date: string, time: string) =>
+      buildHoldsList(holds, slots, [client1, client2], therapists, now(date, time)).map((item) => [
+        item.clientName,
+        item.status,
+      ]);
+
+    expect(list("2026-11-03", "15:00")).toEqual([
+      ["client1", "Expired"],
+      ["client2", "Held"],
+    ]);
+    expect(list("2026-11-05", "10:00")).toEqual([]);
+  });
+
   it("AC-HOLD-42: о 09:59 «Held» client2 на слот 10:00 у списку, з 10:00 — уже ні", () => {
     const slots = [slot("s", "2026-11-03", "10:00")];
     const holds = [hold("h", "s", at("2026-11-02", "14:30"), { clientId: client2.id })];

@@ -4,8 +4,8 @@
 // бачить і терапевтом не стає (міграції 20261023084029, 20261023104436, 20261023105250).
 // Політика рахує прострочення від now(), тож утримання зсуваємо відносно now(), а слоти — у майбутньому.
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { NO_ACCESS_TO_CLIENT, NO_CLIENTS_YET } from "@/lib/clients/card";
-import { NO_ROLE_MESSAGE } from "@/lib/holds/types";
+import { CARD_NOT_FOUND, NO_ACCESS_TO_CLIENT, NO_CLIENTS_YET } from "@/lib/clients/card";
+import { NO_ROLE_MESSAGE, STAFF_PAGE_ONLY } from "@/lib/holds/types";
 import { at } from "../holds/fixtures";
 import { createTestDb, type TestDb } from "./supabase-pglite";
 
@@ -53,6 +53,20 @@ async function holdFor(slot: string, client: string, hoursAgo: number, confirmed
              case when $4 then now() - make_interval(hours => $3) + interval '10 minutes' end)`,
     [slot, client, hoursAgo, confirmed],
   );
+}
+
+/** Слот терапевта, що починається через `hoursFromNow` годин від поточної години (від'ємне — уже почався). */
+async function slotAt(therapistEmail: string, hoursFromNow: number): Promise<string> {
+  const [row] = await t.asService<{ id: string }>(
+    `insert into public.slots (therapist_id, starts_at, ends_at)
+     select th.id, date_trunc('hour', now()) + make_interval(hours => $2),
+            date_trunc('hour', now()) + make_interval(hours => $2) + interval '60 minutes'
+     from public.therapists as th where th.email = $1
+     on conflict (therapist_id, starts_at) do update set ends_at = excluded.ends_at
+     returning id`,
+    [therapistEmail, hoursFromNow],
+  );
+  return row.id;
 }
 
 beforeAll(async () => {
@@ -139,6 +153,47 @@ describe("картки клієнтів для терапевта (RLS clients_s
 
     expect(await cardsSeenBy(therapist2)).toEqual([]);
     expect(NO_CLIENTS_YET).toBe("No clients yet. Clients appear here when a scheduler holds a slot with you.");
+  });
+});
+
+describe("уточнення PM 26.10: «свій клієнт», картка, якої немає, сторінки планувальника", () => {
+  it("AC-CARD-14: «Held» робить клієнта своїм лише до початку слоту, минулий «Confirmed» — без обмеження", async () => {
+    const soon = await slotAt("therapist1@example.test", 1); // ще не почався — як «09:59»
+    const started = await slotAt("therapist1@example.test", -1); // уже почався — як «10:00 або пізніше»
+    const past = await slotAt("therapist1@example.test", -48); // минулий сеанс
+    await holdFor(soon, client9, 1);
+    await holdFor(started, client6, 2); // «Held» ще 22 години, але слот почався
+    await holdFor(past, client7, 50, true);
+
+    expect((await cardsSeenBy(therapist1)).map((c) => c.name)).toEqual(["Client Nine", "Client Seven"]);
+    expect(await cardById(therapist1, client6)).toEqual([]); // сторінка — «You don't have access to this client.»
+    // Утримання в розкладі терапевта лишається «Held» до прострочення (AC-HOLD-22) — змінюється лише доступ до картки.
+    expect(await t.asUser(therapist1, "select id from public.holds where slot_id = $1", [started])).toHaveLength(1);
+  });
+
+  it("AC-CARD-16: картки, на яку веде посилання, немає — жодних даних ні планувальнику, ні терапевту", async () => {
+    const missing = "00000000-0000-0000-0000-000000000016";
+
+    expect(await cardById(t.users["scheduler1@example.test"], missing)).toEqual([]);
+    expect(await cardById(therapist1, missing)).toEqual([]);
+    expect(CARD_NOT_FOUND).toBe("This client card doesn't exist."); // планувальник і адміністратор
+    expect(NO_ACCESS_TO_CLIENT).toBe("You don't have access to this client."); // терапевт — як для чужої
+  });
+
+  it("AC-HOLD-44: therapist1 не отримує слотів і утримань therapist2 навіть напряму; сторінки — лише відмова", async () => {
+    await holdFor(t2At10, client9, 1);
+    const holdsBefore = await t.asService<{ n: number }>("select count(*)::int as n from public.holds");
+
+    expect(
+      await t.asUser(
+        therapist1,
+        `select s.id from public.slots as s join public.therapists as th on th.id = s.therapist_id
+         where th.email = 'therapist2@example.test'`,
+      ),
+    ).toEqual([]);
+    expect(await t.asUser(therapist1, "select id from public.holds where slot_id = $1", [t2At10])).toEqual([]);
+    expect(STAFF_PAGE_ONLY).toBe("Only schedulers and admins can view this page.");
+    expect(await t.asService<{ n: number }>("select count(*)::int as n from public.holds")).toEqual(holdsBefore);
   });
 });
 

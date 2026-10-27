@@ -48,3 +48,10 @@ export function clientContact(client: Partial<Pick<ClientRow, "email" | "guardia
 export function isStaff(role: Role | null | undefined): boolean {
   return role === "scheduler" || role === "admin";
 }
+
+/** Сторінки слотів і утримань планувальника — лише для планувальника й адміністратора (AC-HOLD-44). */
+export const STAFF_PAGE_ONLY = "Only schedulers and admins can view this page.";
+
+export function staffPageError(role: Role | null | undefined): string | null {
+  return isStaff(role) ? null : STAFF_PAGE_ONLY;
+}
