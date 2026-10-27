@@ -27,13 +27,14 @@ const ERROR_FIELD: Partial<Record<CardErrorCode, FieldName>> = {
   CHILD_NAME: "name",
   BIRTH_DATE: "dateOfBirth",
   LANGUAGE: "language",
-  GUARDIAN_INVALID: "guardianName",
+  GUARDIAN_INVALID: "guardianEmail",
   CLIENT_DUPLICATE: "email",
 };
-// Поля, які ще підсвічує помилка, показана біля іншого поля (ім'я та email дорослого, ім'я та email опікуна).
+// Поля, які ще підсвічує помилка, показана біля іншого поля: одне повідомлення PM на пару «ім'я та email» — для
+// дорослого під ім'ям, для опікуна — під email опікуна, останнім полем пари.
 const ALSO_INVALID: Partial<Record<CardErrorCode, FieldName[]>> = {
   CLIENT_INVALID: ["email"],
-  GUARDIAN_INVALID: ["guardianEmail"],
+  GUARDIAN_INVALID: ["guardianName"],
 };
 
 const INITIAL: CardFormState = { errors: [], values: EMPTY_CARD_FORM };
@@ -137,7 +138,7 @@ export function ClientCardForm({ today }: { today: string }) {
           ) : null}
           {values.type === "child" ? (
             <>
-              <Field id="card-guardianName" label="Guardian name" error={fieldError("guardianName")}>
+              <Field id="card-guardianName" label="Guardian name">
                 <Input
                   name="guardian_name"
                   autoComplete="off"
@@ -145,7 +146,7 @@ export function ClientCardForm({ today }: { today: string }) {
                   {...fieldProps("guardianName")}
                 />
               </Field>
-              <Field id="card-guardianEmail" label="Guardian email">
+              <Field id="card-guardianEmail" label="Guardian email" error={fieldError("guardianEmail")}>
                 <Input
                   name="guardian_email"
                   type="email"
