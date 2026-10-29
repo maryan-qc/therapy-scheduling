@@ -8,6 +8,11 @@ import type { Database } from "./database.types";
 // Сторінки, доступні без входу; /api/health — публічна перевірка проду (D0 WS8), без даних користувачів.
 const PUBLIC_PATHS = ["/login", "/auth", "/api/health"];
 
+/** Шлях публічний, лише якщо це сам PUBLIC_PATH або його підшлях: «/api/healthz» чи «/loginx» — ні. */
+export function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -41,9 +46,7 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
 
-  const isPublic = PUBLIC_PATHS.some((path) =>
-    request.nextUrl.pathname.startsWith(path),
-  );
+  const isPublic = isPublicPath(request.nextUrl.pathname);
 
   if (!claims && !isPublic) {
     const url = request.nextUrl.clone();

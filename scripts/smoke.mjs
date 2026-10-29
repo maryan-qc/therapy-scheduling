@@ -12,7 +12,12 @@ const base = (/^https?:\/\//.test(rawBase) ? rawBase : rawBase ? `https://${rawB
 
 const get = async (path) => {
   try {
-    const r = await fetch(base + path, { redirect: "manual", headers: { "user-agent": "smoke/1.0 (D0)" } });
+    // Межа на кожен запит: сервер, що прийняв з'єднання й мовчить, не тримає прогін до timeout-minutes workflow.
+    const r = await fetch(base + path, {
+      redirect: "manual",
+      headers: { "user-agent": "smoke/1.0 (D0)" },
+      signal: AbortSignal.timeout(15_000),
+    });
     return {
       status: r.status,
       location: r.headers.get("location") ?? "",
@@ -34,6 +39,8 @@ async function main() {
   else if (root.status >= 400) {
     const hint = root.vercelError === "MIDDLEWARE_INVOCATION_FAILED" ? " — у Vercel бракує NEXT_PUBLIC_SUPABASE_*?" : "";
     fail.push(`"/": HTTP ${root.status} ${root.vercelError}${hint}`.trim());
+  } else if (root.status >= 300 && new URL(root.location || "/", `${base}/`).pathname !== "/login") {
+    fail.push(`"/": ${root.status} → ${root.location || "(без Location)"} — очікувався редирект на /login`);
   }
 
   const login = await get("/login");
@@ -70,8 +77,10 @@ async function main() {
   }
   if (expectSha && health?.sha === "local") {
     fail.push(`"/api/health": sha=local — у Vercel увімкніть Settings → Environment Variables → «Automatically expose System Environment Variables» і зробіть Redeploy`);
-  } else if (expectSha && health?.sha && health.sha !== expectSha) {
-    fail.push(`прод показує ${String(health.sha).slice(0, 7)}, а очікувався ${expectSha.slice(0, 7)} — деплой main не пройшов чи зроблено Instant Rollback?`);
+  } else if (expectSha && health && health.status < 300 && health.sha !== expectSha) {
+    // Відповідь без sha теж не підтверджує деплой main.
+    const shown = health.sha ? String(health.sha).slice(0, 7) : "відповідь без sha";
+    fail.push(`прод показує ${shown}, а очікувався ${expectSha.slice(0, 7)} — деплой main не пройшов чи зроблено Instant Rollback?`);
   }
 
   console.log(JSON.stringify({ base, root: root.status, login: login.status, health }));
