@@ -30,6 +30,10 @@ describe("classifyDbProbe (/api/health)", () => {
       reason: "status-503-PGRST002",
     });
     expect(classifyDbProbe({ status: 0, error: { message: "fetch failed" } })).toEqual({ db: "down", reason: "status-0" });
+    expect(classifyDbProbe({ status: 500, error: { code: "PGRSTX00", message: "connection library error" } })).toEqual({
+      db: "down",
+      reason: "status-500-PGRSTX00",
+    });
   });
 
   it("не рахує базу живою, коли Postgres не обслуговує запити (53300, 57P03, 08006)", () => {

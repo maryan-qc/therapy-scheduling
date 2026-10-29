@@ -28,6 +28,14 @@ const get = async (path) => {
     return { status: 0, location: "", vercelError: "", text: String(e.cause?.code ?? e) };
   }
 };
+// Шлях, куди веде редирект; некоректний Location — "" (це теж збій, а не виняток посеред перевірок).
+const redirectPath = (location) => {
+  try {
+    return new URL(location || "/", `${base}/`).pathname;
+  } catch {
+    return "";
+  }
+};
 const vercelWall = (r) =>
   /vercel\.com\/(sso|login)|_vercel_sso/.test(r.location) || ((r.status === 401 || r.status === 403) && /vercel/i.test(r.text));
 
@@ -39,7 +47,7 @@ async function main() {
   else if (root.status >= 400) {
     const hint = root.vercelError === "MIDDLEWARE_INVOCATION_FAILED" ? " — у Vercel бракує NEXT_PUBLIC_SUPABASE_*?" : "";
     fail.push(`"/": HTTP ${root.status} ${root.vercelError}${hint}`.trim());
-  } else if (root.status >= 300 && new URL(root.location || "/", `${base}/`).pathname !== "/login") {
+  } else if (root.status >= 300 && redirectPath(root.location) !== "/login") {
     fail.push(`"/": ${root.status} → ${root.location || "(без Location)"} — очікувався редирект на /login`);
   }
 

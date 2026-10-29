@@ -3,8 +3,8 @@
 
 /** Код SQLSTATE Postgres, напр. 42501 «permission denied»: запит дійшов до бази. */
 const SQLSTATE = /^[0-9A-Z]{5}$/;
-/** PostgREST не може під'єднатися до бази. */
-const PGRST_DB_DOWN = /^PGRST00[0-3]$/;
+/** PostgREST не може під'єднатися до бази (PGRSTX00 — внутрішня помилка бібліотеки з'єднання, HTTP 500). */
+const PGRST_DB_DOWN = /^(PGRST00[0-3]|PGRSTX00)$/;
 /** Класи SQLSTATE, коли Postgres не обслуговує запити: 08 — з'єднання, 53 — ресурси (53300 — забагато з'єднань),
  *  57 — втручання оператора (57P03 — база ще не приймає з'єднань). */
 const SQLSTATE_DB_DOWN = /^(08|53|57)/;
@@ -22,6 +22,6 @@ export function classifyDbProbe({ status, error }: DbProbe): DbHealth {
     return { db: "ok", reason: "" };
   }
   if (/api key/i.test(error.message ?? "")) return { db: "down", reason: "invalid-api-key" };
-  // 0 — мережа (Supabase недоступний або хибний URL), 5xx, PGRST000–003, SQLSTATE класів 08, 53, 57.
+  // 0 — мережа (Supabase недоступний або хибний URL), 5xx, PGRST000–003, PGRSTX00, SQLSTATE класів 08, 53, 57.
   return { db: "down", reason: `status-${status}${code ? `-${code}` : ""}` };
 }
