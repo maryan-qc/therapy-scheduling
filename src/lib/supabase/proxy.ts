@@ -7,13 +7,20 @@ import type { Database } from "./database.types";
 
 // Сторінки, доступні без входу; /api/health — публічна перевірка проду (D0 WS8), без даних користувачів.
 const PUBLIC_PATHS = ["/login", "/auth", "/api/health"];
+// Шляхи без сесії: перевірка проду не читає cookie, тож proxy не створює для неї клієнт Supabase і не викликає
+// getClaims() — /api/health відповідає своїм JSON навіть тоді, коли з Supabase щось не так.
+const SESSIONLESS_PATHS = ["/api/health"];
 
-/** Шлях публічний, лише якщо це сам PUBLIC_PATH або його підшлях: «/api/healthz» чи «/loginx» — ні. */
-export function isPublicPath(pathname: string) {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-}
+// Сам шлях або його підшлях: «/api/healthz» чи «/loginx» — ні.
+const matchesAny = (paths: string[], pathname: string) =>
+  paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+
+export const isPublicPath = (pathname: string) => matchesAny(PUBLIC_PATHS, pathname);
+export const isSessionlessPath = (pathname: string) => matchesAny(SESSIONLESS_PATHS, pathname);
 
 export async function updateSession(request: NextRequest) {
+  if (isSessionlessPath(request.nextUrl.pathname)) return NextResponse.next({ request });
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient<Database>(

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // D0 smoke розгорнутого застосунку: лише GET, без входу й форм, без секретів (Node 24, без залежностей).
 // Використання: node scripts/smoke.mjs <base-url> [expected-sha]     (або npm run smoke -- <base-url> [sha])
-//   1) "/"           → редірект на /login або 200 (не 401/404/5xx і не стіна входу Vercel);
-//   2) "/login"      → 200 і поле пароля (застосунок справді віддає сторінку);
-//   3) "/api/health" → 200 {db:"ok"}; з expected-sha — sha збігається (до 6 спроб × 20 с: прод-домен перемикається
-//                      на новий деплой не миттєво).
+//   1) "/api/health" → 200 {db:"ok"}; з expected-sha — sha збігається (до 6 спроб × 20 с: прод-домен перемикається
+//                      на новий деплой не миттєво);
+//   2) "/"           → редірект на /login того самого origin або 200 (не 401/404/5xx і не стіна входу Vercel);
+//   3) "/login"      → 200 і поле пароля (застосунок справді віддає сторінку).
 // Код виходу: 0 — усе гаразд, 1 — є збій (рядки ::error:: видно в GitHub Actions), 2 — не вказано адресу.
 const [rawBase = process.env.PROD_URL ?? "", expectSha = ""] = process.argv.slice(2);
 // client_payload.url від Vercel може прийти хостом без схеми — додаємо https://.
@@ -29,9 +29,11 @@ const get = async (path) => {
   }
 };
 // Шлях, куди веде редирект; некоректний Location — "" (це теж збій, а не виняток посеред перевірок).
+// Редирект на інший origin (навіть на «…/login») — теж "".
 const redirectPath = (location) => {
   try {
-    return new URL(location || "/", `${base}/`).pathname;
+    const target = new URL(location || "/", `${base}/`);
+    return target.origin === new URL(base).origin ? target.pathname : "";
   } catch {
     return "";
   }
@@ -41,6 +43,21 @@ const vercelWall = (r) =>
 
 async function main() {
   const fail = [];
+  // Спершу чекаємо, поки прод-домен покаже очікуваний коміт, і лише потім перевіряємо сторінки: так "/" і "/login"
+  // перевіряються на тому самому деплої, що й /api/health.
+  let health = null;
+  for (let attempt = 1; attempt <= (expectSha ? 6 : 1); attempt++) {
+    const r = await get("/api/health");
+    try {
+      health = { status: r.status, ...JSON.parse(r.text) };
+    } catch {
+      health = { status: r.status, location: r.location };
+    }
+    // Без JSON (редирект, 404, мережа) чи sha=local (Vercel не віддає VERCEL_GIT_COMMIT_SHA) — чекати марно.
+    if (!expectSha || !("sha" in health) || health.sha === expectSha || health.sha === "local") break;
+    if (attempt < 6) await new Promise((res) => setTimeout(res, 20_000));
+  }
+
   const root = await get("/");
   if (vercelWall(root)) fail.push(`"/": стіна входу Vercel — Settings → Deployment Protection → вимкніть Vercel Authentication`);
   else if (root.status === 0) fail.push(`"/": недоступний (${root.text})`);
@@ -56,19 +73,7 @@ async function main() {
     fail.push(`"/login": HTTP ${login.status} ${login.vercelError}${login.status === 200 ? " (немає поля пароля)" : ""}`.trim());
   }
 
-  let health = null;
-  for (let attempt = 1; attempt <= (expectSha ? 6 : 1) && login.status === 200; attempt++) {
-    const r = await get("/api/health");
-    try {
-      health = { status: r.status, ...JSON.parse(r.text) };
-    } catch {
-      health = { status: r.status, location: r.location };
-    }
-    // sha=local — Vercel не віддає VERCEL_GIT_COMMIT_SHA: чекати марно.
-    if (!expectSha || health.sha === expectSha || health.sha === "local") break;
-    if (attempt < 6) await new Promise((res) => setTimeout(res, 20_000));
-  }
-  if (!health) {
+  if (login.status !== 200) {
     // прод не відкрився — причина вже у fail
   } else if (health.status === 404) {
     fail.push(`"/api/health": 404 — додайте src/app/api/health/route.ts`);

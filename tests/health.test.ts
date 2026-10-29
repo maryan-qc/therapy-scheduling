@@ -1,7 +1,7 @@
 // D0: /api/health відрізняє «база відповіла» від «база недоступна, призупинена чи ключ хибний».
 import { describe, expect, it } from "vitest";
 import { classifyDbProbe } from "@/lib/health";
-import { isPublicPath } from "@/lib/supabase/proxy";
+import { isPublicPath, isSessionlessPath } from "@/lib/supabase/proxy";
 
 describe("classifyDbProbe (/api/health)", () => {
   it("рахує базу живою, коли запит пройшов або Postgres відмовив у правах (42501)", () => {
@@ -34,6 +34,7 @@ describe("classifyDbProbe (/api/health)", () => {
       db: "down",
       reason: "status-500-PGRSTX00",
     });
+    expect(classifyDbProbe({ status: 500, error: { code: "PGRST300", message: "JWT secret is missing" } }).db).toBe("down");
   });
 
   it("не рахує базу живою, коли Postgres не обслуговує запити (53300, 57P03, 08006)", () => {
@@ -52,5 +53,10 @@ describe("isPublicPath (proxy)", () => {
   it("пускає без входу лише самі публічні шляхи та їхні підшляхи, не шляхи з тим самим префіксом", () => {
     for (const path of ["/login", "/auth/confirm", "/api/health"]) expect(isPublicPath(path)).toBe(true);
     for (const path of ["/api/healthz", "/api/health-admin", "/loginx", "/clients", "/"]) expect(isPublicPath(path)).toBe(false);
+  });
+
+  it("без сесії — лише /api/health: сторінки входу й застосунку сесію оновлюють", () => {
+    expect(isSessionlessPath("/api/health")).toBe(true);
+    for (const path of ["/login", "/auth/confirm", "/api/healthz", "/clients"]) expect(isSessionlessPath(path)).toBe(false);
   });
 });
