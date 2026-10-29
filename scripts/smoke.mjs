@@ -48,13 +48,15 @@ async function main() {
   let health = null;
   for (let attempt = 1; attempt <= (expectSha ? 6 : 1); attempt++) {
     const r = await get("/api/health");
+    // HTTP-статус — після тіла: поле status у JSON не перезапише справжній.
     try {
-      health = { status: r.status, ...JSON.parse(r.text) };
+      health = { ...JSON.parse(r.text), status: r.status };
     } catch {
       health = { status: r.status, location: r.location };
     }
-    // Без JSON (редирект, 404, мережа) чи sha=local (Vercel не віддає VERCEL_GIT_COMMIT_SHA) — чекати марно.
-    if (!expectSha || !("sha" in health) || health.sha === expectSha || health.sha === "local") break;
+    // Чекаємо й на 307/404 без sha: поки домен перемикається, відповідає ще попередній деплой.
+    // sha=local — Vercel не віддає VERCEL_GIT_COMMIT_SHA: чекати марно.
+    if (!expectSha || health.sha === expectSha || health.sha === "local") break;
     if (attempt < 6) await new Promise((res) => setTimeout(res, 20_000));
   }
 
@@ -87,6 +89,8 @@ async function main() {
     fail.push(
       `"/api/health": HTTP ${health.status}, db=${health.db ?? "?"}${health.reason ? ` (${health.reason})` : ""} — Supabase недоступний чи NEXT_PUBLIC_SUPABASE_URL у Vercel не той?`,
     );
+  } else if (health.status !== 200) {
+    fail.push(`"/api/health": HTTP ${health.status} при db=ok — очікувався 200`);
   }
   if (expectSha && health?.sha === "local") {
     fail.push(`"/api/health": sha=local — у Vercel увімкніть Settings → Environment Variables → «Automatically expose System Environment Variables» і зробіть Redeploy`);
