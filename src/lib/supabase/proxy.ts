@@ -5,8 +5,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./database.types";
 
-// Сторінки, доступні без входу.
-const PUBLIC_PATHS = ["/login", "/auth"];
+// Сторінки, доступні без входу; /api/health — публічна перевірка проду (D0 WS8), без даних користувачів.
+const PUBLIC_PATHS = ["/login", "/auth", "/api/health"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
