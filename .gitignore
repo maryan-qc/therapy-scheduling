@@ -44,3 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# D0 WS8: тестові акаунти з паролями — лише на диску; у git тільки зашифрований accounts.zip
+accounts.txt
