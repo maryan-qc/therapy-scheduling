@@ -4,8 +4,6 @@
 // бачить і терапевтом не стає (міграції 20261023084029, 20261023104436, 20261023105250).
 // Політика рахує прострочення від now(), тож утримання зсуваємо відносно now(), а слоти — у майбутньому.
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { CARD_NOT_FOUND, NO_ACCESS_TO_CLIENT, NO_CLIENTS_YET } from "@/lib/clients/card";
-import { NO_ROLE_MESSAGE, STAFF_PAGE_ONLY } from "@/lib/holds/types";
 import { at } from "../holds/fixtures";
 import { createTestDb, type TestDb } from "./supabase-pglite";
 
@@ -127,7 +125,6 @@ describe("картки клієнтів для терапевта (RLS clients_s
 
     expect(await cardById(therapist2, client9)).toHaveLength(1);
     expect(await cardById(therapist1, client9)).toEqual([]); // сторінка покаже «You don't have access to this client.»
-    expect(NO_ACCESS_TO_CLIENT).toBe("You don't have access to this client.");
     // Змінити чи видалити картку не можна: GRANT update / delete немає.
     await expect(
       t.asUser(therapist1, "update public.clients set name = 'Changed' where id = $1", [client9]),
@@ -151,8 +148,7 @@ describe("картки клієнтів для терапевта (RLS clients_s
     await holdFor(t2At10, client9, 30); // лише прострочене
     await holdFor(t1At10, client6, 1); // у іншого терапевта
 
-    expect(await cardsSeenBy(therapist2)).toEqual([]);
-    expect(NO_CLIENTS_YET).toBe("No clients yet. Clients appear here when a scheduler holds a slot with you.");
+    expect(await cardsSeenBy(therapist2)).toEqual([]); // текст на сторінці — tests/clients/pages.test.tsx (AC-CARD-09)
   });
 });
 
@@ -175,9 +171,7 @@ describe("уточнення PM 26.10: «свій клієнт», картка, 
     const missing = "00000000-0000-0000-0000-000000000016";
 
     expect(await cardById(t.users["scheduler1@example.test"], missing)).toEqual([]);
-    expect(await cardById(therapist1, missing)).toEqual([]);
-    expect(CARD_NOT_FOUND).toBe("This client card doesn't exist."); // планувальник і адміністратор
-    expect(NO_ACCESS_TO_CLIENT).toBe("You don't have access to this client."); // терапевт — як для чужої
+    expect(await cardById(therapist1, missing)).toEqual([]); // тексти обох ролей — tests/clients/pages.test.tsx (AC-CARD-16)
   });
 
   it("AC-HOLD-44: therapist1 не отримує слотів і утримань therapist2 навіть напряму; сторінки — лише відмова", async () => {
@@ -192,7 +186,6 @@ describe("уточнення PM 26.10: «свій клієнт», картка, 
       ),
     ).toEqual([]);
     expect(await t.asUser(therapist1, "select id from public.holds where slot_id = $1", [t2At10])).toEqual([]);
-    expect(STAFF_PAGE_ONLY).toBe("Only schedulers and admins can view this page.");
     expect(await t.asService<{ n: number }>("select count(*)::int as n from public.holds")).toEqual(holdsBefore);
   });
 });
@@ -216,8 +209,7 @@ describe("без входу й без ролі", () => {
     const before = await snapshot();
 
     const [profile] = await t.asUser<{ role: string | null }>(newuser1, "select role from public.profiles");
-    expect(profile.role).toBeNull(); // застосунок покаже лише NO_ROLE_MESSAGE
-    expect(NO_ROLE_MESSAGE).toBe("Your account has no access yet. Contact an administrator.");
+    expect(profile.role).toBeNull(); // сторінка покаже лише повідомлення без ролі — доводить UAT (tests/e2e)
     expect(await cardsSeenBy(newuser1)).toEqual([]);
     expect(await cardById(newuser1, client6)).toEqual([]);
     expect(await t.asUser(newuser1, "select id from public.holds")).toEqual([]);
@@ -234,6 +226,41 @@ describe("без входу й без ролі", () => {
       await t.asService("update public.profiles set email = 'newuser1@example.test' where id = $1", [newuser1]);
     }
     expect(await snapshot()).toEqual(before);
+  });
+
+  // Роль і email профілю визначають, що людина бачить (is_staff, current_therapist_id), тож змінити їх собі не можна:
+  // колонковий grant — лише full_name (міграція 20261012000000). До WS8 тесту на це не було — мутант C5 вижив.
+  const profileOf = (userId: string) =>
+    t.asService<{ role: string | null; email: string }>("select role, email from public.profiles where id = $1", [userId]);
+
+  it("AC-CARD-11: newuser1 не видає собі роль і email терапевта — профіль без змін, даних клієнтів не отримує", async () => {
+    await holdFor(t2At10, client9, 1);
+    const [cardsBefore, profileBefore] = [await snapshot(), await profileOf(newuser1)];
+
+    await expect(
+      t.asUser(newuser1, "update public.profiles set role = 'scheduler' where id = $1", [newuser1]),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      t.asUser(newuser1, "update public.profiles set email = 'therapist2@example.test' where id = $1", [newuser1]),
+    ).rejects.toThrow(/permission denied/);
+    // Ім'я змінити можна: відмова вище — саме через колонки role і email, а не через політику рядка.
+    await t.asUser(newuser1, "update public.profiles set full_name = 'New User One' where id = $1", [newuser1]);
+
+    expect(await profileOf(newuser1)).toEqual(profileBefore);
+    expect(profileBefore[0].role).toBeNull();
+    expect(await cardsSeenBy(newuser1)).toEqual([]);
+    expect(await snapshot()).toEqual(cardsBefore);
+  });
+
+  it("AC-CARD-05: therapist1 не змінює собі email на email therapist2 — картки client9 так само не отримує", async () => {
+    await holdFor(t2At10, client9, 1);
+    const profileBefore = await profileOf(therapist1);
+
+    await expect(
+      t.asUser(therapist1, "update public.profiles set email = 'therapist2@example.test' where id = $1", [therapist1]),
+    ).rejects.toThrow(/permission denied/);
+    expect(await profileOf(therapist1)).toEqual(profileBefore);
+    expect(await cardById(therapist1, client9)).toEqual([]);
   });
 
   it("AC-CARD-11: новий користувач Auth отримує профіль без ролі, а не роль терапевта", async () => {
