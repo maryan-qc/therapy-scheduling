@@ -120,8 +120,10 @@ https://github.com/maryan-qc/therapy-scheduling/actions/runs/41618304612/job/125
   - Ручні TS-мутанти на межах AC-CARD-12 (`node scripts/mutation-check.mjs --kind ts`): T1 `value <= today` → `<` —
     KILLED тестом [card.test.ts#L129](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/card.test.ts#L129); T2 «зупинитись після першої помилки» — KILLED тестом
     [card.test.ts#L117](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/card.test.ts#L117).
-- **SQL-мутації** (`npm run mutation:sql`, `scripts/mutants.mjs`): до — **7 з 11 вбито (64 %)**, вижили C5, C7, C8, C9;
-  після — **11 з 11 (100 %)**, ≈11 с. Таблиця `--markdown` — в описі PR.
+- **SQL-мутації** (`npm run mutation:sql` — лише `kind: "sql"`, C1–C9; `scripts/mutants.mjs`): до — **5 з 9 вбито
+  (56 %)**, вижили C5, C7, C8, C9; після — **9 з 9 (100 %)**. Разом із ручними TS-мутантами T1–T2
+  (`node scripts/mutation-check.mjs` без `--kind`): до — 7 з 11 (64 %), після — **11 з 11 (100 %)**, ≈11 с. Таблиця
+  `--markdown` — в описі PR.
 
   | Мутант | AC | Що зламано | До | Після |
   |---|---|---|---|---|
