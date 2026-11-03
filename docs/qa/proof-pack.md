@@ -156,8 +156,16 @@ https://github.com/maryan-qc/therapy-scheduling/actions/runs/41618304612/job/125
 
 - Звіт: [docs/qa/uat/2026-11-03/report.md](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/report.md) (+ `manifest.json`, `frames/`);
   код тестів `task/uat` @ `f4690ce`, прод `07b01cf`, прогін 03.11.2026 17:49 (Київ), Playwright 27,9 с.
-- Відео: вкладення в описі PR UAT. Файли — ассети pre-release `uat-2026-11-03`, у git їх немає: [AC-CARD-05](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-05.webm),
-  [AC-CARD-11](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-11.webm), [AC-CARD-12](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-12.webm).
+- Відео: вкладення в описі PR UAT — ассети pre-release `uat-2026-11-03` (у git їх немає). Вони з того самого прогону, що й
+  звіт: код тестів `f4690ce`, 03.11.2026 17:49 (Київ). SHA-256 файлів:
+  - [AC-CARD-05.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-05.webm) — `1cdd87467a3da54b27e121a9e0d0b4fd481ea6fb5c5b3c1973df99012f1b18e8`;
+  - [AC-CARD-11.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-11.webm) — `a8e3467ae79952a2b628fc65c93a990bbe8dd8006e9a7b60a5bbf07e1150de7e`;
+  - [AC-CARD-12.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-12.webm) — `8e99b7554b9a475fec06b5cf39f95da78688eb47f58f3ddcca8082d02d66c079`.
+- Відтворити прогін з чистого клону (Node 24):
+  1. `npm ci`;
+  2. `npx playwright install chromium` — `npm ci` браузера не ставить;
+  3. `DEMO_USER_PASSWORD` у `.env.local` — пароль акаунтів з `accounts.zip`;
+  4. `npm run uat -- --url https://therapy-scheduling-sigma.vercel.app`, негативні контролі — `npm run uat:nc -- --url …`.
 - Рецензент: `claude-haiku-5-5` на кожен AC, суперечок не було, тож до `claude-sonnet-5-5` не дійшло. Промпт і схема — з
   materials без змін. Разом за розбір — $0,0065 (ціни API; прогін — за підпискою). Конвеєр запускав агент: змінні
   `CLAUDECODE` / `CLAUDE_*` прибрано, `SUPABASE_SECRET_KEY` порожній.
