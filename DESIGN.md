@@ -3,8 +3,14 @@
 - **Джерело:** артефакт Claude Design типу Design System — https://claude.ai/artifact/4gmsBqWR4ZaqwwJKjLsXSd
   (приватний; знімок — `docs/img/ws7-claude-design-artifact.png` і в описі PR дизайн-системи). Правила й токени перенесено агентом Claude Code у цей файл і
   `src/app/globals.css`; промпт для артефакту — в описі того самого PR.
-- **Вхід від PM:** розділу «Вигляд і тон» у `requirements/product.md` на момент PR немає (знімок 2026-10-21), тому
-  джерело — бачення продукту й ролі з `requirements/product.md` і бриф команди.
+- **Вхід від PM:** на момент PR дизайн-системи (знімок 2026-10-21) розділу «Вигляд і тон» у `requirements/product.md`
+  не було, тож джерелом були бачення продукту, ролі й бриф команди. PM додала розділ 23.10 (синхронізація #14,
+  знімок 2026-10-27). Звірено з цим файлом, розбіжностей немає:
+  - тон спокійний і стриманий;
+  - нейтральне тло, один приглушений акцент (`primary`), червоний (`destructive`) лише для помилок;
+  - щільність середня;
+  - тексти англійською, дата `YYYY-MM-DD`, час `HH:MM`;
+  - статус — підпис і колір.
 - **Код:** токени — `src/app/globals.css`; компоненти — `src/components/ui/` (shadcn/ui); перевірка — `npm run check:design`.
 
 ## 1. Огляд
@@ -131,12 +137,12 @@
 |---|---|---|
 | `Button` | `default`, `secondary`, `outline`, `ghost`, `destructive`, `link`; розміри `default` (36), `sm` (32) | `default` — одна основна дія на екран; дії в рядках таблиці — `outline` або `ghost` `sm`, ніколи не `default`; `destructive` — лише незворотна дія з підтвердженням |
 | `Input` + `Label` | — | у кожного поля видимий `Label` з `htmlFor`; плейсхолдер — лише приклад формату |
-| `Select` | — | фільтр без видимого підпису має `aria-label` |
+| `NativeSelect` | розміри `default`, `sm` | рідний `<select>`; фільтр без видимого підпису має `aria-label` |
 | `Card` | `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter` | одна сутність; карток у картки не вкладаємо |
 | `Table` | `TableHeader`, `TableRow`, `TableHead`, `TableCell` | рядок заголовків на `muted`; час — `tabular-nums`; статус — `Badge`; порожня клітинка — «—» у `text-muted-foreground` |
 | `Badge` | статуси `free`, `held`, `confirmed`, `past`, `expired`; `outline` — роль | слово й маркер завжди; `outline` — лише для ролі в шапці |
 | `Alert` | `default` (успіх), `destructive` (помилка) | успіх — `role="status"`, помилка — `role="alert"`; текст дослівно з AC |
-| `Dialog` | — | одна задача; Esc і клік по затемненню закривають; фокус повертається на кнопку, що відкрила |
+| `Dialog` | — | у застосунку поки немає: діалогів зрізи 1–2 не мають, і невикористаний файл прибрано у WS8 (fallow). Коли знадобиться — `npx shadcn@4.22.1 add dialog`; правило: одна задача; Esc і клік по затемненню закривають; фокус повертається на кнопку, що відкрила |
 
 ## 6. Стани
 

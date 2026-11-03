@@ -30,7 +30,6 @@ function emptySupabase() {
 vi.mock("@/lib/supabase/viewer", () => ({
   requireViewer: async () => ({ role: mocks.role, email: "user@example.test", supabase: emptySupabase() }),
 }));
-vi.mock("@/app/_components/nav", () => ({ Nav: () => null }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 

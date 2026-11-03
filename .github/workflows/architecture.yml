@@ -37,3 +37,13 @@ jobs:
         with:
           node-version: 24
       - run: node scripts/check-server-boundary.mjs
+      # ADR 0001 відкинув admin-клієнт: секретний ключ обходить RLS, а доступ до карток тримає лише RLS. check:boundary
+      # дозволяє admin.ts за умов шаблону, тож заборону з ADR тримає окремий крок. Новий admin-клієнт — спершу новий ADR,
+      # що замінює 0001, і зміна цього кроку в тому самому PR.
+      - name: "ADR 0001: admin-клієнта немає"
+        run: |
+          if [ -e src/lib/supabase/admin.ts ]; then
+            echo "::error file=src/lib/supabase/admin.ts::ADR 0001 (docs/decisions/0001-client-access-by-rls.md) відкинув admin-клієнт — доступ до даних лише через RLS. Спершу новий ADR, що замінює 0001."
+            exit 1
+          fi
+          echo "OK: src/lib/supabase/admin.ts немає — admin-клієнта в застосунку немає (ADR 0001)."
