@@ -64,6 +64,13 @@ export interface ClientCardRow {
   guardian_email: string | null;
 }
 
+const CARD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Чи схожий параметр адреси /clients/[id] на id картки (uuid); інакше картки за посиланням немає (AC-CARD-16). */
+export function isCardId(value: string): boolean {
+  return CARD_ID.test(value);
+}
+
 export function clientTypeLabel(type: string): string {
   return type === "child" ? CLIENT_TYPE_LABEL.child : CLIENT_TYPE_LABEL.adult;
 }

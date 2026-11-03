@@ -7,14 +7,13 @@ import {
   CARD_COLUMNS,
   CARD_NOT_FOUND,
   clientTypeLabel,
+  isCardId,
   NO_ACCESS_TO_CLIENT,
   NOT_PROVIDED,
   type ClientCardRow,
 } from "@/lib/clients/card";
 import { isStaff } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function Field({ label, value }: { label: string; value: string | null }) {
   return (
@@ -33,7 +32,7 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
   const viewer = await requireViewer();
   const staff = isStaff(viewer.role);
   // Некоректний id — картки немає; помилка запиту — сторінка помилки, а не «не знайдено» чи «немає доступу».
-  const { data, error } = UUID.test(id)
+  const { data, error } = isCardId(id)
     ? await viewer.supabase.from("clients").select(CARD_COLUMNS).eq("id", id).maybeSingle()
     : { data: null, error: null };
   if (error) throw error;

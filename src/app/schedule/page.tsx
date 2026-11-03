@@ -47,20 +47,20 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       .order("starts_at");
     slots = slotRows ?? [];
     if (slots.length > 0) {
-      // Утримання на слоти тижня й клієнти одне від одного не залежать — паралельно.
-      const [{ data: holdRows }, { data: clientRows }] = await Promise.all([
-        viewer.supabase
-          .from("holds")
-          .select("id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at")
-          .in(
-            "slot_id",
-            slots.map((slot) => slot.id),
-          )
-          .is("released_at", null),
-        // У розкладі — лише ім'я клієнта, email терапевт тут не бачить (AC-HOLD-40).
-        viewer.supabase.from("clients").select("id, name"),
-      ]);
+      const { data: holdRows } = await viewer.supabase
+        .from("holds")
+        .select("id, slot_id, client_id, created_at, expires_at, confirmed_at, released_at")
+        .in(
+          "slot_id",
+          slots.map((slot) => slot.id),
+        )
+        .is("released_at", null);
       holds = holdRows ?? [];
+      // У розкладі — лише ім'я клієнта, email терапевт тут не бачить (AC-HOLD-40): імена лише клієнтів цих утримань.
+      const clientIds = [...new Set(holds.map((hold) => hold.client_id))];
+      const { data: clientRows } = clientIds.length
+        ? await viewer.supabase.rpc("schedule_client_names", { p_client_ids: clientIds })
+        : { data: [] };
       clients = clientRows ?? [];
     }
   }

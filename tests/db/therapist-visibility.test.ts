@@ -86,6 +86,20 @@ describe("видимість утримань і клієнтів для тер�
     expect(await emailsSeenBy(therapist2)).toEqual([]);
   });
 
+  it("AC-HOLD-40: розклад терапевта отримує лише імена клієнтів своїх утримань, без email", async () => {
+    const ids = (await t.asUser<{ client_id: string }>(therapist1, "select client_id from public.holds")).map(
+      (r) => r.client_id,
+    );
+    const names = await t.asUser<{ id: string; name: string }>(
+      therapist1,
+      "select id, name from public.schedule_client_names($1) order by name",
+      [ids],
+    );
+
+    expect(names.map((r) => r.name)).toEqual(["Active Client", "Confirmed Client"]);
+    expect(Object.keys(names[0])).toEqual(["id", "name"]);
+  });
+
   it("AC-HOLD-09: відвідувач без входу не читає ні утримань, ні клієнтів", async () => {
     await expect(t.asAnon("select id from public.holds")).rejects.toThrow(/permission denied/);
     await expect(t.asAnon("select id from public.clients")).rejects.toThrow(/permission denied/);

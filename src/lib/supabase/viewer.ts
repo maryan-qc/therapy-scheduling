@@ -19,7 +19,8 @@ export async function requireViewer({ allowNoRole = false }: { allowNoRole?: boo
     .eq("id", claims.sub)
     .maybeSingle();
 
-  const role = ROLES.find((candidate) => candidate === profile?.role) ?? null;
+  // Роль — з метаданих токена, якщо вона там є (так її видно одразу після зміни в Auth), інакше з profiles.
+  const role = ROLES.find((candidate) => candidate === (claims.user_metadata?.role ?? profile?.role)) ?? null;
   if (!role && !allowNoRole) redirect("/");
   return {
     supabase,

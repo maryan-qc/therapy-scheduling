@@ -191,6 +191,10 @@ export type Database = {
         Args: { p_hold_id: string };
         Returns: Json;
       };
+      schedule_client_names: {
+        Args: { p_client_ids: string[] };
+        Returns: { id: string; name: string }[];
+      };
     };
     Enums: {
       [_ in never]: never;
