@@ -1,8 +1,8 @@
 // Сама Server Action createClientCard (src/app/clients/actions.ts): її можна викликати напряму, оминаючи сторінку,
 // тож перевіряємо порядок у дії — роль → форма → запис. Сесію (requireViewer), Supabase і навігацію Next підмінено:
 // RLS і check-обмеження бази — окремо, у tests/db/client-cards.test.ts.
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CardForm } from "@/lib/clients/card";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CARD_MESSAGES, type CardForm } from "@/lib/clients/card";
 
 const mocks = vi.hoisted(() => ({
   role: "scheduler" as string | null,
@@ -45,6 +45,10 @@ beforeEach(() => {
   });
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("дія createClientCard", () => {
   it("AC-CARD-06: therapist1 викликає дію напряму — «Only schedulers and admins can create client cards.», запису немає", async () => {
     mocks.role = "therapist";
@@ -79,6 +83,42 @@ describe("дія createClientCard", () => {
       guardianEmail: "guardian8@example.test",
     });
     expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it("AC-CARD-12: дитина без імені, з датою завтра, без мови — три повідомлення одразу, запису немає, введене лишається у формі", async () => {
+    // «Дано сьогодні 2026-11-03» — у поясі практики America/Los_Angeles (дія бере сьогоднішню дату сама).
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-03T12:00:00-08:00"));
+    mocks.role = "scheduler";
+    // Як надсилає форма дитини: поля email у ній немає, мову не вибрано («Select…» — порожнє значення).
+    const fields = {
+      type: "child",
+      name: "",
+      date_of_birth: "2026-11-04",
+      session_language: "",
+      guardian_name: "Guardian Eight",
+      guardian_email: "guardian8@example.test",
+    };
+
+    const state = await createClientCard(EMPTY, formData(fields));
+
+    expect(state.errors.map((code) => CARD_MESSAGES[code])).toEqual([
+      "Enter the client's name.",
+      "Enter a date of birth that is not in the future.",
+      "Select a session language.",
+    ]);
+    // «Усі введені дані лишаються у формі» — рівно те, що ввів scheduler1, і нічого, чого він не вводив.
+    expect(state.values).toEqual({
+      type: "child",
+      name: "",
+      dateOfBirth: "2026-11-04",
+      language: "",
+      email: "",
+      guardianName: "Guardian Eight",
+      guardianEmail: "guardian8@example.test",
+    });
+    expect(mocks.from).not.toHaveBeenCalled(); // картку не створено: до бази дія не дійшла
+    expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
   it("AC-CARD-01: планувальник — картку записано його клієнтом Supabase, далі сторінка нової картки", async () => {

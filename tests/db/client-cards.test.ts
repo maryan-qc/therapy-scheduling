@@ -7,7 +7,6 @@ import {
   CARD_MESSAGES,
   cardErrorCode,
   cardRoleError,
-  NO_CARDS_YET,
   validateClientCard,
   type CardForm,
 } from "@/lib/clients/card";
@@ -203,7 +202,41 @@ describe("уточнення PM 26.10 (openspec/specs/client-cards)", () => {
   it("AC-CARD-15: карток ще немає — планувальник і адміністратор отримують порожній список (сторінка — NO_CARDS_YET)", async () => {
     expect(await cardsSeenBy(scheduler1)).toEqual([]);
     expect(await cardsSeenBy(admin)).toEqual([]);
-    expect(NO_CARDS_YET).toBe("No clients yet. Create a client card from an intake form.");
+    // Текст на сторінці доводить tests/clients/pages.test.tsx (AC-CARD-15), а не порівняння константи тут.
+  });
+});
+
+// AC-CARD-12 у базі: та сама межа, що й у формі (validateClientCard), — остання лінія для запиту в обхід форми.
+// Дані — з AC (дитина, опікун «Guardian Eight», guardian8@example.test). Кожен запит порушує рівно одне правило, а решта
+// полів правильні: інакше мутант одного правила ховається за іншим (до WS8 вижили мутанти C7, C8, C9 —
+// scripts/mutants.mjs). «Сьогодні» — дата бази в America/Los_Angeles, як у тригері, тож межу рахує сам запит.
+const LA_TODAY = "(now() at time zone 'America/Los_Angeles')::date";
+const insertChild = (name: string, dateOfBirthSql: string, language: string | null) =>
+  t.asUser(
+    scheduler1,
+    `insert into public.clients (client_type, name, date_of_birth, session_language, guardian_name, guardian_email)
+     values ('child', $1, ${dateOfBirthSql}, $2, 'Guardian Eight', 'guardian8@example.test')`,
+    [name, language],
+  );
+
+describe("AC-CARD-12 у базі — кожне правило окремо", () => {
+  it("AC-CARD-12: порожнє ім'я дитини — картку не створено (clients_name_not_blank), карток не додалося", async () => {
+    await expect(insertChild("", "'2016-01-10'", "English")).rejects.toThrow(/clients_name_not_blank/);
+    expect(await cardCount()).toBe(0);
+  });
+
+  it("AC-CARD-12: дата народження завтра — картку не створено (23514); дорівнює сьогоднішній — створено", async () => {
+    await expect(insertChild("Client Eight", `${LA_TODAY} + 1`, "English")).rejects.toThrow(/later than today/);
+    expect(await cardCount()).toBe(0);
+
+    // Межа з припущення PM: «Дата народження, що дорівнює сьогоднішній, коректна».
+    await insertChild("Client Eight", LA_TODAY, "English");
+    expect(await cardCount()).toBe(1);
+  });
+
+  it("AC-CARD-12: дитина без мови сеансів — картку не створено (clients_contact_by_type), карток не додалося", async () => {
+    await expect(insertChild("Client Eight", "'2016-01-10'", null)).rejects.toThrow(/clients_contact_by_type/);
+    expect(await cardCount()).toBe(0);
   });
 });
 
