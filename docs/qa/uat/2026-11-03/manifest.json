@@ -1,0 +1,144 @@
+{
+  "kind": "uat",
+  "generatedAt": "2026-11-03T11:09:17.377Z",
+  "baseURL": "https://therapy-scheduling-sigma.vercel.app",
+  "deployedSha": "07b01cf3e8910272f2d99ae372cf5fc8b1e548b9",
+  "testsCommit": "fc5f9e0b08440157690a051d707a9d1e2c607727",
+  "reviewer": {
+    "model": "claude-haiku-5-5",
+    "disputes": "claude-sonnet-5-5"
+  },
+  "note": "Відео й траси не в git (test-results/ локально, артефакт CI). check-recordings конвеєра WS9 вимагає відео на диску — для нього цей manifest треба доповнити.",
+  "results": [
+    {
+      "id": "AC-CARD-05",
+      "proof": "AC-CARD-05",
+      "title": "AC-CARD-05: therapist1 відкриває картку client9 за прямим посиланням — «You don't have access to this client.», даних client9 немає",
+      "screenshot": "docs/qa/uat/2026-11-03/frames/AC-CARD-05-then-1.png",
+      "video": "test-results/artifacts/client-cards-терапевт-AC-C-6f835-lient-»-даних-client9-немає-chromium/video.webm",
+      "trace": "test-results/artifacts/client-cards-терапевт-AC-C-6f835-lient-»-даних-client9-немає-chromium/trace.zip",
+      "asserted": true,
+      "vision": {
+        "met": true,
+        "readable": true,
+        "notes": "На кадрі frame-then-1.png у червоному блоці помилки видно текст «You don't have access to this client.», він читається чітко і збігається з критерієм за словами та крапкою в кінці. Сторінка показує лише цю помилку та навігацію therapist1 (My clients), без даних client9. Частини про відсутність даних і незмінність картки не з кадрів, тому я їх не оцінював."
+      },
+      "agentModel": "claude-haiku-5-5",
+      "agentVerdicts": {
+        "claude-haiku-5-5": "PASS",
+        "claude-sonnet-5-5": null
+      },
+      "escalated": false,
+      "quotesVerified": [
+        {
+          "quote": "You don't have access to this client.",
+          "onPage": true
+        }
+      ],
+      "verdict": "PASS",
+      "factoryGate": "PASS",
+      "rule": "R6: перевірки, агент і цитати збігаються",
+      "playwrightMs": 3878,
+      "reviewCostUsd": 0.002,
+      "reviewWallMs": 8785
+    },
+    {
+      "id": "AC-CARD-11",
+      "proof": "AC-CARD-11",
+      "title": "AC-CARD-11: newuser1 без ролі відкриває застосунок і картку client6 за посиланням — лише «Your account has no access yet. Contact an administrator.» і «Sign out»",
+      "screenshot": "docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-1.png",
+      "video": "test-results/artifacts/client-cards-користувач-бе-8ab7b-dministrator-»-і-«Sign-out»-chromium/video.webm",
+      "trace": "test-results/artifacts/client-cards-користувач-бе-8ab7b-dministrator-»-і-«Sign-out»-chromium/trace.zip",
+      "asserted": true,
+      "vision": {
+        "met": true,
+        "readable": true,
+        "notes": "На обох кадрах (frame-then-1.png, frame-then-2.png) сторінка «/» показує заголовок «Therapy scheduling», червоний блок із текстом «Your account has no access yet. Contact an administrator.» і одну кнопку «Sign out». Обидві видимі частини «Тоді» збігаються з критерієм посимвольно. Частини про відсутність даних клієнтів і незмінність карток не з кадрів, тож їх не оцінював."
+      },
+      "agentModel": "claude-haiku-5-5",
+      "agentVerdicts": {
+        "claude-haiku-5-5": "PASS",
+        "claude-sonnet-5-5": null
+      },
+      "escalated": false,
+      "quotesVerified": [
+        {
+          "quote": "Your account has no access yet. Contact an administrator.",
+          "onPage": true
+        },
+        {
+          "quote": "Sign out",
+          "onPage": true
+        },
+        {
+          "quote": "Your account has no access yet. Contact an administrator.",
+          "onPage": true
+        },
+        {
+          "quote": "Sign out",
+          "onPage": true
+        }
+      ],
+      "verdict": "PASS",
+      "factoryGate": "PASS",
+      "rule": "R6: перевірки, агент і цитати збігаються",
+      "playwrightMs": 3661,
+      "reviewCostUsd": 0.00256,
+      "reviewWallMs": 9283
+    },
+    {
+      "id": "AC-CARD-12",
+      "proof": "AC-CARD-12",
+      "title": "AC-CARD-12: scheduler1 створює картку «Child» без імені, з датою завтра й без мови — три повідомлення біля полів, картку не створено",
+      "screenshot": "docs/qa/uat/2026-11-03/frames/AC-CARD-12-then-1.png",
+      "video": "test-results/artifacts/client-cards-планувальник--4f8da-ля-полів-картку-не-створено-chromium/video.webm",
+      "trace": "test-results/artifacts/client-cards-планувальник--4f8da-ля-полів-картку-не-створено-chromium/trace.zip",
+      "asserted": true,
+      "vision": {
+        "met": true,
+        "readable": true,
+        "notes": "На кадрі /clients/new (форма «New client card») видно три червоні повідомлення під відповідними полями з точним текстом із критерію, а поля з помилкою підсвічені червоною рамкою. Тип «Child», ім'я опікуна «Guardian Eight» і email guardian8@example.test лишилися у формі. Поле дати показує 04.11.2026 — це локальний формат браузера для 2026-11-04, і за правилами це не оцінюється з кадру."
+      },
+      "agentModel": "claude-haiku-5-5",
+      "agentVerdicts": {
+        "claude-haiku-5-5": "PASS",
+        "claude-sonnet-5-5": null
+      },
+      "escalated": false,
+      "quotesVerified": [
+        {
+          "quote": "Enter the client's name.",
+          "onPage": true
+        },
+        {
+          "quote": "Enter a date of birth that is not in the future.",
+          "onPage": true
+        },
+        {
+          "quote": "Select a session language.",
+          "onPage": true
+        },
+        {
+          "quote": "Child",
+          "onPage": true
+        },
+        {
+          "quote": "Guardian Eight",
+          "onPage": true
+        },
+        {
+          "quote": "guardian8@example.test",
+          "onPage": true
+        }
+      ],
+      "verdict": "PASS",
+      "factoryGate": "PASS",
+      "rule": "R6: перевірки, агент і цитати збігаються",
+      "playwrightMs": 7913,
+      "reviewCostUsd": 0.00208,
+      "reviewWallMs": 8341
+    }
+  ],
+  "negativeControls": [],
+  "cleanup": null
+}
