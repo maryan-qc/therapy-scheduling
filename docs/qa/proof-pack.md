@@ -165,7 +165,9 @@ https://github.com/maryan-qc/therapy-scheduling/actions/runs/41618304612/job/125
   1. `npm ci`;
   2. `npx playwright install chromium` — `npm ci` браузера не ставить;
   3. `DEMO_USER_PASSWORD` у `.env.local` — пароль акаунтів з `accounts.zip`;
-  4. `npm run uat -- --url https://therapy-scheduling-sigma.vercel.app`, негативні контролі — `npm run uat:nc -- --url …`.
+  4. `SUPABASE_SECRET_KEY= npm run uat -- --url https://therapy-scheduling-sigma.vercel.app`, негативні контролі —
+     `SUPABASE_SECRET_KEY= npm run uat:nc -- --url …`. Порожній секретний ключ — навмисно: усі три AC лише читають, а з
+     ключем teardown `cleanup` видалив би всіх `uat-*@example.test`, не лише цього прогону.
 - Рецензент: `claude-haiku-5-5` на кожен AC, суперечок не було, тож до `claude-sonnet-5-5` не дійшло. Промпт і схема — з
   materials без змін. Разом за розбір — $0,0065 (ціни API; прогін — за підпискою). Конвеєр запускав агент: змінні
   `CLAUDECODE` / `CLAUDE_*` прибрано, `SUPABASE_SECRET_KEY` порожній.
@@ -198,16 +200,34 @@ https://github.com/maryan-qc/therapy-scheduling/actions/runs/41618304612/job/125
 
 ## D. Eval рецензента
 
-- PR з вадами (не злитий): <!-- …/pull/N -->
-- Ключ і таблиця: <!-- …/pull/N#issuecomment-M -->
+- PR з вадами (не злитий, закритий після eval): https://github.com/maryan-qc/therapy-scheduling/pull/36 — гілка
+  `task/refactor-schedule-names`, нейтральні назва, коміт і опис; вади пройшли весь обов'язковий CI
+- Ключ і таблиця: https://github.com/maryan-qc/therapy-scheduling/pull/36#issuecomment-6608519705
+- Рецензенти: CodeRabbit (`@coderabbitai review`) і `/code-review high 36` у Claude Code неінтерактивно (команда з
+  гайду, `--setting-sources project`; модель рецензента — `claude-sonnet-5-5`, 26 с, $0,16)
 
 | # | Вада (ключ) | CodeRabbit | `/code-review high` |
 |---|---|---|---|
-| 1 | <!-- категорія і файл:рядок --> | <!-- знайшов / пропустив + цитата --> | <!-- знайшов / пропустив + цитата --> |
-| 2 | … | … | … |
-| 3 | … | … | … |
-| П | приманка: <!-- що --> | <!-- хибна тривога? цитата --> | <!-- хибна тривога? цитата --> |
+| 1 | права в даних — `supabase/migrations/20261103120000_schedule_client_names.sql`: `public.schedule_client_names` — `security definer` без перевірки доступу й без `set search_path = ''`, `execute` для `authenticated` | **знайшов** (Major, IDOR): «Функція `schedule_client_names` обходить RLS для `clients` і повертає імена за довільними ID.» | **знайшов**: «The function has no role or ownership check, so the definer bypasses the RLS on clients. Any authenticated user can read the name of any client by id.» |
+| 2 | авторизація в дії — `src/lib/supabase/viewer.ts:23`: роль спершу з `claims.user_metadata.role` | **знайшов, але як Minor**: «Не використовуйте `claims.user_metadata.role` як джерело ролі.» … «Доступ до даних це не відкриває.» | **знайшов**: «user_metadata can be edited by the signed-in user, so this is a privilege escalation.» |
+| 3 | тести — `tests/db/therapist-visibility.test.ts`, «AC-HOLD-40: … лише імена клієнтів своїх утримань» лише з власними id | **пропустив** (лише побічно, у знахідці 1: «Перевірте … що прямий виклик з ID клієнтів `Expired Client` і `Released Client` повертає порожній результат для `therapist1`.») | **знайшов**: «The new AC-HOLD-40 test covers only the happy path. It never checks that a therapist cannot fetch names of clients outside their holds…» |
+| П | приманка: `isCardId` у `src/lib/clients/card.ts` — винесення регексу без зміни поведінки | хибної тривоги немає (жодного зауваження) | м'яка хибна тривога: «The UUID regex extraction into `isCardId` is unrelated churn in a PR about schedule names.» |
 
-- Інші знахідки: <!-- слушна / шум, по рядку на кожну -->
-- Правило, що закриває пропуск: <!-- рядок в AGENTS.md чи path instruction, …/commit/<sha> -->
-- Повторний прогін: <!-- хто, результат, цитата, …/pull/N#issuecomment-M -->
+- Інші знахідки:
+  - CodeRabbit, рядок AC-HOLD-40 у `docs/conformance.md` не оновлено — **слушна**;
+  - CodeRabbit, «додайте тест для пріоритету `user_metadata.role`» — **шум**: тест закріпив би ваду 2;
+  - `/code-review`, помилку `rpc` не перевірено — **слушна**;
+  - `/code-review`, два послідовні запити замість одного з RLS — **слушна**;
+  - `/code-review`, `database.types.ts` змінено руками — **слушна** (процес).
+- Правило, що закриває пропуск (ваду 3 пропустив CodeRabbit): рядок в `AGENTS.md`, розділ «Процес і ролі» — «Тест з AC ID
+  на правило доступу … перевіряє й заборонений випадок … Тест лише з власними даними користувача межі не доводить … для
+  рецензента це знахідка рівня «must fix» (Major)». PR https://github.com/maryan-qc/therapy-scheduling/pull/37, коміт `48cbd82` у `main`
+- Повторний прогін (`git merge main` → `@coderabbitai full review` і `/code-review high 36`):
+  https://github.com/maryan-qc/therapy-scheduling/pull/36#issuecomment-6610619853
+  - **CodeRabbit** знайшов ваду 3 окремою знахідкою, але як Trivial: «Додайте прямий виклик RPC із чужим ID. Тест передає
+    лише ID, які `therapist1` уже отримав через RLS. Тому він проходить, навіть якщо RPC повертає імена інших клієнтів.»
+    Застереження: ключ уже був опублікований у PR, і підсумок CodeRabbit на нього відповідає, тож прогін не сліпий.
+  - **`/code-review high`** знову знайшов усі три вади й послався на правило: «It does not check the forbidden cases that
+    AGENTS.md requires».
+  - Висновок: правило закрило пропуск, але CodeRabbit і далі занижує рівень. Таку ваду блокують SQL-мутація й тест
+    відмови (трек B), а не дорадче рев'ю.
