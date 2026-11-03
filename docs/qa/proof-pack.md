@@ -91,18 +91,18 @@ admin-клієнт відкинув — тепер його поява черв�
 
 | AC | Специфікація | Тест (твердження) | Агент | Вердикт | Кадр |
 |---|---|---|---|---|---|
-| AC-CARD-05 | [client-cards.spec.ts#L61](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/tests/e2e/client-cards.spec.ts#L61) | passed | Haiku: PASS | **PASS** — R6 | [AC-CARD-05-then-1.png](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/docs/qa/uat/2026-11-03/frames/AC-CARD-05-then-1.png) |
-| AC-CARD-11 | [client-cards.spec.ts#L130](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/tests/e2e/client-cards.spec.ts#L130) | passed | Haiku: PASS | **PASS** — R6 | [then-1](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-1.png) (застосунок), [then-2](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-2.png) (картка client6 за посиланням) |
-| AC-CARD-12 | [client-cards.spec.ts#L183](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/tests/e2e/client-cards.spec.ts#L183) | passed | Haiku: PASS | **PASS** — R6 | [AC-CARD-12-then-1.png](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/docs/qa/uat/2026-11-03/frames/AC-CARD-12-then-1.png) |
+| AC-CARD-05 | [client-cards.spec.ts#L61](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L61) | passed | Haiku: PASS | **PASS** — R6 | [AC-CARD-05-then-1.png](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-05-then-1.png) |
+| AC-CARD-11 | [client-cards.spec.ts#L130](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L130) | passed | Haiku: PASS | **PASS** — R6 | [then-1](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-1.png) (застосунок), [then-2](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-2.png) (картка client6 за посиланням) |
+| AC-CARD-12 | [client-cards.spec.ts#L183](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L183) | passed | Haiku: PASS | **PASS** — R6 | [AC-CARD-12-then-1.png](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-12-then-1.png) |
 
-- Звіт: [docs/qa/uat/2026-11-03/report.md](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/docs/qa/uat/2026-11-03/report.md) (+ `manifest.json`, `frames/`);
-  код тестів `task/uat` @ `fc5f9e0`, прод `07b01cf`, прогін 03.11.2026 13:08 (Київ), Playwright 23,4 с.
+- Звіт: [docs/qa/uat/2026-11-03/report.md](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/report.md) (+ `manifest.json`, `frames/`);
+  код тестів `task/uat` @ `f4690ce`, прод `07b01cf`, прогін 03.11.2026 17:49 (Київ), Playwright 27,9 с.
 - Відео: вкладення в описі PR UAT. Файли — ассети pre-release `uat-2026-11-03`, у git їх немає: [AC-CARD-05](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-05.webm),
   [AC-CARD-11](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-11.webm), [AC-CARD-12](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-12.webm).
 - Рецензент: `claude-haiku-5-5` на кожен AC, суперечок не було, тож до `claude-sonnet-5-5` не дійшло. Промпт і схема — з
-  materials без змін. Разом за розбір — $0,0066 (ціни API; прогін — за підпискою). Конвеєр запускав агент: змінні
+  materials без змін. Разом за розбір — $0,0065 (ціни API; прогін — за підпискою). Конвеєр запускав агент: змінні
   `CLAUDECODE` / `CLAUDE_*` прибрано, `SUPABASE_SECRET_KEY` порожній.
-- Негативний контроль (`npm run uat:nc`, [negative-controls.spec.ts](https://github.com/maryan-qc/therapy-scheduling/blob/1ce54de85e64c95d91867971be607807007d3581/tests/e2e/negative-controls.spec.ts)), обидва на AC-CARD-05:
+- Негативний контроль (`npm run uat:nc`, [negative-controls.spec.ts](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/negative-controls.spec.ts)), обидва на AC-CARD-05:
   - **NC-1** — у твердженні «You do not have access to this client.» замість тексту AC: перевірки впали, Haiku сказав
     PASS → **FAIL** (R1, агент не перекриває впале твердження);
   - **NC-2** — анотація `ac-text` з іншим «Тоді» («This client card is private.»), тест і застосунок без змін: перевірки
