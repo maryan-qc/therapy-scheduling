@@ -10,7 +10,7 @@
 
 - Прод-URL: https://therapy-scheduling-sigma.vercel.app
 - Вимоги: https://github.com/Sofiia-pm/therapy-scheduling-spec · джерело: issues · знімок 2026-10-27
-- `/api/health` на момент UAT: <!-- sha і db, напр. «sha 1a2b3c4, db ok, 01.11.2026» -->
+- `/api/health` на момент UAT: sha 07b01cf, db ok, 03.11.2026
 
 ## 3 AC
 
@@ -150,23 +150,51 @@ https://github.com/maryan-qc/therapy-scheduling/actions/runs/41618304612/job/125
 
 | AC | Специфікація | Тест (твердження) | Агент | Вердикт | Кадр |
 |---|---|---|---|---|---|
-| AC-CARD-05 | <!-- …/blob/<sha>/tests/e2e/….spec.ts --> | <!-- passed / failed --> | <!-- Haiku: PASS / FAIL / NEEDS-HUMAN (+ Sonnet, якщо була суперечка) --> | <!-- PASS / FAIL / NEEDS-HUMAN і правило (R1–R6) --> | <!-- …/blob/<sha>/docs/qa/uat/<дата>/frames/AC-…-then-1.png --> |
-| AC-CARD-12 | | | | | |
-| AC-CARD-11 | | | | | |
+| AC-CARD-05 | [client-cards.spec.ts#L61](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L61) | passed | Haiku: PASS | **PASS** — R6 | [AC-CARD-05-then-1.png](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-05-then-1.png) |
+| AC-CARD-11 | [client-cards.spec.ts#L130](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L130) | passed | Haiku: PASS | **PASS** — R6 | [then-1](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-1.png) (застосунок), [then-2](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-2.png) (картка client6 за посиланням) |
+| AC-CARD-12 | [client-cards.spec.ts#L183](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L183) | passed | Haiku: PASS | **PASS** — R6 | [AC-CARD-12-then-1.png](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-12-then-1.png) |
 
-- Звіт: <!-- …/blob/<sha>/docs/qa/uat/<YYYY-MM-DD>/report.md -->
-- Відео: <!-- вкладення в описі PR …/pull/N -->
-- Рецензент: <!-- моделі зі звіту (claude-haiku-5-5; суперечки — claude-sonnet-5-5) і вартість прогону -->
-- Негативний контроль: <!-- NC-… (npm run uat:nc): що навмисно хибне, вердикт (FAIL / NEEDS-HUMAN), …/pull/N -->
-- Дані: лише читання
+- Звіт: [docs/qa/uat/2026-11-03/report.md](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/report.md) (+ `manifest.json`, `frames/`);
+  код тестів `task/uat` @ `f4690ce`, прод `07b01cf`, прогін 03.11.2026 17:49 (Київ), Playwright 27,9 с.
+- Відео: вкладення в описі PR UAT — ассети pre-release `uat-2026-11-03` (у git їх немає). Вони з того самого прогону, що й
+  звіт: код тестів `f4690ce`, 03.11.2026 17:49 (Київ). SHA-256 файлів:
+  - [AC-CARD-05.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-05.webm) — `1cdd87467a3da54b27e121a9e0d0b4fd481ea6fb5c5b3c1973df99012f1b18e8`;
+  - [AC-CARD-11.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-11.webm) — `a8e3467ae79952a2b628fc65c93a990bbe8dd8006e9a7b60a5bbf07e1150de7e`;
+  - [AC-CARD-12.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-12.webm) — `8e99b7554b9a475fec06b5cf39f95da78688eb47f58f3ddcca8082d02d66c079`.
+- Відтворити прогін з чистого клону (Node 24):
+  1. `npm ci`;
+  2. `npx playwright install chromium` — `npm ci` браузера не ставить;
+  3. `DEMO_USER_PASSWORD` у `.env.local` — пароль акаунтів з `accounts.zip`;
+  4. `npm run uat -- --url https://therapy-scheduling-sigma.vercel.app`, негативні контролі — `npm run uat:nc -- --url …`.
+- Рецензент: `claude-haiku-5-5` на кожен AC, суперечок не було, тож до `claude-sonnet-5-5` не дійшло. Промпт і схема — з
+  materials без змін. Разом за розбір — $0,0065 (ціни API; прогін — за підпискою). Конвеєр запускав агент: змінні
+  `CLAUDECODE` / `CLAUDE_*` прибрано, `SUPABASE_SECRET_KEY` порожній.
+- Негативний контроль (`npm run uat:nc`, [negative-controls.spec.ts](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/negative-controls.spec.ts)), обидва на AC-CARD-05:
+  - **NC-1** — у твердженні «You do not have access to this client.» замість тексту AC: перевірки впали, Haiku сказав
+    PASS → **FAIL** (R1, агент не перекриває впале твердження);
+  - **NC-2** — анотація `ac-text` з іншим «Тоді» («This client card is private.»), тест і застосунок без змін: перевірки
+    пройшли, Haiku й Sonnet — FAIL → **NEEDS-HUMAN** (R3).
+
+  Рядки звіту — в описі PR UAT.
+- Дані: **лише читання**. UAT нічого не створює (прибирання не запускалось: прогін без секретного ключа). «Дано» на проді —
+  синтетичні дані, створені один раз 03.11 через застосунок під scheduler1 (з RLS) і залишені для приймання PM:
+  - картки «Client Six» (client6@example.test, дані AC-CARD-01) і «Client Nine» (client9@example.test);
+  - сеанс «Confirmed» Client Nine у Therapist Two 2026-11-05 о 11:00 — тож client9 лишається своїм лише для therapist2.
+
+  Специфікація щоразу перевіряє «Дано»: картку бачить scheduler1, вона є в «My clients» therapist2 і її немає в therapist1.
+- `docs/conformance.md`: AC-CARD-05, AC-CARD-11, AC-CARD-12 — `реалізовано` зі шляхом `tests/e2e/client-cards.spec.ts`.
+  Рядків `відкладено (e2e — WS8)` у матриці немає: усі 60 AC зрізів 1–2 «реалізовано» ще з WS7.
 
 ### Приймання PM
 
 | AC | Рішення PM | Посилання |
 |---|---|---|
-| AC-CARD-05 | <!-- ✅ / ❌ / NEEDS-HUMAN → … --> | <!-- коментар-підпис або issue «Відхилення від вимог» --> |
-| AC-CARD-12 | | |
-| AC-CARD-11 | | |
+| AC-CARD-05 | очікує приймання PM (звіт подано 03.11.2026) | — |
+| AC-CARD-12 | очікує приймання PM (звіт подано 03.11.2026) | — |
+| AC-CARD-11 | очікує приймання PM (звіт подано 03.11.2026) | — |
+
+Оцінки 0–3 PM ставить у таблиці приймання курсу; підпис і issues «Відхилення від вимог» (форма
+`.github/ISSUE_TEMPLATE/deviation.yml`, мітка `відхилення`) — у цьому репо. Виправлення — до кінця Сб 07.11.
 
 ## D. Eval рецензента
 
