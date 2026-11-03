@@ -183,7 +183,7 @@ test.describe("планувальник", () => {
   test(
     "AC-CARD-12: scheduler1 створює картку «Child» без імені, з датою завтра й без мови — три повідомлення біля полів, картку не створено",
     { tag: ["@uat"], annotation: { type: "ac", description: "AC-CARD-12" } },
-    async ({ page }) => {
+    async ({ page, browser }) => {
       // AC: «сьогодні 2026-11-03», дата народження 2026-11-04. Дату рахуємо від сьогодні в поясі практики, тож
       // 03.11 це дослівно дати AC, а в повторному прогоні (виправлення до 07.11) — той самий «завтра».
       const { today, tomorrow } = practiceToday();
@@ -244,13 +244,8 @@ test.describe("планувальник", () => {
           await expect(page.getByLabel("Session language")).toHaveValue("");
           await expect(page.getByLabel("Guardian name")).toHaveValue("Guardian Eight");
           await expect(page.getByLabel("Guardian email")).toHaveValue("guardian8@example.test");
-          // Картку не створено: окрема вкладка тієї самої сесії, щоб кадр лишився на формі.
-          const list = await page.context().newPage();
-          try {
-            expect(await allCards(list)).toBe(cardsBefore);
-          } finally {
-            await list.close();
-          }
+          // Картку не створено: список карток у сесії scheduler1 окремим контекстом, щоб кадр і відео лишились на формі.
+          expect(await asRole(browser, "scheduler", allCards)).toBe(cardsBefore);
         },
       );
     },
