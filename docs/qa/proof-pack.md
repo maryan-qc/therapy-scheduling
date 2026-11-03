@@ -64,28 +64,84 @@ admin-клієнт відкинув — тепер його поява черв�
 
 ## B. Якість тестів
 
+- PR якості тестів: <!-- …/pull/N -->
+- Взято з `koldovsky/2026-quitcode-08-quality-hw/materials/testing`: `stryker.config.json`, `vitest.stryker.config.mts`,
+  `scripts/mutation-check.mjs`, формат `scripts/mutants.mjs`. Гарнес `tests/db/supabase-pglite.ts` — наш з WS6.
+
 ### Рівень для кожного AC
 
 | AC | Де живе правило | Рівень | Чому | Тест |
 |---|---|---|---|---|
-| AC-…-NN | <!-- політика / функція бази / TS-модуль / сторінка --> | <!-- unit / база (PGlite) / e2e --> | … | <!-- …/blob/<sha>/tests/…#L<N> --> |
+| AC-CARD-05 | **SQL:** RLS `clients_select` + `private.is_client_of_current_therapist` (міграції `20261021150100`, `20261027073004`); немає GRANT `update`/`delete` на `clients` (`20261023104436`); email профілю змінити не можна — колонковий grant лише `full_name` (`20261012000000`). **Сторінка** `/clients/[id]`: порожня відповідь бази → «You don't have access to this client.» | база (PGlite) + e2e | «не бачить і не змінює» тримає SQL: це доводить лише справжній Postgres з усіма міграціями й RLS, TS-копії правила немає. Дослівний текст і «даних не показано» — сторінка, асинхронний серверний компонент, тож e2e | [client-access.test.ts#L122](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-access.test.ts#L122), [#L255](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-access.test.ts#L255) (email терапевта), e2e — розділ C |
+| AC-CARD-11 | **SQL:** `private.current_therapist_id()` — лише для `role = 'therapist'` (`20261023105250`), `is_staff()` для `null` → `false`, `clients_insert_staff`, колонковий grant `profiles` (роль і email собі не змінити). **Сторінки:** `requireViewer` без ролі перенаправляє на «/», «/» показує лише повідомлення й «Sign out» | база (PGlite) + e2e | «без ролі — жодних даних і змін» тримає SQL. Що людина бачить лише повідомлення й «Sign out» (зокрема за посиланням на картку — редірект) — сторінка: Vitest серверних сторінок з `redirect` не рендерить, тож e2e | [client-access.test.ts#L207](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-access.test.ts#L207), [#L236](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-access.test.ts#L236) (роль і email собі не видати), [#L266](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-access.test.ts#L266), e2e — розділ C |
+| AC-CARD-12 | **TS:** `validateClientCard` + `isBirthDate` (`src/lib/clients/card.ts`) — три помилки одразу, межа дати «сьогодні — коректно»; дія `createClientCard` повертає помилки й рівно введені значення. **SQL — та сама межа:** `clients_name_not_blank`, тригер дати народження, `clients_contact_by_type` (мова дитини). **Сторінка:** `card-form.tsx` — повідомлення біля полів | unit + дія + база + e2e | правило двічі: TS дає повідомлення PM, SQL — остання лінія для запиту в обхід форми, і кожен шар може втратити правило окремо. Межі — unit і база. «Біля відповідних полів» і «дані лишаються у формі» видно лише на сторінці (Client Component) — e2e | [card.test.ts#L117](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/clients/card.test.ts#L117), [#L129](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/clients/card.test.ts#L129), [actions.test.ts#L88](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/clients/actions.test.ts#L88), [client-cards.test.ts#L223](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-cards.test.ts#L223), [#L228](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-cards.test.ts#L228), [#L237](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-cards.test.ts#L237), e2e — розділ C |
 
 ### Покриття
 
+`npm run test:coverage` (v8): разом рядки 57,64 % (230 з 399) — і до, і після нових тестів: тести, що вбили мутантів,
+не додали жодного виконаного рядка. Цифри — з `coverage/coverage-summary.json`.
+
 | Файл за AC | Рядки | Гілки | Чим доведено, якщо 0 % |
 |---|---|---|---|
-| <!-- src/lib/<модуль>.ts --> | … % | … % | — |
-| <!-- src/app/<сторінка>/page.tsx --> | 0 % | 0 % | <!-- e2e: tests/e2e/….spec.ts --> |
+| `src/lib/clients/card.ts` (AC-CARD-12) | 92,5 % | 91,07 % | — (функції 85,71 %: не покрито `clientTypeLabel` — тип у картці, AC-CARD-01/02, поза 3 AC) |
+| `src/app/clients/actions.ts` (AC-CARD-12) | 100 % | 90 % | — |
+| `src/lib/holds/types.ts` (`isStaff`, текст без ролі — AC-CARD-11) | 100 % | 87,5 % | — |
+| `src/app/clients/[id]/page.tsx` (AC-CARD-05) | 88,88 % | 43,75 % | гілки сторінки — `tests/clients/pages.test.tsx` (AC-CARD-16); відмова терапевта на справжній базі — e2e AC-CARD-05 |
+| `src/app/clients/new/card-form.tsx` (AC-CARD-12) | 0 % | 0 % | Client Component: e2e AC-CARD-12 (повідомлення біля полів, дані у формі) |
+| `src/app/clients/new/page.tsx` (AC-CARD-12) | 0 % | 0 % | e2e AC-CARD-12 |
+| `src/app/page.tsx` (AC-CARD-11) | 0 % | 0 % | e2e AC-CARD-11 (лише повідомлення й «Sign out») |
+| `src/lib/supabase/viewer.ts` (AC-CARD-11) | 0 % | 0 % | адаптер Supabase (`getClaims`, роль з `profiles`): редірект без ролі — e2e AC-CARD-11; правило ролі — тести бази (`current_therapist_id`, `is_staff`) |
+| SQL: RLS, GRANT, тригер, check (AC-CARD-05, 11, 12) | — | — | JS-покриття SQL не бачить: SQL-мутації C1–C9 нижче |
 
 ### Доказ мутацією
 
+Вижилі мутанти на рядках 3 AC → тест, посилений з тексту AC → повторний прогін:
+
 | Мутант (файл:рядок, що змінено) | AC під загрозою | До | Тест, посилений з тексту AC | Після |
 |---|---|---|---|---|
-| <!-- src/lib/…/x.ts:14 `<=` → `<` --> | AC-…-NN | вижив | <!-- …/blob/<sha>/tests/…#L<N>: межа «…» з AC --> | убитий |
+| C5 · `supabase/migrations/20261012000000_profiles_and_roles.sql:45` `grant update (full_name)` → `grant update (full_name, role, email)` | AC-CARD-11 (і AC-CARD-05) | вижив | [client-access.test.ts#L236](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-access.test.ts#L236): newuser1 не видає собі роль і email терапевта, профіль без змін, даних клієнтів немає; [#L255](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-access.test.ts#L255): therapist1 не бере собі email therapist2 | убитий |
+| C7 · `20261023104436_client_cards.sql:62` тригер дати `>` → `>=` | AC-CARD-12 (межа: «дата, що дорівнює сьогоднішній, коректна») | вижив | [client-cards.test.ts#L228](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-cards.test.ts#L228): завтра — 23514, сьогодні — картку створено | убитий |
+| C8 · `20261023104436_client_cards.sql:43` `clients_contact_by_type` без `session_language is not null` | AC-CARD-12 («Select a session language.») | вижив | [client-cards.test.ts#L237](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-cards.test.ts#L237): дитина без мови — 23514, карток не додалося | убитий |
+| C9 · `20261021150100_slot_holds.sql:47` `clients_name_not_blank` → `check (true)` | AC-CARD-12 («Enter the client's name.») | вижив | [client-cards.test.ts#L223](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/db/client-cards.test.ts#L223): порожнє ім'я дитини — 23514, карток не додалося | убитий |
+| Stryker · `src/app/clients/actions.ts:22` `field("guardian_name")` → `field("")` | AC-CARD-12 (рівно три повідомлення; «всі введені дані лишаються у формі») | вижив | [actions.test.ts#L88](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/clients/actions.test.ts#L88): рівно три тексти з «Тоді» і рівно введені значення | убитий |
+| Stryker · `src/app/clients/actions.ts:15` `?? ""` → `?? "Stryker was here!"` | AC-CARD-12 (у форму не повертається email, якого не вводили) | вижив | той самий [actions.test.ts#L88](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/clients/actions.test.ts#L88) | убитий |
 
-- Stryker: <!-- score до → після, посилання на PR з виводом -->
-- SQL-мутації (`npm run mutation:sql`): <!-- таблиця з npm run mutation:sql -- --markdown (KILLED / SURVIVED / ERROR) з PR або «немає PGlite-гарнесу» -->
-- Еквівалентні мутанти: <!-- який і чому (рядок міграції чи коду, що робить його еквівалентним) або «немає» -->
+- **Stryker** (`npm run mutation:ts -- --mutate <файл>`, 10.1.1):
+  - `src/app/clients/actions.ts`: 67,65 % → **73,53 %** (вижило 7 → 5). Лишились поза 3 AC: шлях помилки бази після
+    успішної форми (`:39`, два мутанти — це AC-CARD-06/13, їх доводять тести бази через той самий шлях),
+    `revalidatePath` (`:41`, `:42` — кеш сторінок, AC-CARD-01) і `select("id")` (`:38` — мок не перевіряє колонок; потрібен
+    для переходу на нову картку, AC-CARD-01).
+  - `src/lib/clients/card.ts`: 85,56 % (154 убито, 15 вижило, 11 без покриття) і до, і після. На рядках AC-CARD-12
+    (`validateClientCard`, `isBirthDate`, 114–160) вижили лише 3 еквівалентні (нижче). Решта 12 поза 3 AC: підписи типу
+    `CLIENT_TYPE_LABEL` (AC-CARD-01/02/10), `NOT_PROVIDED` (картки зрізу 1), власні тексти `CARD_DATA_INVALID` і
+    `SAVE_FAILED` (PM текстів не дала), початкові значення `EMPTY_CARD_FORM` (чотири — порожня форма до введення),
+    типовий `message` і `42501` у `cardErrorCode` (мапа кодів бази AC-CARD-06/13).
+  - Ручні TS-мутанти на межах AC-CARD-12 (`node scripts/mutation-check.mjs --kind ts`): T1 `value <= today` → `<` —
+    KILLED тестом [card.test.ts#L129](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/clients/card.test.ts#L129); T2 «зупинитись після першої помилки» — KILLED тестом
+    [card.test.ts#L117](https://github.com/maryan-qc/therapy-scheduling/blob/{{SHA}}/tests/clients/card.test.ts#L117).
+- **SQL-мутації** (`npm run mutation:sql`, `scripts/mutants.mjs`): до — **7 з 11 вбито (64 %)**, вижили C5, C7, C8, C9;
+  після — **11 з 11 (100 %)**, ≈11 с. Таблиця `--markdown` — в описі PR.
+
+  | Мутант | AC | Що зламано | До | Після |
+  |---|---|---|---|---|
+  | C1 | AC-CARD-05 | `clients_select` → `using (true)` | KILLED | KILLED |
+  | C2 | AC-CARD-05 | «свій клієнт» без умови терапевта | KILLED | KILLED |
+  | C3 | AC-CARD-05 | `grant update` + політика `using (true)` на `clients` | KILLED | KILLED |
+  | C4 | AC-CARD-11 | `current_therapist_id()` без `role = 'therapist'` | KILLED | KILLED |
+  | C5 | AC-CARD-11 | колонковий grant `profiles` + `role`, `email` | SURVIVED | KILLED |
+  | C6 | AC-CARD-11 | `clients_insert_staff` → `with check (true)` | KILLED | KILLED |
+  | C7 | AC-CARD-12 | тригер дати `>` → `>=` | SURVIVED | KILLED |
+  | C8 | AC-CARD-12 | дитина без мови сеансів | SURVIVED | KILLED |
+  | C9 | AC-CARD-12 | `clients_name_not_blank` → `true` | SURVIVED | KILLED |
+  | T1 | AC-CARD-12 | `isBirthDate`: `<=` → `<` | KILLED | KILLED |
+  | T2 | AC-CARD-12 | не всі помилки одразу | KILLED | KILLED |
+
+- **Еквівалентні мутанти:** Stryker на `src/lib/clients/card.ts` — `:115` `if (!ISO_DATE.test(value))` → `if (false)` і два
+  мутанти якорів регексу `ISO_DATE` (`:111`). Еквівалентні через рядок 117: `parsed.toISOString().slice(0, 10) === value`
+  приймає лише рядок рівно у вигляді РРРР-ММ-ДД, тож без регексу результат той самий. `Stryker disable` не ставили — пояснення тут.
+- Ще з відгуку викладача до WS7: з тестів бази прибрано перевірки, що порівнювали TS-константу з її ж текстом
+  (`client-access.test.ts`: AC-CARD-05, 09, 11, 16, AC-HOLD-44; `client-cards.test.ts`: AC-CARD-15). Вони нічого не
+  доводили про базу, а текст на сторінці доводять `tests/clients/pages.test.tsx` і UAT.
 
 ## C. UAT на проді
 
