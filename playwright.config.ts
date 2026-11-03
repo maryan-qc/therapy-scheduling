@@ -39,6 +39,9 @@ export default defineConfig({
     locale: "uk-UA",
     timezoneId: "Europe/Kyiv",
     viewport: { width: 1280, height: 800 },
+    // Наше (відхилення від materials): система «просить менше руху» — застосунок вимикає всі анімації (DESIGN.md,
+    // розділ 7), тож кадр «Тоді» завжди кінцевий стан, а не середина появи повідомлення.
+    reducedMotion: "reduce",
     video: {
       mode: "on",
       size: { width: 1280, height: 800 },

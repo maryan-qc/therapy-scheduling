@@ -2,7 +2,7 @@ import { ActionAlerts } from "@/app/_components/action-alerts";
 import { Nav } from "@/app/_components/nav";
 import { TimeZoneNote } from "@/app/_components/time-zone-note";
 import { confirmHold } from "@/app/slots/actions";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -126,9 +126,9 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
                         <form action={confirmHold}>
                           <input type="hidden" name="back" value="/holds" />
                           <input type="hidden" name="hold_id" value={item.holdId} />
-                          <Button type="submit" variant="outline" size="sm">
+                          <SubmitButton variant="outline" size="sm">
                             Confirm
-                          </Button>
+                          </SubmitButton>
                         </form>
                       ) : null}
                     </TableCell>

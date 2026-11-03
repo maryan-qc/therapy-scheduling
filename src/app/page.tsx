@@ -1,7 +1,7 @@
 import { CircleAlertIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Alert, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { isStaff, NO_ROLE_MESSAGE } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
 import { signOut } from "./login/actions";
@@ -21,9 +21,7 @@ export default async function Home() {
         <AlertTitle>{NO_ROLE_MESSAGE}</AlertTitle>
       </Alert>
       <form action={signOut}>
-        <Button type="submit" variant="outline">
-          Sign out
-        </Button>
+        <SubmitButton variant="outline">Sign out</SubmitButton>
       </form>
     </main>
   );

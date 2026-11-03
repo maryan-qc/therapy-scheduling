@@ -61,6 +61,19 @@
   --text-small--line-height: 1.125rem;
   /* Ширина вмісту сторінки 1200px → клас max-w-content. */
   --container-content: 75rem;
+  /* Рух (DESIGN.md, розділ 7): рядок, щойно змінений дією, коротко підсвічується й згасає → клас animate-row-changed. */
+  --animate-row-changed: row-changed 1200ms ease-out;
+
+  /* Тінт тримається першу третину часу, щоб око встигло знайти рядок, потім рівно згасає. */
+  @keyframes row-changed {
+    0%,
+    35% {
+      background-color: color-mix(in oklch, var(--ring) 16%, transparent);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
 }
 
 :root {
@@ -154,5 +167,16 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Система просить менше руху — руху немає зовсім: переходи й анімації миттєві, спінер не крутиться. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

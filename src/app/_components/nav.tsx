@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { isStaff, type Role } from "@/lib/holds/types";
 
 type Section = "/slots" | "/holds" | "/schedule" | "/clients";
@@ -52,9 +53,9 @@ export function Nav({ email, role, current }: { email: string | null; role: Role
           <Badge variant="outline">{role ? ROLE_LABEL[role] : "No role"}</Badge>
         </span>
         <form action={signOut}>
-          <Button type="submit" variant="ghost" size="sm">
+          <SubmitButton variant="ghost" size="sm">
             Sign out
-          </Button>
+          </SubmitButton>
         </form>
       </div>
     </header>

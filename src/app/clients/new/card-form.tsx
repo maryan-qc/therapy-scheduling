@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlertIcon } from "lucide-react";
+import { CircleAlertIcon, Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { startTransition, useActionState, useState, type FormEvent, type ReactNode } from "react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
@@ -45,7 +45,11 @@ function Field({ id, label, error, children }: { id: string; label: string; erro
       <Label htmlFor={id}>{label}</Label>
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-small text-destructive" data-testid="field-error">
+        <p
+          id={`${id}-error`}
+          className="text-small text-destructive animate-in fade-in-0 duration-150"
+          data-testid="field-error"
+        >
           {error}
         </p>
       ) : null}
@@ -152,7 +156,8 @@ export function ClientCardForm({ today }: { today: string }) {
           ) : null}
 
           <div className="flex items-center gap-2">
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
+              {pending ? <Loader2Icon className="animate-spin" aria-hidden="true" data-icon="inline-start" /> : null}
               Create client card
             </Button>
             <Link href="/clients" className={buttonVariants({ variant: "ghost" })}>
