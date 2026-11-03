@@ -65,7 +65,7 @@ https://github.com/maryan-qc/therapy-scheduling/actions/runs/41618304612/job/125
 
 ## B. Якість тестів
 
-- PR якості тестів: <!-- …/pull/N -->
+- PR якості тестів: https://github.com/maryan-qc/therapy-scheduling/pull/34 (вивід Stryker і `mutation:sql` «до / після» — в описі)
 - Взято з `koldovsky/2026-quitcode-08-quality-hw/materials/testing`: `stryker.config.json`, `vitest.stryker.config.mts`,
   `scripts/mutation-check.mjs`, формат `scripts/mutants.mjs`. Гарнес `tests/db/supabase-pglite.ts` — наш з WS6.
 
