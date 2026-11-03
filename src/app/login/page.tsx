@@ -1,6 +1,6 @@
 import { CircleAlertIcon } from "lucide-react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +40,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
                 <AlertTitle>{message}</AlertTitle>
               </Alert>
             ) : null}
-            <Button type="submit">Sign in</Button>
+            <SubmitButton>Sign in</SubmitButton>
           </form>
         </CardContent>
       </Card>

@@ -6,14 +6,22 @@ import { CONFIRM_CODES, HOLD_CODES } from "@/lib/holds/messages";
 import { readCode } from "@/lib/holds/rules";
 import { requireViewer } from "@/lib/supabase/viewer";
 
-/** Повертаємось на сторінку, з якої прийшла форма (слоти дня або список утримань), з кодом результату в адресі. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Повертаємось на сторінку, з якої прийшла форма (слоти дня або список утримань), з кодом результату в адресі.
+ * Після успіху — ще й id рядка, який змінила дія (поле changed форми): сторінка коротко його підсвічує.
+ */
 function backTo(formData: FormData, key: "error" | "ok", code: string): string {
   const raw = String(formData.get("back") ?? "");
   const allowed = raw.startsWith("/slots") || raw.startsWith("/holds");
   const url = new URL(allowed ? raw : "/slots", "http://local");
   url.searchParams.delete("error");
   url.searchParams.delete("ok");
+  url.searchParams.delete("changed");
   url.searchParams.set(key, code);
+  const changed = String(formData.get("changed") ?? "");
+  if (key === "ok" && UUID.test(changed)) url.searchParams.set("changed", changed);
   return `${url.pathname}?${url.searchParams.toString()}`;
 }
 

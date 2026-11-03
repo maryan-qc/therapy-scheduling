@@ -3,6 +3,7 @@ import { ActionAlerts } from "@/app/_components/action-alerts";
 import { Nav } from "@/app/_components/nav";
 import { TimeZoneNote } from "@/app/_components/time-zone-note";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,6 +71,8 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
   ]);
   const therapists: TherapistRow[] = therapistRows ?? [];
   const clientQuery = first(params.client)?.trim() ?? "";
+  // Рядок, який щойно змінила дія (Hold чи Confirm), коротко підсвічується (DESIGN.md, розділ 7).
+  const changed = first(params.changed);
   const clients: ClientRow[] = allClients.filter((client) => matchesClient(client, clientQuery));
   const therapist = therapists.find((t) => t.id === first(params.therapist)) ?? therapists[0];
 
@@ -184,7 +187,11 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                 </TableHeader>
                 <TableBody>
                   {view.slots.map((slot) => (
-                    <TableRow key={slot.id} className={slot.status === "Past" ? "text-muted-foreground" : undefined}>
+                    <TableRow
+                      key={slot.id}
+                      className={slot.status === "Past" ? "text-muted-foreground" : undefined}
+                      data-changed={slot.id === changed || undefined}
+                    >
                       <TableCell className="tabular-nums">
                         {formatPracticeTime(slot.startsAt)}–{formatPracticeTime(slot.endsAt)}
                       </TableCell>
@@ -210,6 +217,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                             <form action={holdSlot} className="flex gap-2">
                               <input type="hidden" name="back" value={back} />
                               <input type="hidden" name="slot_id" value={slot.id} />
+                              <input type="hidden" name="changed" value={slot.id} />
                               <NativeSelect name="client_id" defaultValue="" size="sm" aria-label="Client">
                                 <NativeSelectOption value="" disabled>
                                   Client…
@@ -220,18 +228,19 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                                   </NativeSelectOption>
                                 ))}
                               </NativeSelect>
-                              <Button type="submit" variant="outline" size="sm">
+                              <SubmitButton variant="outline" size="sm">
                                 Hold
-                              </Button>
+                              </SubmitButton>
                             </form>
                           ) : null}
                           {slot.status === "Held" && slot.hold ? (
                             <form action={confirmHold}>
                               <input type="hidden" name="back" value={back} />
                               <input type="hidden" name="hold_id" value={slot.hold.id} />
-                              <Button type="submit" variant="outline" size="sm">
+                              <input type="hidden" name="changed" value={slot.id} />
+                              <SubmitButton variant="outline" size="sm">
                                 Confirm
-                              </Button>
+                              </SubmitButton>
                             </form>
                           ) : null}
                       </TableCell>
