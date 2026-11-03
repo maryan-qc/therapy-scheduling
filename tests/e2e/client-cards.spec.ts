@@ -101,7 +101,7 @@ test.describe("терапевт", () => {
           await expect(page.getByTestId("client-card")).toHaveCount(0);
           const text = await page.locator("body").innerText();
           expect(text).not.toContain("Client Nine");
-          expect(text).not.toContain("1985-07-01");
+          expect(text).not.toMatch(/1985/); // дата народження client9 у будь-якому форматі — за роком
           expect(await visibleEmails(page)).toEqual(["therapist1@example.test"]);
           expect(await asRole(browser, "scheduler", (p) => cardData(p, href))).toBe(cardBefore);
         },
