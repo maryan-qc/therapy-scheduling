@@ -188,7 +188,9 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
                 <TableBody>
                   {view.slots.map((slot) => (
                     <TableRow
-                      key={slot.id}
+                      // Код дії в ключі зміненого рядка: після Hold, а потім Confirm того самого слота рядок монтується
+                      // заново, і підсвітка запускається вдруге (інакше React лишив би той самий DOM з тим самим атрибутом).
+                      key={slot.id === changed ? `${slot.id}:${okCode}` : slot.id}
                       className={slot.status === "Past" ? "text-muted-foreground" : undefined}
                       data-changed={slot.id === changed || undefined}
                     >
