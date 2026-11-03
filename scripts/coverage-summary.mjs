@@ -16,7 +16,19 @@ const LAYERS = [
 const layerIndex = (file) => LAYERS.findIndex((l) => l.test.test(file));
 const pct = (m) => (m.total === 0 ? "—" : `${Math.floor(m.pct)} %`);
 
-const summary = JSON.parse(readFileSync(process.argv[2] ?? "coverage/coverage-summary.json", "utf8"));
+// Наше (відхилення від materials, за рев'ю CodeRabbit у PR воріт): у quality.yml крок іде з if: always(), тож звіту може
+// не бути (тести впали до репортера) — пояснюємо українською й виходимо з кодом 1, а не друкуємо виняток Node.
+const reportPath = process.argv[2] ?? "coverage/coverage-summary.json";
+let summary;
+try {
+  summary = JSON.parse(readFileSync(reportPath, "utf8"));
+} catch (error) {
+  console.error(
+    `coverage-summary: не вдалося прочитати ${reportPath} (${error.code ?? error.name}). ` +
+      "Спершу npm run test:coverage — звіт пише репортер json-summary.",
+  );
+  process.exit(1);
+}
 const rows = Object.entries(summary)
   .filter(([file]) => file !== "total")
   .map(([file, m]) => ({ file: path.relative(process.cwd(), file).replaceAll("\\", "/"), layer: layerIndex(file), m }))
