@@ -7,7 +7,7 @@ import { addDays } from "@/lib/holds/time";
 export function WeekNav({ monday, sunday }: { monday: string; sunday: string }) {
   const link = buttonVariants({ variant: "outline", size: "sm" });
   return (
-    <div className="flex items-center gap-3 text-sm">
+    <div className="flex flex-wrap items-center gap-3 text-sm">
       <Link href={`/schedule?week=${addDays(monday, -7)}`} className={link}>
         <ChevronLeftIcon aria-hidden="true" data-icon="inline-start" />
         Previous week

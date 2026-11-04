@@ -4,6 +4,7 @@ import { InfoIcon } from "lucide-react"
 import type { ComponentProps } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import type { HoldStatus, SlotStatus } from "@/lib/holds/status"
 
@@ -30,7 +31,7 @@ function StatusMark({ status, ...props }: { status: Status } & ComponentProps<"s
 }
 
 // Бейдж не отримує фокусу (інакше кожен рядок таблиці — зайва зупинка Tab), тож підказка на ньому — лише для миші;
-// з клавіатури ті самі пояснення дає StatusGuide.
+// з клавіатури й дотиком ті самі пояснення дає StatusGuide.
 function StatusBadge({ status, ...props }: { status: Status } & ComponentProps<"span">) {
   return (
     <Tooltip>
@@ -40,26 +41,25 @@ function StatusBadge({ status, ...props }: { status: Status } & ComponentProps<"
   )
 }
 
-// Довідка про всі статуси — одна кнопка на сторінку біля підпису поясу: відкривається наведенням і фокусом.
+// Довідка про всі статуси — одна кнопка на сторінку біля підпису поясу. Popover, а не підказка: відкривається
+// натисканням — мишею, дотиком, Enter чи пробілом; Esc закриває й повертає фокус на кнопку.
 function StatusGuide() {
   return (
-    <Tooltip>
-      <TooltipTrigger
-        closeOnClick={false}
-        render={<Button variant="ghost" size="xs" className="text-muted-foreground" />}
-      >
+    <Popover>
+      <PopoverTrigger render={<Button variant="ghost" size="xs" className="text-muted-foreground" />}>
         <InfoIcon aria-hidden="true" data-icon="inline-start" />
         Status guide
-      </TooltipTrigger>
-      <TooltipContent side="bottom" align="start" className="max-w-sm flex-col items-start gap-2 p-3">
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="start" className="w-96 gap-2 p-3">
+        <PopoverTitle>Statuses</PopoverTitle>
         {(Object.keys(STATUS) as Status[]).map((status) => (
-          <span key={status} className="flex items-center gap-2">
+          <span key={status} className="flex items-center gap-2 text-small">
             <StatusMark status={status} />
             {STATUS[status].hint}
           </span>
         ))}
-      </TooltipContent>
-    </Tooltip>
+      </PopoverContent>
+    </Popover>
   )
 }
 

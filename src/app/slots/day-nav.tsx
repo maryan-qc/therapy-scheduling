@@ -22,7 +22,7 @@ export function DayNav({
 }) {
   const link = buttonVariants({ variant: "outline", size: "sm" });
   return (
-    <nav aria-label="Days" className="flex items-center gap-2">
+    <nav aria-label="Days" className="flex flex-wrap items-center gap-2">
       <Link href={slotsHref(therapistId, addDays(date, -1), client)} className={link}>
         <ChevronLeftIcon aria-hidden="true" data-icon="inline-start" />
         Previous day
