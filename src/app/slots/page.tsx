@@ -1,36 +1,22 @@
+import { SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { ActionAlerts } from "@/app/_components/action-alerts";
 import { Nav } from "@/app/_components/nav";
 import { TimeZoneNote } from "@/app/_components/time-zone-note";
 import { Button } from "@/components/ui/button";
-import { SubmitButton } from "@/components/ui/submit-button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { NativeSelectOption } from "@/components/ui/native-select";
 import { matchesClient } from "@/lib/clients/search";
 import { buildDayView } from "@/lib/holds/day-view";
 import { CONFIRM_MESSAGES, HOLD_MESSAGES } from "@/lib/holds/messages";
-import {
-  formatPracticeDateTime,
-  formatPracticeTime,
-  isValidDate,
-  practiceDate,
-  practiceDayRange,
-} from "@/lib/holds/time";
-import {
-  clientContact,
-  staffPageError,
-  type ClientRow,
-  type HoldRow,
-  type SlotRow,
-  type TherapistRow,
-} from "@/lib/holds/types";
+import { isValidDate, practiceDate, practiceDayRange } from "@/lib/holds/time";
+import { staffPageError, type ClientRow, type HoldRow, type SlotRow, type TherapistRow } from "@/lib/holds/types";
 import { allRows } from "@/lib/supabase/all-rows";
 import { requireViewer } from "@/lib/supabase/viewer";
-import { confirmHold, holdSlot } from "./actions";
+import { DayNav, slotsHref } from "./day-nav";
+import { DaySlots } from "./slots-table";
+import { TherapistSelect } from "./therapist-select";
 
 const MESSAGES: Record<string, string> = {
   ...Object.fromEntries(Object.entries(HOLD_MESSAGES).map(([code, text]) => [`hold.${code}`, text])),
@@ -77,7 +63,8 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
   const therapist = therapists.find((t) => t.id === first(params.therapist)) ?? therapists[0];
 
   const requestedDate = first(params.date);
-  const date = requestedDate && isValidDate(requestedDate) ? requestedDate : practiceDate(now);
+  const today = practiceDate(now);
+  const date = requestedDate && isValidDate(requestedDate) ? requestedDate : today;
   const { start, end } = practiceDayRange(date);
 
   let slots: SlotRow[] = [];
@@ -106,7 +93,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
 
   const view = buildDayView(slots, holds, allClients, now);
 
-  const back = `/slots?${new URLSearchParams({ therapist: therapist?.id ?? "", date, client: clientQuery }).toString()}`;
+  const back = slotsHref(therapist?.id ?? "", date, clientQuery);
   const errorCode = first(params.error);
   const okCode = first(params.ok);
 
@@ -122,13 +109,13 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
           <form method="get" className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="therapist">Therapist</Label>
-              <NativeSelect id="therapist" name="therapist" defaultValue={therapist?.id}>
+              <TherapistSelect id="therapist" name="therapist" defaultValue={therapist?.id}>
                 {therapists.map((t) => (
                   <NativeSelectOption key={t.id} value={t.id}>
                     {t.name}
                   </NativeSelectOption>
                 ))}
-              </NativeSelect>
+              </TherapistSelect>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="date">Date</Label>
@@ -146,6 +133,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
               />
             </div>
             <Button type="submit" variant="outline">
+              <SearchIcon aria-hidden="true" data-icon="inline-start" />
               Show
             </Button>
           </form>
@@ -165,93 +153,13 @@ export default async function SlotsPage({ searchParams }: PageProps<"/slots">) {
         />
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold tabular-nums">
-            {therapist?.name ?? "No therapist"} · {date}
-          </h2>
-          {view.message ? (
-            <p data-testid="day-message" className="text-sm text-muted-foreground">
-              {view.message}
-            </p>
-          ) : null}
-          {view.slots.length > 0 ? (
-            <Card className="gap-0 py-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Held until</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {view.slots.map((slot) => (
-                    <TableRow
-                      // Код дії в ключі зміненого рядка: після Hold, а потім Confirm того самого слота рядок монтується
-                      // заново, і підсвітка запускається вдруге (інакше React лишив би той самий DOM з тим самим атрибутом).
-                      key={slot.id === changed ? `${slot.id}:${okCode}` : slot.id}
-                      className={slot.status === "Past" ? "text-muted-foreground" : undefined}
-                      data-changed={slot.id === changed || undefined}
-                    >
-                      <TableCell className="tabular-nums">
-                        {formatPracticeTime(slot.startsAt)}–{formatPracticeTime(slot.endsAt)}
-                      </TableCell>
-                      <TableCell data-testid="slot-status">
-                        <StatusBadge status={slot.status} />
-                      </TableCell>
-                      <TableCell>
-                        {slot.hold ? (
-                          `${slot.hold.clientName} (${slot.hold.clientContact})`
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="tabular-nums">
-                        {slot.hold?.heldUntil ? (
-                          `Held until ${formatPracticeDateTime(slot.hold.heldUntil)}`
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                          {slot.canHold ? (
-                            <form action={holdSlot} className="flex gap-2">
-                              <input type="hidden" name="back" value={back} />
-                              <input type="hidden" name="slot_id" value={slot.id} />
-                              <input type="hidden" name="changed" value={slot.id} />
-                              <NativeSelect name="client_id" defaultValue="" size="sm" aria-label="Client">
-                                <NativeSelectOption value="" disabled>
-                                  Client…
-                                </NativeSelectOption>
-                                {clients.map((client) => (
-                                  <NativeSelectOption key={client.id} value={client.id}>
-                                    {client.name} ({clientContact(client)})
-                                  </NativeSelectOption>
-                                ))}
-                              </NativeSelect>
-                              <SubmitButton variant="outline" size="sm">
-                                Hold
-                              </SubmitButton>
-                            </form>
-                          ) : null}
-                          {slot.status === "Held" && slot.hold ? (
-                            <form action={confirmHold}>
-                              <input type="hidden" name="back" value={back} />
-                              <input type="hidden" name="hold_id" value={slot.hold.id} />
-                              <input type="hidden" name="changed" value={slot.id} />
-                              <SubmitButton variant="outline" size="sm">
-                                Confirm
-                              </SubmitButton>
-                            </form>
-                          ) : null}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold tabular-nums">
+              {therapist?.name ?? "No therapist"} · {date}
+            </h2>
+            <DayNav therapistId={therapist?.id ?? ""} date={date} today={today} client={clientQuery} />
+          </div>
+          <DaySlots view={view} clients={clients} back={back} changed={changed} okCode={okCode} now={now} />
         </section>
 
       </main>

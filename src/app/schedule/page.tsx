@@ -1,22 +1,15 @@
-import Link from "next/link";
+import { CalendarXIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Nav } from "@/app/_components/nav";
 import { TimeZoneNote } from "@/app/_components/time-zone-note";
-import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { buildSchedule } from "@/lib/holds/schedule";
-import {
-  addDays,
-  formatPracticeDateTime,
-  formatPracticeTime,
-  isValidDate,
-  practiceDate,
-  practiceWeekRange,
-} from "@/lib/holds/time";
+import { formatPracticeDateTime, formatPracticeTime, isValidDate, practiceDate, practiceWeekRange } from "@/lib/holds/time";
 import { isStaff, type ClientName, type HoldRow, type SlotRow } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
+import { WeekNav } from "./week-nav";
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
@@ -66,7 +59,6 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   }
 
   const days = therapist ? buildSchedule(therapist.id, week.monday, slots, holds, clients, now) : [];
-  const weekLink = buttonVariants({ variant: "outline", size: "sm" });
 
   return (
     <>
@@ -77,24 +69,17 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             <h1 className="text-xl font-semibold tracking-tight">My schedule</h1>
             <TimeZoneNote />
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <Link href={`/schedule?week=${addDays(week.monday, -7)}`} className={weekLink}>
-              ← Previous week
-            </Link>
-            <span className="font-medium tabular-nums" data-testid="week">
-              {week.monday} – {week.sunday}
-            </span>
-            <Link href={`/schedule?week=${addDays(week.monday, 7)}`} className={weekLink}>
-              Next week →
-            </Link>
-          </div>
+          <WeekNav monday={week.monday} sunday={week.sunday} />
         </div>
         {therapist ? null : <p className="text-sm">No therapist is linked to {viewer.email ?? "this user"}.</p>}
         {days.map((day) => (
           <section key={day.date} className="flex flex-col gap-2">
             <h2 className="text-base font-semibold tabular-nums">{day.date}</h2>
             {day.slots.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No slots.</p>
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarXIcon className="size-4" aria-hidden="true" />
+                No slots.
+              </p>
             ) : (
               <Card className="gap-0 py-0">
                 <Table>

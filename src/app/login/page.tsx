@@ -1,4 +1,5 @@
-import { CircleAlertIcon } from "lucide-react";
+import { CircleAlertIcon, LogInIcon } from "lucide-react";
+import { Brand } from "@/app/_components/brand";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const message = typeof error === "string" ? ERRORS[error] : undefined;
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 py-16">
+    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
+      <Brand className="justify-center text-sm" />
       <Card>
         <CardHeader>
           <CardTitle>
@@ -40,7 +42,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
                 <AlertTitle>{message}</AlertTitle>
               </Alert>
             ) : null}
-            <SubmitButton>Sign in</SubmitButton>
+            <SubmitButton icon={<LogInIcon aria-hidden="true" data-icon="inline-start" />}>Sign in</SubmitButton>
           </form>
         </CardContent>
       </Card>

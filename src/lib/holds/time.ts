@@ -82,6 +82,17 @@ export function formatPracticeTime(instant: Date | string): string {
   return formatPracticeDateTime(instant).slice(11);
 }
 
+/** Скільки лишилось утриманню — після «Held until …»: «3 h 12 min left», «12 min left», «under a minute left»; потім «expired». */
+export function formatTimeLeft(ms: number): string {
+  if (ms <= 0) return "expired";
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 1) return "under a minute left";
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest} min left`;
+  return rest === 0 ? `${hours} h left` : `${hours} h ${rest} min left`;
+}
+
 export function addDays(date: string, days: number): string {
   const [y, m, d] = date.split("-").map(Number);
   const next = new Date(Date.UTC(y, m - 1, d + days));

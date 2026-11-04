@@ -1,4 +1,8 @@
+import { CheckIcon, HourglassIcon } from "lucide-react";
+import Link from "next/link";
 import { ActionAlerts } from "@/app/_components/action-alerts";
+import { EmptyState } from "@/app/_components/empty-state";
+import { HoldCountdown } from "@/app/_components/hold-countdown";
 import { Nav } from "@/app/_components/nav";
 import { TimeZoneNote } from "@/app/_components/time-zone-note";
 import { confirmHold } from "@/app/slots/actions";
@@ -89,7 +93,16 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
           ok={okCode ? MESSAGES[okCode] : undefined}
         />
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No holds.</p>
+          <EmptyState
+            icon={<HourglassIcon aria-hidden="true" />}
+            tone="held"
+            title="No holds."
+            hint={
+              <>
+                Hold a free slot on the <Link href="/slots">Slots</Link> page.
+              </>
+            }
+          />
         ) : (
           <Card className="gap-0 py-0">
             <Table>
@@ -116,7 +129,10 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
                     </TableCell>
                     <TableCell className="tabular-nums">
                       {item.heldUntil ? (
-                        formatPracticeDateTime(item.heldUntil)
+                        <>
+                          {formatPracticeDateTime(item.heldUntil)}
+                          {item.status === "Held" ? <HoldCountdown until={item.heldUntil} now={now.getTime()} /> : null}
+                        </>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -126,7 +142,11 @@ export default async function HoldsPage({ searchParams }: PageProps<"/holds">) {
                         <form action={confirmHold}>
                           <input type="hidden" name="back" value="/holds" />
                           <input type="hidden" name="hold_id" value={item.holdId} />
-                          <SubmitButton variant="outline" size="sm">
+                          <SubmitButton
+                            variant="outline"
+                            size="sm"
+                            icon={<CheckIcon aria-hidden="true" data-icon="inline-start" />}
+                          >
                             Confirm
                           </SubmitButton>
                         </form>
