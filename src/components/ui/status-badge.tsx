@@ -50,7 +50,8 @@ function StatusGuide() {
         <InfoIcon aria-hidden="true" data-icon="inline-start" />
         Status guide
       </PopoverTrigger>
-      <PopoverContent side="bottom" align="start" className="w-96 gap-2 p-3">
+      {/* 384 px, але не ширше за місце до краю екрана (--available-width рахує Base UI). */}
+      <PopoverContent side="bottom" align="start" className="w-96 max-w-(--available-width) gap-2 p-3">
         <PopoverTitle>Statuses</PopoverTitle>
         {(Object.keys(STATUS) as Status[]).map((status) => (
           <span key={status} className="flex items-center gap-2 text-small">
