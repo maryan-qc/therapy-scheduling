@@ -1,3 +1,4 @@
+import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { ActionAlerts } from "@/app/_components/action-alerts";
 import { Nav } from "@/app/_components/nav";
@@ -44,7 +45,8 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
       <Nav email={viewer.email} role={viewer.role} current="/clients" />
       <main className="mx-auto flex w-full max-w-content flex-1 flex-col gap-6 px-6 py-6">
         <Link href="/clients" className={buttonVariants({ variant: "ghost", size: "sm", className: "self-start" })}>
-          ← {staff ? "Clients" : "My clients"}
+          <ArrowLeftIcon aria-hidden="true" data-icon="inline-start" />
+          {staff ? "Clients" : "My clients"}
         </Link>
         {client ? (
           <>

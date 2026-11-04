@@ -1,4 +1,4 @@
-import { CircleAlertIcon } from "lucide-react";
+import { CircleAlertIcon, LogOutIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -21,7 +21,9 @@ export default async function Home() {
         <AlertTitle>{NO_ROLE_MESSAGE}</AlertTitle>
       </Alert>
       <form action={signOut}>
-        <SubmitButton variant="outline">Sign out</SubmitButton>
+        <SubmitButton variant="outline" icon={<LogOutIcon aria-hidden="true" data-icon="inline-start" />}>
+          Sign out
+        </SubmitButton>
       </form>
     </main>
   );

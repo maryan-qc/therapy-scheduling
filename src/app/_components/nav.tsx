@@ -1,4 +1,7 @@
+import { CalendarDaysIcon, CalendarRangeIcon, HourglassIcon, LogOutIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
+import type * as React from "react";
+import { Brand } from "@/app/_components/brand";
 import { signOut } from "@/app/login/actions";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -9,7 +12,18 @@ type Section = "/slots" | "/holds" | "/schedule" | "/clients";
 
 const ROLE_LABEL: Record<Role, string> = { admin: "Admin", scheduler: "Scheduler", therapist: "Therapist" };
 
-function NavLink({ href, current, children }: { href: Section; current?: Section; children: string }) {
+// Іконки — лише поруч зі словом (DESIGN.md, розділ 5): назва пункту для людей і тестів не змінюється.
+function NavLink({
+  href,
+  current,
+  icon: Icon,
+  children,
+}: {
+  href: Section;
+  current?: Section;
+  icon: React.ComponentType<React.ComponentProps<"svg">>;
+  children: string;
+}) {
   const active = href === current;
   return (
     <Link
@@ -17,6 +31,7 @@ function NavLink({ href, current, children }: { href: Section; current?: Section
       aria-current={active ? "page" : undefined}
       className={buttonVariants({ variant: active ? "secondary" : "ghost", size: "sm" })}
     >
+      <Icon aria-hidden="true" data-icon="inline-start" />
       {children}
     </Link>
   );
@@ -26,24 +41,24 @@ export function Nav({ email, role, current }: { email: string | null; role: Role
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-14 w-full max-w-content items-center gap-4 px-6 text-sm">
-        <span className="font-semibold">Therapy scheduling</span>
+        <Brand />
         <nav className="flex gap-1">
           {isStaff(role) ? (
             <>
-              <NavLink href="/slots" current={current}>
+              <NavLink href="/slots" current={current} icon={CalendarDaysIcon}>
                 Slots
               </NavLink>
-              <NavLink href="/holds" current={current}>
+              <NavLink href="/holds" current={current} icon={HourglassIcon}>
                 Holds
               </NavLink>
             </>
           ) : (
-            <NavLink href="/schedule" current={current}>
+            <NavLink href="/schedule" current={current} icon={CalendarRangeIcon}>
               My schedule
             </NavLink>
           )}
           {role ? (
-            <NavLink href="/clients" current={current}>
+            <NavLink href="/clients" current={current} icon={UsersIcon}>
               {isStaff(role) ? "Clients" : "My clients"}
             </NavLink>
           ) : null}
@@ -53,7 +68,7 @@ export function Nav({ email, role, current }: { email: string | null; role: Role
           <Badge variant="outline">{role ? ROLE_LABEL[role] : "No role"}</Badge>
         </span>
         <form action={signOut}>
-          <SubmitButton variant="ghost" size="sm">
+          <SubmitButton variant="ghost" size="sm" icon={<LogOutIcon aria-hidden="true" data-icon="inline-start" />}>
             Sign out
           </SubmitButton>
         </form>

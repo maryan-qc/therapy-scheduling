@@ -1,4 +1,6 @@
+import { UserPlusIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
+import { EmptyState } from "@/app/_components/empty-state";
 import { Nav } from "@/app/_components/nav";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,14 +38,17 @@ export default async function ClientsPage() {
           <h1 className="text-xl font-semibold tracking-tight">{staff ? "Clients" : "My clients"}</h1>
           {staff ? (
             <Link href="/clients/new" className={buttonVariants()}>
+              <UserPlusIcon aria-hidden="true" data-icon="inline-start" />
               New client card
             </Link>
           ) : null}
         </div>
         {clients.length === 0 ? (
-          <p className="text-sm text-muted-foreground" data-testid="clients-empty">
-            {staff ? NO_CARDS_YET : NO_CLIENTS_YET}
-          </p>
+          <EmptyState
+            icon={<UsersIcon aria-hidden="true" />}
+            title={staff ? NO_CARDS_YET : NO_CLIENTS_YET}
+            testId="clients-empty"
+          />
         ) : (
           <Card className="gap-0 py-0">
             <Table>

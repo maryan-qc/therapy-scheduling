@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlertIcon, Loader2Icon } from "lucide-react";
+import { CircleAlertIcon, Loader2Icon, UserPlusIcon } from "lucide-react";
 import Link from "next/link";
 import { startTransition, useActionState, useState, type FormEvent, type ReactNode } from "react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
@@ -157,7 +157,11 @@ export function ClientCardForm({ today }: { today: string }) {
 
           <div className="flex items-center gap-2">
             <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
-              {pending ? <Loader2Icon className="animate-spin" aria-hidden="true" data-icon="inline-start" /> : null}
+              {pending ? (
+                <Loader2Icon className="animate-spin" aria-hidden="true" data-icon="inline-start" />
+              ) : (
+                <UserPlusIcon aria-hidden="true" data-icon="inline-start" />
+              )}
               Create client card
             </Button>
             <Link href="/clients" className={buttonVariants({ variant: "ghost" })}>
