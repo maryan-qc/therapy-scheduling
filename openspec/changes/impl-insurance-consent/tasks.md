@@ -18,16 +18,16 @@
 
 ## 2. Документи згоди (`task/consent-documents`)
 
-- [ ] 2.1 Міграція `…_consent_documents.sql`: таблиця, RLS, `prepare_consent_documents`, `sign_consent_document`,
+- [x] 2.1 Міграція `…_consent_documents.sql`: таблиця, RLS, `prepare_consent_documents`, `sign_consent_document`,
   `confirm_hold_at` з `UNSIGNED_DOCUMENTS`; `database.types.ts`.
   Done when: `db-check` зелений; після merge — зелений `db-deploy`.
-- [ ] 2.2 `src/lib/clients/consent.ts`, дії `prepareConsentDocuments` і `signConsentDocument`, розділ «Consent
+- [x] 2.2 `src/lib/clients/consent.ts`, дії `prepareConsentDocuments` і `signConsentDocument`, розділ «Consent
   documents» на `/clients/[id]`, сторінка документа.
   Done when: AC-DOC-01, AC-DOC-02, AC-DOC-03, AC-DOC-04, AC-DOC-05, AC-DOC-06.
-- [ ] 2.3 Підтвердження утримання з документами: повідомлення, тести бази для обох гілок і для клієнта без документів
+- [x] 2.3 Підтвердження утримання з документами: повідомлення, тести бази для обох гілок і для клієнта без документів
   (зріз 1 без змін).
   Done when: AC-DOC-07, AC-DOC-08.
-- [ ] 2.4 Тести відмов: терапевт бачить документ свого клієнта й не позначає підпис; чужий клієнт — 0 рядків; `anon` —
+- [x] 2.4 Тести відмов: терапевт бачить документ свого клієнта й не позначає підпис; чужий клієнт — 0 рядків; `anon` —
   permission denied; стан не змінився.
   Done when: AC-DOC-09, AC-DOC-10, AC-DOC-11.
 

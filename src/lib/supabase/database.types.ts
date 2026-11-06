@@ -130,6 +130,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      consent_documents: {
+        Row: {
+          id: string;
+          client_id: string;
+          kind: string;
+          position: number;
+          prepared_at: string;
+          signed_at: string | null;
+          signed_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          client_id: string;
+          kind: string;
+          position: number;
+          prepared_at: string;
+          signed_at?: string | null;
+          signed_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          client_id?: string;
+          kind?: string;
+          position?: number;
+          prepared_at?: string;
+          signed_at?: string | null;
+          signed_by?: string | null;
+        };
+        Relationships: [];
+      };
       holds: {
         Row: {
           id: string;
@@ -196,6 +226,14 @@ export type Database = {
       };
       set_insurance_status: {
         Args: { p_client_id: string; p_status: string };
+        Returns: Json;
+      };
+      prepare_consent_documents: {
+        Args: { p_client_id: string };
+        Returns: Json;
+      };
+      sign_consent_document: {
+        Args: { p_document_id: string };
         Returns: Json;
       };
     };

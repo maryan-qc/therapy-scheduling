@@ -12,14 +12,21 @@ import {
   NOT_PROVIDED,
   type ClientCardRow,
 } from "@/lib/clients/card";
-import { INSURANCE_MESSAGES, INSURANCE_SAVED, type InsuranceErrorCode } from "@/lib/clients/insurance";
+import { CONSENT_COLUMNS, CONSENT_MESSAGES, type ConsentDocumentRow } from "@/lib/clients/consent";
+import { INSURANCE_MESSAGES, INSURANCE_SAVED } from "@/lib/clients/insurance";
 import { isStaff } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
-import { setInsuranceStatus } from "@/app/clients/actions";
+import { prepareConsentDocuments, setInsuranceStatus, signConsentDocument } from "@/app/clients/actions";
+import { ConsentSection } from "./consent-section";
 import { InsuranceSection } from "./insurance-section";
 
 // Результат дії з адреси (?ok=): тексти — з AC.
 const OK_MESSAGES: Record<string, string> = { created: "Client created.", insurance: INSURANCE_SAVED };
+// Відмови дій картки (?error=insurance.… / consent.…).
+const ERROR_MESSAGES: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(INSURANCE_MESSAGES).map(([code, text]) => [`insurance.${code}`, text])),
+  ...Object.fromEntries(Object.entries(CONSENT_MESSAGES).map(([code, text]) => [`consent.${code}`, text])),
+};
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -40,11 +47,20 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
   const viewer = await requireViewer();
   const staff = isStaff(viewer.role);
   // Некоректний id — картки немає; помилка запиту — сторінка помилки, а не «не знайдено» чи «немає доступу».
-  const { data, error } = UUID.test(id)
-    ? await viewer.supabase.from("clients").select(CARD_COLUMNS).eq("id", id).maybeSingle()
-    : { data: null, error: null };
+  // Картка й документи згоди одне від одного не залежать — паралельно; обидва рядки фільтрує RLS (AC-DOC-09, 10).
+  const [{ data, error }, { data: documentRows, error: documentsError }] = UUID.test(id)
+    ? await Promise.all([
+        viewer.supabase.from("clients").select(CARD_COLUMNS).eq("id", id).maybeSingle(),
+        viewer.supabase.from("consent_documents").select(CONSENT_COLUMNS).eq("client_id", id),
+      ])
+    : [
+        { data: null, error: null },
+        { data: [], error: null },
+      ];
   if (error) throw error;
+  if (documentsError) throw documentsError;
   const client: ClientCardRow | null = data;
+  const documents: ConsentDocumentRow[] = documentRows ?? [];
 
   return (
     <>
@@ -56,7 +72,7 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
         </Link>
         {client ? (
           <>
-            <ActionAlerts ok={OK_MESSAGES[String(query.ok)]} error={INSURANCE_MESSAGES[query.error as InsuranceErrorCode]} />
+            <ActionAlerts ok={OK_MESSAGES[String(query.ok)]} error={ERROR_MESSAGES[String(query.error)]} />
             <Card className="max-w-2xl">
               <CardHeader>
                 <CardTitle>
@@ -83,6 +99,13 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
                   status={client.insurance_status}
                   canEdit={staff}
                   action={setInsuranceStatus}
+                />
+                <ConsentSection
+                  clientId={client.id}
+                  documents={documents}
+                  canEdit={staff}
+                  prepare={prepareConsentDocuments}
+                  sign={signConsentDocument}
                 />
               </CardContent>
             </Card>
