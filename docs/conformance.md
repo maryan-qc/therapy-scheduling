@@ -93,12 +93,12 @@
 | AC-CARD-14 | «Held» робить клієнта своїм лише до початку слоту, минулий «Confirmed» — без обмеження | `supabase/migrations/20261027073004_client_cards_clarify.sql` (`is_client_of_current_therapist`), `src/app/clients/page.tsx`, `src/app/clients/[id]/page.tsx` | `tests/db/client-access.test.ts` | реалізовано |
 | AC-CARD-15 | порожній список клієнтів для планувальника й адміністратора | `src/app/clients/page.tsx`, `src/lib/clients/card.ts` (`NO_CARDS_YET`) | `tests/db/client-cards.test.ts`, `tests/clients/card.test.ts`, `tests/clients/pages.test.tsx` | реалізовано |
 | AC-CARD-16 | картка, якої немає: «This client card doesn't exist.» / як для чужої | `src/app/clients/[id]/page.tsx`, `src/lib/clients/card.ts` (`CARD_NOT_FOUND`) | `tests/db/client-access.test.ts`, `tests/clients/card.test.ts`, `tests/clients/pages.test.tsx` | реалізовано |
-| AC-INS-01 | картка без позначки — «Insurance: Not set» | — | — | відкладено (чекає реалізації) |
-| AC-INS-02 | планувальник позначає «Verified» — «Insurance status saved.», статус зберігся | — | — | відкладено (чекає реалізації) |
-| AC-INS-03 | адміністратор змінює на «Private pay», інший планувальник бачить | — | — | відкладено (чекає реалізації) |
-| AC-INS-04 | терапевт бачить статус свого клієнта без зміни | — | — | відкладено (чекає реалізації) |
-| AC-INS-05 | терапевт напряму не змінює статус | — | — | відкладено (чекає реалізації) |
-| AC-INS-06 | без входу — лише сторінка входу, статус не змінився | — | — | відкладено (чекає реалізації) |
+| AC-INS-01 | картка без позначки — «Insurance: Not set» | `supabase/migrations/20261106170000_insurance_status.sql` (default), `src/lib/clients/insurance.ts`, `src/app/clients/[id]/insurance-section.tsx` | `tests/db/insurance-status.test.ts`, `tests/clients/insurance.test.tsx` | реалізовано |
+| AC-INS-02 | планувальник позначає «Verified» — «Insurance status saved.», статус зберігся | `supabase/migrations/20261106170000_insurance_status.sql` (`set_insurance_status`), `src/app/clients/actions.ts` (`setInsuranceStatus`), `src/app/clients/[id]/insurance-section.tsx` | `tests/db/insurance-status.test.ts`, `tests/clients/insurance.test.tsx` | реалізовано |
+| AC-INS-03 | адміністратор змінює на «Private pay», інший планувальник бачить | `supabase/migrations/20261106170000_insurance_status.sql` (`set_insurance_status`), `src/app/clients/[id]/page.tsx` | `tests/db/insurance-status.test.ts`, `tests/clients/insurance.test.tsx` | реалізовано |
+| AC-INS-04 | терапевт бачить статус свого клієнта без зміни | `src/app/clients/[id]/insurance-section.tsx` (форма лише персоналу), RLS `clients_select` | `tests/db/insurance-status.test.ts`, `tests/clients/insurance.test.tsx` | реалізовано |
+| AC-INS-05 | терапевт напряму не змінює статус | `supabase/migrations/20261106170000_insurance_status.sql` (роль у `set_insurance_status`, без GRANT update) | `tests/db/insurance-status.test.ts` | реалізовано |
+| AC-INS-06 | без входу — лише сторінка входу, статус не змінився | `supabase/migrations/20261106170000_insurance_status.sql` (revoke від anon), `src/proxy.ts` | `tests/db/insurance-status.test.ts` | реалізовано |
 | AC-DOC-01 | документів не формували — «No consent documents yet.» | — | — | відкладено (чекає реалізації) |
 | AC-DOC-02 | формування для «Adult» — два документи «Not signed» і «Missing signatures: …» | — | — | відкладено (чекає реалізації) |
 | AC-DOC-03 | формування для «Child» — три документи «Not signed» | — | — | відкладено (чекає реалізації) |

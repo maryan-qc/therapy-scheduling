@@ -51,7 +51,7 @@ export const NO_CARDS_YET = "No clients yet. Create a client card from an intake
 
 /** Картка так, як її читають сторінки /clients і /clients/[id] (рядки фільтрує RLS clients_select). */
 export const CARD_COLUMNS =
-  "id, name, client_type, date_of_birth, session_language, email, guardian_name, guardian_email" as const;
+  "id, name, client_type, date_of_birth, session_language, email, guardian_name, guardian_email, insurance_status" as const;
 
 export interface ClientCardRow {
   id: string;
@@ -62,6 +62,7 @@ export interface ClientCardRow {
   email: string | null;
   guardian_name: string | null;
   guardian_email: string | null;
+  insurance_status: string;
 }
 
 export function clientTypeLabel(type: string): string {
