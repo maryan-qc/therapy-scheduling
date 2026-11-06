@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cardErrorCode, cardRoleError, validateClientCard, type CardErrorCode, type CardForm } from "@/lib/clients/card";
+import { insuranceResult } from "@/lib/clients/insurance";
 import { practiceDate } from "@/lib/holds/time";
 import { requireViewer } from "@/lib/supabase/viewer";
 
@@ -41,4 +42,21 @@ export async function createClientCard(_previous: CardFormState, formData: FormD
   revalidatePath("/clients");
   revalidatePath("/slots");
   redirect(`/clients/${data.id}?ok=created`);
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Статус перевірки страхування (AC-INS-02, 03, 05): хто може позначати й які значення, перевіряє функція бази
+// set_insurance_status, тож прямий виклик дії терапевтом нічого не змінює.
+export async function setInsuranceStatus(formData: FormData): Promise<void> {
+  const clientId = String(formData.get("client_id") ?? "");
+  if (!UUID.test(clientId)) redirect("/clients");
+  const viewer = await requireViewer();
+  const { data, error } = await viewer.supabase.rpc("set_insurance_status", {
+    p_client_id: clientId,
+    p_status: String(formData.get("insurance_status") ?? ""),
+  });
+  const code = error ? "SAVE_FAILED" : insuranceResult((data as { code?: unknown } | null)?.code);
+  revalidatePath(`/clients/${clientId}`);
+  redirect(code === "OK" ? `/clients/${clientId}?ok=insurance` : `/clients/${clientId}?error=${code}`);
 }
