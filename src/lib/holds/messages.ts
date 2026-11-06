@@ -16,6 +16,7 @@ export const CONFIRM_MESSAGES: Record<ConfirmCode, string> = {
   ALREADY_CONFIRMED: "This hold is already confirmed.",
   HOLD_EXPIRED: "This hold has expired. Hold the slot again.",
   SLOT_STARTED: "This slot has already started and cannot be confirmed.",
+  UNSIGNED_DOCUMENTS: "Sign all consent documents before confirming.", // AC-DOC-07 (requirements/34-…)
   NOT_FOUND: "This hold is no longer available.",
 };
 

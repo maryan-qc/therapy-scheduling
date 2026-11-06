@@ -8,6 +8,7 @@ export type ConfirmCode =
   | "ALREADY_CONFIRMED"
   | "HOLD_EXPIRED"
   | "SLOT_STARTED"
+  | "UNSIGNED_DOCUMENTS"
   | "NOT_FOUND";
 
 /** Код із відповіді функції бази ({ code: … }); незрозуміла відповідь — NOT_FOUND. */
