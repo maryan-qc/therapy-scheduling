@@ -98,6 +98,7 @@ export type Database = {
           session_language: string | null;
           guardian_name: string | null;
           guardian_email: string | null;
+          insurance_status: string;
           created_by: string | null;
           created_at: string;
         };
@@ -110,6 +111,7 @@ export type Database = {
           session_language?: string | null;
           guardian_name?: string | null;
           guardian_email?: string | null;
+          insurance_status?: string;
           created_by?: string | null;
           created_at?: string;
         };
@@ -122,6 +124,7 @@ export type Database = {
           session_language?: string | null;
           guardian_name?: string | null;
           guardian_email?: string | null;
+          insurance_status?: string;
           created_by?: string | null;
           created_at?: string;
         };
@@ -189,6 +192,10 @@ export type Database = {
       };
       confirm_hold: {
         Args: { p_hold_id: string };
+        Returns: Json;
+      };
+      set_insurance_status: {
+        Args: { p_client_id: string; p_status: string };
         Returns: Json;
       };
     };

@@ -7,12 +7,12 @@
 
 ## 1. Статус перевірки страхування (`task/insurance-status`)
 
-- [ ] 1.1 Міграція `…_insurance_status.sql`: колонка з default і check, `set_insurance_status` (private + public),
+- [x] 1.1 Міграція `…_insurance_status.sql`: колонка з default і check, `set_insurance_status` (private + public),
   права; `database.types.ts`.
   Done when: `db-check` зелений; після merge — зелений `db-deploy`.
-- [ ] 1.2 `src/lib/clients/insurance.ts`, дія `setInsuranceStatus`, рядок і форма на `/clients/[id]`.
+- [x] 1.2 `src/lib/clients/insurance.ts`, дія `setInsuranceStatus`, рядок і форма на `/clients/[id]`.
   Done when: AC-INS-01, AC-INS-02, AC-INS-03, AC-INS-04.
-- [ ] 1.3 Тести відмов (PGlite): терапевт через RPC і прямий `update` — відмова, статус той самий; `anon` — permission
+- [x] 1.3 Тести відмов (PGlite): терапевт через RPC і прямий `update` — відмова, статус той самий; `anon` — permission
   denied; «Not set» повернути не можна.
   Done when: AC-INS-05, AC-INS-06.
 
