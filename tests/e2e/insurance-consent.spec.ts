@@ -132,7 +132,7 @@ test.describe("статус перевірки страхування — пла
 
   test(
     "AC-INS-01: scheduler1 відкриває щойно створену картку client6 — «Insurance: Not set»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-INS-01" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-INS-01" } },
     async ({ page }) => {
       let href = "";
       const c6 = fresh("Client Six", "c6");
@@ -154,7 +154,7 @@ test.describe("статус перевірки страхування — пла
 
   test(
     "AC-INS-02: scheduler1 позначає «Verified» — «Insurance status saved.» і «Insurance: Verified» після повторного відкриття",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-INS-02" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-INS-02" } },
     async ({ page }) => {
       let href = "";
       const c6 = fresh("Client Six", "c6");
@@ -197,7 +197,7 @@ test.describe("статус перевірки страхування — пла
 
   test(
     "AC-INS-03: admin1 змінює «Verified» на «Private pay» — admin1 і scheduler2 бачать «Insurance: Private pay»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-INS-03" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-INS-03" } },
     async ({ page, browser }) => {
       let href = "";
       const c7 = fresh("Client Seven", "g7");
@@ -262,7 +262,7 @@ test.describe("статус перевірки страхування — тер
 
   test(
     "AC-INS-04: therapist1 відкриває картку свого client6 — «Insurance: Not accepted» без можливості змінити",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-INS-04" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-INS-04" } },
     async ({ page, browser }) => {
       let href = "";
       await given("client6 — свій клієнт therapist1, і картка client6 показує «Insurance: Not accepted»", async () => {
@@ -289,7 +289,7 @@ test.describe("статус перевірки страхування — тер
 
   test(
     "AC-INS-05: therapist1 напряму, оминаючи сторінки, пробує змінити статус client6 на «Verified» — scheduler1 бачить «Insurance: Not accepted»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-INS-05" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-INS-05" } },
     async ({ page, browser }) => {
       let href = "";
       let answer: unknown;
@@ -342,7 +342,7 @@ test.describe("статус перевірки страхування — тер
 test.describe("без входу", () => {
   test(
     "AC-INS-06: користувач без входу відкриває картку client6 — лише сторінка входу, scheduler1 бачить «Insurance: Verified»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-INS-06" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-INS-06" } },
     async ({ page, browser }) => {
       let href = "";
       await given("користувач не увійшов у застосунок, а картка client6 показує «Insurance: Verified»", async () => {
@@ -390,7 +390,7 @@ test.describe("без входу", () => {
 
   test(
     "AC-DOC-11: користувач без входу відкриває документ «Consent to treatment» client6 — лише сторінка входу, стан не змінився",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-11" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-11" } },
     async ({ page, browser }) => {
       let link = "";
       let before = "";
@@ -431,7 +431,7 @@ test.describe("документи згоди — планувальник", () =
 
   test(
     "AC-DOC-01: scheduler1 відкриває картку client6 без документів — «No consent documents yet.» і жодного документа",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-01" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-01" } },
     async ({ page }) => {
       let href = "";
       await given("картку client6 (тип «Adult») створено, і документів згоди для неї ще не формували", async () => {
@@ -456,7 +456,7 @@ test.describe("документи згоди — планувальник", () =
 
   test(
     "AC-DOC-02: scheduler1 формує документи для client6 (Adult) — два «Not signed» і «Missing signatures: …»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-02" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-02" } },
     async ({ page }) => {
       let href = "";
       await given("для client6 (тип «Adult») документів згоди ще немає", async () => {
@@ -496,7 +496,7 @@ test.describe("документи згоди — планувальник", () =
 
   test(
     "AC-DOC-03: scheduler1 формує документи для client7 (Child) — три «Not signed»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-03" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-03" } },
     async ({ page }) => {
       let href = "";
       await given("для client7 (тип «Child», опікун «Guardian Seven») документів згоди ще немає", async () => {
@@ -533,7 +533,7 @@ test.describe("документи згоди — планувальник", () =
 
   test(
     "AC-DOC-04: scheduler1 відкриває «Release of information» client7 — заголовок, Client, Guardian і Prepared",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-04" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-04" } },
     async ({ page }) => {
       let link = "";
       let name = "";
@@ -578,7 +578,7 @@ test.describe("документи згоди — планувальник", () =
 
   test(
     "AC-DOC-05: scheduler1 позначає «Consent to treatment» підписаним — «Signed <дата> <час>», лишився «Cancellation policy acknowledgement»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-05" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-05" } },
     async ({ page }) => {
       let href = "";
       let before = 0;
@@ -627,7 +627,7 @@ test.describe("документи згоди — планувальник", () =
 
   test(
     "AC-DOC-06: scheduler2 позначає «Cancellation policy acknowledgement» — обидва «Signed …» і «All consent documents signed.»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-06" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-06" } },
     async ({ page, browser }) => {
       let href = "";
       await given("«Consent to treatment» client6 має стан «Signed», а «Cancellation policy acknowledgement» — «Not signed»", async () => {
@@ -663,7 +663,7 @@ test.describe("документи згоди — планувальник", () =
 
   test(
     "AC-DOC-07: scheduler1 пробує підтвердити утримання client6 з непідписаним документом — «Sign all consent documents before confirming.», «Held»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-07" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-07" } },
     async ({ page }) => {
       const c6 = fresh("Client Six", "c6");
       let heldUntil = "";
@@ -705,7 +705,7 @@ test.describe("документи згоди — планувальник", () =
 
   test(
     "AC-DOC-08: усі документи client6 підписано — scheduler1 підтверджує утримання, слот «Confirmed» без «Held until»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-08" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-08" } },
     async ({ page }) => {
       const c6 = fresh("Client Six", "c6");
       await given(
@@ -747,7 +747,7 @@ test.describe("документи згоди — терапевт", () => {
 
   test(
     "AC-DOC-09: therapist1 відкриває «Consent to treatment» свого client6 — документ і «Not signed», без позначки підпису",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-09" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-09" } },
     async ({ page, browser }) => {
       let link = "";
       await given("client6 — свій клієнт therapist1, і документ «Consent to treatment» client6 має стан «Not signed»", async () => {
@@ -797,7 +797,7 @@ test.describe("документи згоди — терапевт", () => {
 
   test(
     "AC-DOC-10: therapist1 відкриває «Consent to treatment» client9 (свій лише для therapist2) — «You don't have access to this client.»",
-    { tag: ["@uat"], annotation: { type: "ac", description: "AC-DOC-10" } },
+    { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-DOC-10" } },
     async ({ page, browser }) => {
       let link = "";
       let before = "";
