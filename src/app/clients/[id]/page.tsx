@@ -12,8 +12,14 @@ import {
   NOT_PROVIDED,
   type ClientCardRow,
 } from "@/lib/clients/card";
+import { INSURANCE_MESSAGES, INSURANCE_SAVED, type InsuranceErrorCode } from "@/lib/clients/insurance";
 import { isStaff } from "@/lib/holds/types";
 import { requireViewer } from "@/lib/supabase/viewer";
+import { setInsuranceStatus } from "@/app/clients/actions";
+import { InsuranceSection } from "./insurance-section";
+
+// Результат дії з адреси (?ok=): тексти — з AC.
+const OK_MESSAGES: Record<string, string> = { created: "Client created.", insurance: INSURANCE_SAVED };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -50,7 +56,7 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
         </Link>
         {client ? (
           <>
-            <ActionAlerts ok={query.ok === "created" ? "Client created." : undefined} />
+            <ActionAlerts ok={OK_MESSAGES[String(query.ok)]} error={INSURANCE_MESSAGES[query.error as InsuranceErrorCode]} />
             <Card className="max-w-2xl">
               <CardHeader>
                 <CardTitle>
@@ -72,6 +78,12 @@ export default async function ClientCardPage({ params, searchParams }: PageProps
                     <Field label="Email" value={client.email} />
                   )}
                 </dl>
+                <InsuranceSection
+                  clientId={client.id}
+                  status={client.insurance_status}
+                  canEdit={staff}
+                  action={setInsuranceStatus}
+                />
               </CardContent>
             </Card>
           </>
