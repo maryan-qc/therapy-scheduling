@@ -107,6 +107,12 @@ describe("статус перевірки страхування (set_insurance_
     expect(await statusOf(client6)).toBe("verified");
   });
 
+  it("AC-INS-05: користувач без ролі (newuser1) через RPC не змінює статус — «Verified» лишається", async () => {
+    await setStatus(scheduler1, client6, "verified");
+    expect(await setStatus(t.users["newuser1@example.test"], client6, "not_accepted")).toBe("INSURANCE_FORBIDDEN");
+    expect(await statusOf(client6)).toBe("verified");
+  });
+
   it("AC-INS-06: без входу (anon) ні читання картки, ні зміни статусу — «Verified» лишається", async () => {
     await setStatus(scheduler1, client6, "verified");
     await expect(t.asAnon("select insurance_status from public.clients where id = $1", [client6])).rejects.toThrow(
