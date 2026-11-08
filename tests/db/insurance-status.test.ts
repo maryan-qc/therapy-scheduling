@@ -22,14 +22,21 @@ const setStatus = async (userId: string, clientId: string, status: string) =>
   (await t.asUser<{ result: { code: string } }>(userId, "select public.set_insurance_status($1, $2) as result", [clientId, status]))[0]
     .result.code;
 
-/** client6 — свій клієнт therapist1: утримання «Held» на його слоті, що ще не почався. */
+/**
+ * client6 — свій клієнт therapist1: утримання «Held» на його слоті, що ще не почався (AC-CARD-14: «Held» робить клієнта
+ * своїм лише до початку слоту). Слот створюємо відносно now(), а не беремо з сиду: сид має слоти лише до 2026-12-31.
+ */
 async function makeClient6OfTherapist1() {
   await t.asService(
-    `insert into public.holds (slot_id, client_id, created_at, expires_at)
-     select s.id, $1, now(), now() + interval '24 hours'
-     from public.slots as s join public.therapists as th on th.id = s.therapist_id
-     where th.email = 'therapist1@example.test' and s.starts_at > now() + interval '2 days'
-     order by s.starts_at limit 1`,
+    `with slot as (
+       insert into public.slots (therapist_id, starts_at, ends_at)
+       select th.id, date_trunc('hour', now()) + interval '3 days', date_trunc('hour', now()) + interval '3 days 1 hour'
+       from public.therapists as th where th.email = 'therapist1@example.test'
+       on conflict (therapist_id, starts_at) do update set ends_at = excluded.ends_at
+       returning id
+     )
+     insert into public.holds (slot_id, client_id, created_at, expires_at)
+     select id, $1, now(), now() + interval '24 hours' from slot`,
     [client6],
   );
 }
