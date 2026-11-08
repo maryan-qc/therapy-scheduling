@@ -99,14 +99,14 @@
 | AC-INS-04 | терапевт бачить статус свого клієнта без зміни | — | — | відкладено (чекає реалізації) |
 | AC-INS-05 | терапевт напряму не змінює статус | — | — | відкладено (чекає реалізації) |
 | AC-INS-06 | без входу — лише сторінка входу, статус не змінився | — | — | відкладено (чекає реалізації) |
-| AC-DOC-01 | документів не формували — «No consent documents yet.» | — | — | відкладено (чекає реалізації) |
-| AC-DOC-02 | формування для «Adult» — два документи «Not signed» і «Missing signatures: …» | — | — | відкладено (чекає реалізації) |
-| AC-DOC-03 | формування для «Child» — три документи «Not signed» | — | — | відкладено (чекає реалізації) |
-| AC-DOC-04 | текст «Release of information»: Client, Guardian, Prepared | — | — | відкладено (чекає реалізації) |
-| AC-DOC-05 | позначення підпису — «Signed РРРР-ММ-ДД ГГ:ХХ», решта в «Missing signatures» | — | — | відкладено (чекає реалізації) |
-| AC-DOC-06 | підписано всі — «All consent documents signed.» | — | — | відкладено (чекає реалізації) |
-| AC-DOC-07 | непідписаний документ — «Sign all consent documents before confirming.», утримання «Held» | — | — | відкладено (чекає реалізації) |
-| AC-DOC-08 | усі підписано — утримання «Confirmed» | — | — | відкладено (чекає реалізації) |
-| AC-DOC-09 | терапевт бачить документ свого клієнта без позначення підпису | — | — | відкладено (чекає реалізації) |
-| AC-DOC-10 | документ чужого клієнта — «You don't have access to this client.» | — | — | відкладено (чекає реалізації) |
-| AC-DOC-11 | без входу — лише сторінка входу, стан документа не змінився | — | — | відкладено (чекає реалізації) |
+| AC-DOC-01 | документів не формували — «No consent documents yet.» | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-02 | формування для «Adult» — два документи «Not signed» і «Missing signatures: …» | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-03 | формування для «Child» — три документи «Not signed» | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-04 | текст «Release of information»: Client, Guardian, Prepared | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-05 | позначення підпису — «Signed РРРР-ММ-ДД ГГ:ХХ», решта в «Missing signatures» | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-06 | підписано всі — «All consent documents signed.» | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-07 | непідписаний документ — «Sign all consent documents before confirming.», утримання «Held» | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-08 | усі підписано — утримання «Confirmed» | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-09 | терапевт бачить документ свого клієнта без позначення підпису | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-10 | документ чужого клієнта — «You don't have access to this client.» | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
+| AC-DOC-11 | без входу — лише сторінка входу, стан документа не змінився | — | — | відкладено (рішення PM: пізніший зріз, HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34) |
