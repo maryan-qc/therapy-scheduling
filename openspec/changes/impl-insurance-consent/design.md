@@ -21,7 +21,10 @@ AC-DOC-01…11). Питань до PM немає; власні припущен�
   лише `authenticated`; `anon` — revoke (AC-INS-06).
 - Читання — наявна політика `clients_select`: персонал — усі, терапевт — свої клієнти (AC-INS-04).
 
-### Документи згоди (`…_consent_documents.sql`)
+### Документи згоди (`…_consent_documents.sql`) — пізніший зріз
+
+Рішення PM 2026-11-06: HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34 перенесено на пізніший зріз; у WS9 не
+реалізуємо. Дизайн нижче — для того зрізу.
 
 - Таблиця `public.consent_documents`: `id uuid pk default gen_random_uuid()`, `client_id uuid not null references
   public.clients on delete cascade`, `kind text not null check (kind in ('consent_to_treatment', 'cancellation_policy',

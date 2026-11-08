@@ -16,7 +16,11 @@
   denied; «Not set» повернути не можна.
   Done when: AC-INS-05, AC-INS-06.
 
-## 2. Документи згоди (`task/consent-documents`)
+## 2. Документи згоди (`task/consent-documents`) — відкладено
+
+Рішення PM 2026-11-06: вимогу HryhoriiHaponiukQuitCode/therapy-scheduling-spec#34 перенесено зі зрізу 3 на пізніший зріз
+(«AC-DOC-01…11 не змінено, у WS9 не реалізуємо»). Реалізацію (PR #46, гілка `task/consent-documents`) у WS9 не зливаємо;
+задачі нижче лишаються для пізнішого зрізу, рядки AC-DOC у `docs/conformance.md` — «відкладено (рішення PM…)».
 
 - [ ] 2.1 Міграція `…_consent_documents.sql`: таблиця, RLS, `prepare_consent_documents`, `sign_consent_document`,
   `confirm_hold_at` з `UNSIGNED_DOCUMENTS`; `database.types.ts`.
@@ -35,7 +39,6 @@
 
 - [ ] 3.1 e2e-специфікації кожного AC зрізу 3 (`tests/e2e/`), прогін `npm run uat` на проді, звіт і кадри в
   `docs/qa/uat/<дата>/`, рядки матриці з посиланням на UAT.
-  Done when: AC-INS-01, AC-INS-02, AC-INS-03, AC-INS-04, AC-INS-05, AC-INS-06, AC-DOC-01, AC-DOC-02, AC-DOC-03,
-  AC-DOC-04, AC-DOC-05, AC-DOC-06, AC-DOC-07, AC-DOC-08, AC-DOC-09, AC-DOC-10, AC-DOC-11 — вердикт агента «PASS».
+  Done when: AC-INS-01, AC-INS-02, AC-INS-03, AC-INS-04, AC-INS-05, AC-INS-06 — вердикт агента «PASS».
 - [ ] 3.2 archive `impl-insurance-consent`.
   Done when: `npx openspec archive impl-insurance-consent -y`, `npm run spec:validate` зелений.
