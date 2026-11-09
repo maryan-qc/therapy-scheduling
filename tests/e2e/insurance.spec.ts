@@ -9,6 +9,10 @@ import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { attachRuntimeErrors, given, thenStep, when } from "./support/uat";
 
+// «Дано» кожного AC будує дані на проді через сторінки (нова картка, статус, утримання слоту, сесії інших ролей), тож
+// 60 с типового ліміту замало: до 3 хвилин на тест.
+test.describe.configure({ timeout: 180_000 });
+
 const RUN = process.env.UAT_RUN ?? "local";
 let seq = 0;
 /** Унікальна в межах прогону назва й адреса картки: «Client Six 2611061830-3», uat-2611061830-3-c6@example.test. */
