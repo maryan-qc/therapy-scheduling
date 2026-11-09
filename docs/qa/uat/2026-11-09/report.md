@@ -1,20 +1,20 @@
 # Звіт UAT — 09.11.2026
 
 - **Застосунок:** https://therapy-scheduling-sigma.vercel.app (/api/health: коміт `60b0bc0`)
-- **Код тестів:** `task/uat-slice-3` @ `ab51d0c`
-- **Прогін:** 09.11.2026, 10:57 (Київ), Playwright 58.6 с; AC: 6 — PASS 6, FAIL 0, NEEDS-HUMAN 0
-- **Рецензент:** `claude-haiku-5-5`; суперечки → `claude-sonnet-5-5`. Разом за розбір: $0.0444 (ціни API; за підпискою — у межах ліміту плану)
+- **Код тестів:** `task/uat-slice-3` @ `5964158`
+- **Прогін:** 09.11.2026, 11:02 (Київ), Playwright 69.3 с; AC: 6 — PASS 6, FAIL 0, NEEDS-HUMAN 0
+- **Рецензент:** `claude-haiku-5-5`; суперечки → `claude-sonnet-5-5`. Разом за розбір: $0.0129 (ціни API; за підпискою — у межах ліміту плану)
 - **Прибирання:** не запускалось (прогін без SUPABASE_SECRET_KEY — лише AC, що нічого не пишуть)
 - **Відео й траси:** не в git — `test-results/` локально або артефакт CI; трасу відкриває `npx playwright show-trace <trace.zip>`
 
 | AC | Перевірки | Агент | Підсумок | Чому | Playwright | Розбір |
 |---|---|---|---|---|---|---|
-| AC-INS-01 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 7.4 с | $0.0018, 6.7 с |
-| AC-INS-02 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 9.6 с | $0.0022, 7.1 с |
-| AC-INS-03 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 11.8 с | $0.0022, 7.1 с |
-| AC-INS-04 | пройшли | Haiku: NEEDS-HUMAN, Sonnet: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 5.4 с | $0.0338, 19.8 с |
-| AC-INS-05 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 6.9 с | $0.0020, 7.2 с |
-| AC-INS-06 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 4.2 с | $0.0024, 9.8 с |
+| AC-INS-01 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 7.8 с | $0.0017, 6.7 с |
+| AC-INS-02 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 10.0 с | $0.0022, 8.5 с |
+| AC-INS-03 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 9.9 с | $0.0025, 11.6 с |
+| AC-INS-04 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 8.7 с | $0.0021, 9.2 с |
+| AC-INS-05 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 7.5 с | $0.0020, 8.7 с |
+| AC-INS-06 | пройшли | Haiku: PASS | **PASS** | R6: перевірки, агент і цитати збігаються | 4.4 с | $0.0023, 7.6 с |
 
 ## AC-INS-01 — PASS
 
@@ -28,7 +28,7 @@
 
 **Кроки:** ✔ Дано: картку client6 створено, і статус перевірки страхування ще ніхто не позначав → ✔ Коли: scheduler1 відкриває картку client6 → ✔ Тоді: в картці показано «Insurance: Not set».
 
-**Агент (claude-haiku-5-5, PASS):** На кадрі видно картку клієнта «Client Six 261109085735-1» зі стрічкою «Insurance: Not set» над полем «Insurance status» і кнопкою «Save insurance status». Текст збігається з критерієм посимвольно, кадр читабельний і повний.
+**Агент (claude-haiku-5-5, PASS):** На кадрі сторінка картки «Client Six 261109090210-1» (користувач scheduler1@example.test), і під роздільником видно рядок «Insurance: Not set», що дослівно збігається з критерієм. Кадр повний, без завантаження й обрізання; поруч є поле «Insurance status» і кнопка збереження, що узгоджується зі станом «ще не позначено».
 
 **Цитати агента, звірені зі сторінкою (aria):**
 - «Insurance: Not set» — є на сторінці
@@ -52,7 +52,7 @@
 
 **Кроки:** ✔ Дано: картка client6 показує «Insurance: Not set» → ✔ Коли: scheduler1 позначає статус перевірки страхування «Verified» → ✔ Тоді: scheduler1 бачить повідомлення «Insurance status saved.», а картка client6 показує «Insurance: Verified» → ✔ Коли: scheduler1 відкриває картку client6 знову → ✔ Тоді: картка client6 показує «Insurance: Verified» і після того, як scheduler1 відкриє її знову.
 
-**Агент (claude-haiku-5-5, PASS):** На кадрі 1 видно зелене підтвердження «Insurance status saved.» над карткою «Client Six 261109085735-2», а в картці — «Insurance: Verified». На кадрі 2 (картка відкрита знову, сторінка та URL ті самі) рядок «Insurance: Verified» збережений. Усі видимі частини «Тоді» підтверджено дослівно.
+**Агент (claude-haiku-5-5, PASS):** На frame-then-1.png видно банер «Insurance status saved.» і рядок «Insurance: Verified» на картці Client Six 261109090210-2. На frame-then-2.png після повторного відкриття картки (банера немає) той самий рядок «Insurance: Verified» присутній. Частина «Дано» (початковий «Insurance: Not set») на кадрах не видна і не оцінювалася.
 
 **Цитати агента, звірені зі сторінкою (aria):**
 - «Insurance status saved.» — є на сторінці
@@ -78,7 +78,7 @@
 
 **Кроки:** ✔ Дано: картка client7 показує «Insurance: Verified» → ✔ Коли: admin1 змінює статус перевірки страхування на «Private pay» → ✔ Тоді: admin1 бачить у картці «Insurance: Private pay» → ✔ Коли: scheduler2 відкриває картку client7 → ✔ Тоді: і admin1, і scheduler2 бачать у картці «Insurance: Private pay».
 
-**Агент (claude-haiku-5-5, PASS):** На frame-then-1 у шапці видно admin1@example.test, а в картці Client Seven 261109085735-3 — рядок «Insurance: Private pay» (з повідомленням «Insurance status saved.»). На frame-then-2 у шапці видно scheduler2@example.test, а в тій самій картці знову «Insurance: Private pay». Усі видимі частини «Тоді» підтверджено дослівно.
+**Агент (claude-haiku-5-5, PASS):** На frame-then-1.png у шапці видно admin1@example.test, а картка client7 (Client Seven 261109090210-3) показує «Insurance: Private pay». На frame-then-2.png у шапці scheduler2@example.test, і та сама картка показує «Insurance: Private pay». Обидві видимі частини «Тоді» підтверджені дослівними цитатами з кадрів.
 
 **Цитати агента, звірені зі сторінкою (aria):**
 - «Insurance: Private pay» — є на сторінці
@@ -103,12 +103,9 @@
 
 **Кроки:** ✔ Дано: client6 — свій клієнт therapist1, і картка client6 показує «Insurance: Not accepted» → ✔ Коли: therapist1 відкриває картку client6 → ✔ Тоді: він бачить «Insurance: Not accepted», а змінити статус перевірки страхування в картці йому не запропоновано.
 
-**Агент (claude-sonnet-5-5, PASS):** На кадрі картка «Client Six 261109085735-4» під therapist1@example.test з рядками Type, Name, Date of birth, Session language, Email та підсумком «Insurance: Not accepted». Поля «Insurance status» і кнопки «Save insurance status» у картці немає, є лише цей текстовий рядок. Цитата для другої частини — єдиний рядок про страхування, бо відсутність елементів не можна процитувати.
-
-Haiku сказав NEEDS-HUMAN, тож розбір повторив Sonnet; рішення агента — за Sonnet.
+**Агент (claude-haiku-5-5, PASS):** На кадрі видно повну картку «Client Six 261109090210-4» з рядком «Insurance: Not accepted» і без полів чи кнопок для зміни статусу страхування (ні «Insurance status», ні «Save insurance status»). Частина про відсутність поля перевірена негативно: цитати немає, бо на кадрі просто немає такого елемента, картка при цьому повністю видна.
 
 **Цитати агента, звірені зі сторінкою (aria):**
-- «Insurance: Not accepted» — є на сторінці
 - «Insurance: Not accepted» — є на сторінці
 
 **Правило:** R6: перевірки, агент і цитати збігаються
@@ -129,7 +126,7 @@ Haiku сказав NEEDS-HUMAN, тож розбір повторив Sonnet; р�
 
 **Кроки:** ✔ Дано: client6 — свій клієнт therapist1, і картка client6 показує «Insurance: Not accepted» → ✔ Коли: therapist1 напряму, оминаючи сторінки застосунку, пробує змінити статус на «Verified» → ✔ Тоді: статус не змінився: scheduler1 у картці client6 бачить «Insurance: Not accepted».
 
-**Агент (claude-haiku-5-5, PASS):** На кадрі frame-then-1.png у шапці видно «scheduler1@example.test» (сесія scheduler1 з роллю Scheduler), а в картці клієнта «Client Six 261109085735-5» — рядок «Insurance: Not accepted» без змін. Кадр чіткий, обрізання немає. Частини з розділу «Не з кадрів» не оцінювались.
+**Агент (claude-haiku-5-5, PASS):** На кадрі frame-then-1.png у шапці видно scheduler1@example.test, а в картці клієнта Client Six 261109090210-5 (email uat-261109090210-5-c6@example.test) напис «Insurance: Not accepted» — обидві видимі частини «Тоді» підтверджено. Частини з розділу «Не з кадрів» не оцінювались.
 
 **Цитати агента, звірені зі сторінкою (aria):**
 - «scheduler1@example.test» — є на сторінці
@@ -154,7 +151,7 @@ Haiku сказав NEEDS-HUMAN, тож розбір повторив Sonnet; р�
 
 **Кроки:** ✔ Дано: користувач не увійшов у застосунок, а картка client6 показує «Insurance: Verified» → ✔ Коли: він відкриває картку client6 за прямим посиланням → ✔ Тоді: він бачить лише сторінку входу, статусу страхування й інших даних client6 не показано → ✔ Тоді: а scheduler1 після цього бачить у картці client6 «Insurance: Verified».
 
-**Агент (claude-haiku-5-5, PASS):** На frame-then-1 видно сторінку входу «Sign in» з полями «Email» і «Password», без даних картки client6. На frame-then-2 у шапці показано scheduler1@example.test, а в картці клієнта є рядок «Insurance: Verified». Частина «scheduler1 у шапці» зіставлена за логіном у шапці; якщо PM вимагає саме слово без домену, це варто підтвердити.
+**Агент (claude-haiku-5-5, PASS):** На кадрі frame-then-1 видно сторінку входу «Sign in» з полями «Email» і «Password» і без даних client6. На кадрі frame-then-2 у шапці видно «scheduler1@example.test» (з Scheduler-бейджем), а в картці client6 — рядок «Insurance: Verified». Частина «scheduler1 у шапці» зіставлена з email, що містить scheduler1; це прийнятно, але варто тримати на увазі.
 
 **Цитати агента, звірені зі сторінкою (aria):**
 - «Sign in» — є на сторінці
