@@ -2,7 +2,7 @@
 // AC-CARD-12 (помилки форми картки). Текст AC — requirements/19-planuvalnyk-zapovniuie-kartku-klienta.md.
 // Лише читання: AC-CARD-12 картки не створює, решта лише відкриває сторінки. Дані «Дано» на проді — синтетичні картки
 // «Client Six» (client6@example.test) і «Client Nine» (client9@example.test) та сеанс «Confirmed» Client Nine у
-// Therapist Two (docs/qa/proof-pack.md, розділ C). Адреси карток беремо зі списку планувальника, а не з коду.
+// Therapist Two (docs/qa/proof-pack-ws8.md, розділ C). Адреси карток беремо зі списку планувальника, а не з коду.
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { attachRuntimeErrors, given, thenStep, when } from "./support/uat";
 

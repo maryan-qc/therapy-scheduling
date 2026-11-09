@@ -1,233 +1,101 @@
-# QA proof pack: Планувальник заповнює картку клієнта з анкети, а терапевт бачить картки лише своїх клієнтів
+# QA proof pack: зріз 3 — статус перевірки страхування в картці клієнта
 
-<!--
-Шаблон з koldovsky/2026-quitcode-08-quality-hw/materials/templates/proof-pack.template.md.
-Покладіть у docs/qa/proof-pack.md вашого репо й заповнюйте по кроках WS8 (A → B → C → D).
-Посилання — на файли на коміті (…/blob/<sha>/…#L<N>), на PR (…/pull/N) і на прогони (…/actions/runs/N).
-Жодних паролів і пароля від accounts.zip. Акаунти — лише адреси *@example.test.
-Цей файл — вхід для конвеєра WS9: на кожен AC видно, чим він доведений.
--->
+<!-- Шаблон — koldovsky/2026-quitcode-09-software-factory-hw/materials/templates/proof-pack.template.md.
+     Proof pack WS8 (зріз 2) — docs/qa/proof-pack-ws8.md. Посилання на файли — відносні: читаються на SHA здачі. -->
 
 - Прод-URL: https://therapy-scheduling-sigma.vercel.app
-- Вимоги: https://github.com/Sofiia-pm/therapy-scheduling-spec · джерело: issues · знімок 2026-10-27
-- `/api/health` на момент UAT: sha 07b01cf, db ok, 03.11.2026
+- Зріз 3: планувальник або адміністратор позначає в картці клієнта статус перевірки страхування («Verified», «Not
+  accepted», «Private pay»), а кожен, хто бачить картку, бачить «Insurance: <статус>» (roadmap PM, рядок «WS8» →
+  «WS9 — конвеєр (зріз 3)»).
+- Вимоги: https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec · джерело: issues · знімок 2026-11-08
+  (HryhoriiHaponiukQuitCode/therapy-scheduling-spec#33). Вимогу #34 (документи згоди, AC-DOC-01…11) PM 2026-11-06
+  переніс на пізніший зріз — у WS9 її не реалізуємо (рядки матриці — «відкладено (рішення PM…)»).
+- Спека: [`openspec/specs/insurance-status/spec.md`](../../openspec/specs/insurance-status/spec.md)
+- `/api/health` на момент UAT: sha `60b0bc0`, db ok, 09.11.2026 11:15 (Київ).
 
-## 3 AC
+## Доказ на кожен AC зрізу 3
 
-Вимога PM: https://github.com/Sofiia-pm/therapy-scheduling-spec/issues/19 (знімок — `requirements/19-planuvalnyk-zapovniuie-kartku-klienta.md`).
+| AC | Вид | Тест (рівень, посилання) | Здатен упасти | Специфікація UAT | Вердикт UAT і кадр | PR і SHA злиття |
+|---|---|---|---|---|---|---|
+| AC-INS-01 | стан: картка без позначки | база: [`insurance-status.test.ts#L66`](../../tests/db/insurance-status.test.ts#L66); unit: [`insurance.test.tsx#L13`](../../tests/clients/insurance.test.tsx#L13) | негативний контроль NC-3 → FAIL (R1) | [`insurance.spec.ts#L80`](../../tests/e2e/insurance.spec.ts#L80) | PASS (R6), [кадр](uat/2026-11-09/frames/AC-INS-01-then-1.png) | [#45](https://github.com/maryan-qc/therapy-scheduling/pull/45), `60b0bc0` |
+| AC-INS-02 | основний сценарій | база: [`#L76`](../../tests/db/insurance-status.test.ts#L76); дія: [`insurance-action.test.ts#L37`](../../tests/clients/insurance-action.test.ts#L37); unit: [`insurance.test.tsx#L18`](../../tests/clients/insurance.test.tsx#L18) | — | [`insurance.spec.ts#L102`](../../tests/e2e/insurance.spec.ts#L102) | PASS (R6), [кадр 1](uat/2026-11-09/frames/AC-INS-02-then-1.png), [кадр 2](uat/2026-11-09/frames/AC-INS-02-then-2.png) | #45, `60b0bc0` |
+| AC-INS-03 | основний сценарій (інша роль змінює, третя бачить) | база: [`#L81`](../../tests/db/insurance-status.test.ts#L81); unit: [`insurance.test.tsx#L25`](../../tests/clients/insurance.test.tsx#L25) | — | [`insurance.spec.ts#L145`](../../tests/e2e/insurance.spec.ts#L145) | PASS (R6), [кадр 1](uat/2026-11-09/frames/AC-INS-03-then-1.png), [кадр 2](uat/2026-11-09/frames/AC-INS-03-then-2.png) | #45, `60b0bc0` |
+| AC-INS-04 | відмова в інтерфейсі (терапевт лише бачить) | база (RLS — свій і чужий клієнт): [`#L88`](../../tests/db/insurance-status.test.ts#L88); unit (форми немає): [`insurance.test.tsx#L29`](../../tests/clients/insurance.test.tsx#L29) | — | [`insurance.spec.ts#L210`](../../tests/e2e/insurance.spec.ts#L210) | PASS (R6), [кадр](uat/2026-11-09/frames/AC-INS-04-then-1.png) | #45, `60b0bc0` |
+| AC-INS-05 | відмова: заборонена роль, напряму, оминаючи сторінки | база: [`#L95`](../../tests/db/insurance-status.test.ts#L95), [`#L110`](../../tests/db/insurance-status.test.ts#L110), [`#L117`](../../tests/db/insurance-status.test.ts#L117); дія: [`insurance-action.test.ts#L45`](../../tests/clients/insurance-action.test.ts#L45) | SQL-мутанти C10, C11, C12 — KILLED ([`scripts/mutants.mjs#L90`](../../scripts/mutants.mjs#L90)) | [`insurance.spec.ts#L237`](../../tests/e2e/insurance.spec.ts#L237) — «напряму» через Data API з входом therapist1, «що не змінилося» — кадр scheduler1 | PASS (R6), [кадр](uat/2026-11-09/frames/AC-INS-05-then-1.png) | #45, `60b0bc0` |
+| AC-INS-06 | відмова: не увійшов | база (`anon`): [`#L123`](../../tests/db/insurance-status.test.ts#L123); дія: [`insurance-action.test.ts#L61`](../../tests/clients/insurance-action.test.ts#L61) | SQL-мутант C13 — KILLED ([`scripts/mutants.mjs#L111`](../../scripts/mutants.mjs#L111)) | [`insurance.spec.ts#L290`](../../tests/e2e/insurance.spec.ts#L290) | PASS (R6), [кадр 1](uat/2026-11-09/frames/AC-INS-06-then-1.png), [кадр 2](uat/2026-11-09/frames/AC-INS-06-then-2.png) | #45, `60b0bc0` |
 
-| AC | Вид | «Тоді» (дослівно з вимоги PM) |
-|---|---|---|
-| AC-CARD-05 | відмова в браузері: чужі дані за прямим посиланням (картка клієнта іншого терапевта) | therapist1 бачить повідомлення «You don't have access to this client.», жодних даних client9 не показано, і картка client9 не змінилася. |
-| AC-CARD-12 | стан інтерфейсу: помилки форми нової картки з дослівним текстом | картку не створено, scheduler1 одразу бачить три повідомлення біля відповідних полів — «Enter the client's name.», «Enter a date of birth that is not in the future.» і «Select a session language.», а всі введені дані лишаються у формі. |
-| AC-CARD-11 | відмова в браузері: користувач без ролі | він бачить лише повідомлення «Your account has no access yet. Contact an administrator.» і дію «Sign out», жодних даних клієнтів не показано, і жодна картка не змінилася. |
+Специфікацію UAT, звіт і мутанти злито PR «UAT зрізу 3» (номер і SHA злиття — у файлі здачі).
 
-Усі три — лише читання на проді: AC-CARD-12 картки не створює, тож прибирати після UAT нічого.
+## Не перевірено
 
-## A. Ворота
-
-- PR воріт: https://github.com/maryan-qc/therapy-scheduling/pull/33
-- Зелений `quality` на `main` (07b01cf): https://github.com/maryan-qc/therapy-scheduling/actions/runs/41624326257
-- Обов'язкові перевірки в `solo-main` з 03.11.2026: «Ворота: fallow audit», «Покриття: доменна підлога» (поруч зі `spec`, `app`, `conformance`, `db-check`); «Порада: вразливі залежності» — дорадча, не обов'язкова
-
-Розбір першого повного прогону `fallow` 3.35.0 (`npx fallow --no-cache` на `main` e6f5641 з конфігом із materials, без
-файлу покриття — як у CI; той самий — в описі PR воріт). До розбору: 4 невикористані файли, 1 невикористаний експорт,
-5 груп дублів, 15 складних і 5 великих функцій. Після: мертвого коду 0, `fallow audit` на PR — «No issues».
-
-| # | Група знахідок | Скільки | Справжня / навмисна / хибна | Дія і причина |
-|---|---|---|---|---|
-| 1 | невикористані файли `src/components/ui/dialog.tsx`, `src/components/ui/select.tsx` | 2 | справжня | **видалено**: додано з дизайн-системою (#10), але жодна сторінка їх не імпортує. Випадні списки — `NativeSelect` (рідний `<select>`), діалогів у зрізах 1–2 немає. `DESIGN.md` оновлено, повернути — `npx shadcn@4.22.1 add dialog` |
-| 2 | невикористаний файл `src/lib/supabase/client.ts` | 1 | навмисна | `ignoreFindings` з причиною: браузерний клієнт шаблону курсу (лише публічний ключ) — готова точка для майбутніх Client Components; сьогодні всі запити серверні |
-| 3 | невикористаний файл `src/lib/utils.ts` | 1 | навмисна | `ignoreFindings` з причиною: на нього вказує `aliases.utils` у `components.json`, і `npx shadcn add` вписує в нові компоненти імпорт `@/lib/utils`; наявні компоненти імпортують `cn` напряму |
-| 4 | невикористаний експорт `AC_ID_GLOBAL` (`scripts/lib/spec-lib.mjs:10`) | 1 | навмисна | `ignoreExports` лише на це ім'я: спільна бібліотека скриптів шаблону, тримаємо її як у шаблоні — WS8 оновлює сусідні `test-titles.mjs` і `check-ac-coverage.mjs` з `materials/` |
-| 5 | дублі `scripts/check-design-tokens.mjs` ↔ `scripts/check-server-boundary.mjs` | 3 групи, 42 рядки | навмисна | лишено: два скрипти WS7 без залежностей, кожен — окремий job `architecture.yml`; спільний модуль зв'язав би два незалежні правила |
-| 6 | дубль `src/app/clients/page.tsx:46-60` ↔ `src/app/holds/page.tsx:92-106` | 15 рядків | хибна | лишено: спільна лише структура розмітки shadcn (`Card` → `Table` → `TableHeader`), колонки й тексти різні — fallow порівнює послідовність токенів, а не зміст |
-| 7 | дубль `src/app/schedule/page.tsx:110-121` ↔ `src/app/slots/page.tsx:186-199` | 14 рядків | справжня, дрібна | лишено: однакові дві клітинки рядка слота (час і статус), а третя різна — терапевт бачить ім'я клієнта, планувальник — ім'я й контакт. Спільний рядок — у рефакторі сторінок (рядок 9) |
-| 8 | складність скриптів шаблону й WS7: `check-spec` (3), `check-design-tokens` (3), `check-server-boundary` (2), `create-demo-users` (1) | 9 функцій | навмисна | `health.ignore` з причиною: розбір markdown і обхід файлів; поведінку тримають `tests/scripts/` і jobs `architecture.yml`. Мертвий код у цих файлах fallow перевіряє й далі |
-| 9 | `SlotsPage` (`src/app/slots/page.tsx:46`): цикломатична 21, когнітивна 18, 204 рядки | 1 | справжня | лишено: сторінка з трьома станами й формою утримання. Дробити — окремим рефакторинг-PR під e2e, щоб не змінити тексти «Тоді» зрізу 1 |
-| 10 | `validateClientCard` (`src/lib/clients/card.ts:125`): цикломатична 21, когнітивна 23 | 1 | справжня, виправдана | лишено: AC-CARD-12 вимагає всі помилки одразу, тож кожне поле перевіряється окремою незалежною гілкою. Силу тестів доводить Stryker у треку B |
-| 11 | лише CRAP (оцінка): `SchedulePage`, `schedule/page.tsx:110`, `holds/schedule.ts:73`, `GET /api/health` | 4 | хибна (оцінка) | лишено: без файлу покриття fallow оцінює CRAP з графа експортів. З `coverage-final.json` `holds/schedule.ts` має 100 % рядків і нижче порогу. Сторінки й Route Handler Vitest не рендерить — їх доводять e2e і `smoke`. `complexity-crap` — `warn`, як у materials |
-| 12 | великі функції (> 60 рядків): `SlotsPage` 204, `HoldsPage` 122, `SchedulePage` 112, `ClientCardForm` 109, `ClientsPage` 75 | 5 | справжня (розмір), прийнятна | лишено: це JSX серверних сторінок і форми — таблиця чи форма з дослівними текстами AC. `SlotsPage` — у тому самому рефакторі, що й рядок 9 |
-
-Тестові правила лінтера (`@vitest/eslint-plugin` 1.6.27, усі `error`): одна знахідка —
-`tests/clients/pages.test.tsx:33`, `no-restricted-syntax` (`vi.mock` власного модуля `@/app/_components/nav`).
-**Виправлено**: мок прибрано, тест рендерить справжню навігацію, тверджень не поменшало (5 з 5 зелені).
-
-Покриття (`vitest.coverage.config.mts`): підлога 90/85/90/90 на файл — для 7 доменних модулів, що вже її тримають:
-`health`, `clients/search`, `holds/clients`, `holds/messages`, `holds/schedule`, `holds/status`, `holds/types`. Нижче
-підлоги й поза списком: `clients/card` (функції 85,7 %), `holds/day-view` (гілки 83 %), `holds/time`, `holds/rules`
-(правило утримання живе в SQL — його доводять тести бази).
-
-Ще в цьому PR (відгук викладача до WS7, п. 4): крок «ADR 0001: admin-клієнта немає» в `architecture.yml` (job «Секретний
-ключ лише на сервері»). `check:boundary` дозволяє `src/lib/supabase/admin.ts` за правилами шаблону, а ADR 0001
-admin-клієнт відкинув — тепер його поява червонить прогін (доказ — червоний прогін з тимчасовим `admin.ts`:
-https://github.com/maryan-qc/therapy-scheduling/actions/runs/41618304612/job/125857212718).
-
-## B. Якість тестів
-
-- PR якості тестів: https://github.com/maryan-qc/therapy-scheduling/pull/34 (вивід Stryker і `mutation:sql` «до / після» — в описі)
-- Взято з `koldovsky/2026-quitcode-08-quality-hw/materials/testing`: `stryker.config.json`, `vitest.stryker.config.mts`,
-  `scripts/mutation-check.mjs`, формат `scripts/mutants.mjs`. Гарнес `tests/db/supabase-pglite.ts` — наш з WS6.
-
-### Рівень для кожного AC
-
-| AC | Де живе правило | Рівень | Чому | Тест |
-|---|---|---|---|---|
-| AC-CARD-05 | **SQL:** RLS `clients_select` + `private.is_client_of_current_therapist` (міграції `20261021150100`, `20261027073004`); немає GRANT `update`/`delete` на `clients` (`20261023104436`); email профілю змінити не можна — колонковий grant лише `full_name` (`20261012000000`). **Сторінка** `/clients/[id]`: порожня відповідь бази → «You don't have access to this client.» | база (PGlite) + e2e | «не бачить і не змінює» тримає SQL: це доводить лише справжній Postgres з усіма міграціями й RLS, TS-копії правила немає. Дослівний текст і «даних не показано» — сторінка, асинхронний серверний компонент, тож e2e | [client-access.test.ts#L122](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-access.test.ts#L122), [#L255](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-access.test.ts#L255) (email терапевта), e2e — розділ C |
-| AC-CARD-11 | **SQL:** `private.current_therapist_id()` — лише для `role = 'therapist'` (`20261023105250`), `is_staff()` для `null` → `false`, `clients_insert_staff`, колонковий grant `profiles` (роль і email собі не змінити). **Сторінки:** `requireViewer` без ролі перенаправляє на «/», «/» показує лише повідомлення й «Sign out» | база (PGlite) + e2e | «без ролі — жодних даних і змін» тримає SQL. Що людина бачить лише повідомлення й «Sign out» (зокрема за посиланням на картку — редірект) — сторінка: Vitest серверних сторінок з `redirect` не рендерить, тож e2e | [client-access.test.ts#L207](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-access.test.ts#L207), [#L236](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-access.test.ts#L236) (роль і email собі не видати), [#L266](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-access.test.ts#L266), e2e — розділ C |
-| AC-CARD-12 | **TS:** `validateClientCard` + `isBirthDate` (`src/lib/clients/card.ts`) — три помилки одразу, межа дати «сьогодні — коректно»; дія `createClientCard` повертає помилки й рівно введені значення. **SQL — та сама межа:** `clients_name_not_blank`, тригер дати народження, `clients_contact_by_type` (мова дитини). **Сторінка:** `card-form.tsx` — повідомлення біля полів | unit + дія + база + e2e | правило двічі: TS дає повідомлення PM, SQL — остання лінія для запиту в обхід форми, і кожен шар може втратити правило окремо. Межі — unit і база. «Біля відповідних полів» і «дані лишаються у формі» видно лише на сторінці (Client Component) — e2e | [card.test.ts#L117](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/card.test.ts#L117), [#L129](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/card.test.ts#L129), [actions.test.ts#L88](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/actions.test.ts#L88), [client-cards.test.ts#L223](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-cards.test.ts#L223), [#L228](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-cards.test.ts#L228), [#L237](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-cards.test.ts#L237), e2e — розділ C |
-
-### Покриття
-
-`npm run test:coverage` (v8): разом рядки 57,64 % (230 з 399) — і до, і після нових тестів: тести, що вбили мутантів,
-не додали жодного виконаного рядка. Цифри — з `coverage/coverage-summary.json`.
-
-| Файл за AC | Рядки | Гілки | Чим доведено, якщо 0 % |
+| AC чи частина | Чому не перевірено | Що зроблено замість | Ризик на проді |
 |---|---|---|---|
-| `src/lib/clients/card.ts` (AC-CARD-12) | 92,5 % | 91,07 % | — (функції 85,71 %: не покрито `clientTypeLabel` — тип у картці, AC-CARD-01/02, поза 3 AC) |
-| `src/app/clients/actions.ts` (AC-CARD-12) | 100 % | 90 % | — |
-| `src/lib/holds/types.ts` (`isStaff`, текст без ролі — AC-CARD-11) | 100 % | 87,5 % | — |
-| `src/app/clients/[id]/page.tsx` (AC-CARD-05) | 88,88 % | 43,75 % | гілки сторінки — `tests/clients/pages.test.tsx` (AC-CARD-16); відмова терапевта на справжній базі — e2e AC-CARD-05 |
-| `src/app/clients/new/card-form.tsx` (AC-CARD-12) | 0 % | 0 % | Client Component: e2e AC-CARD-12 (повідомлення біля полів, дані у формі) |
-| `src/app/clients/new/page.tsx` (AC-CARD-12) | 0 % | 0 % | e2e AC-CARD-12 |
-| `src/app/page.tsx` (AC-CARD-11) | 0 % | 0 % | e2e AC-CARD-11 (лише повідомлення й «Sign out») |
-| `src/lib/supabase/viewer.ts` (AC-CARD-11) | 0 % | 0 % | адаптер Supabase (`getClaims`, роль з `profiles`): редірект без ролі — e2e AC-CARD-11; правило ролі — тести бази (`current_therapist_id`, `is_staff`) |
-| SQL: RLS, GRANT, тригер, check (AC-CARD-05, 11, 12) | — | — | JS-покриття SQL не бачить: SQL-мутації C1–C9 нижче |
+| Порядок «тест до коду» (maker ≠ checker) для AC-INS-01…06 | тести бази й unit написано в тій самій сесії агента, що й код, після міграції, а не окремою сесією чи до коду | сила тестів відмов доведена SQL-мутантами C10–C13 (4 з 4 KILLED) і негативним контролем NC-3; UAT-специфікації писались з тексту AC (дослівне «Тоді») | низький: правила відмов ловлять мутанти; основні сценарії — UAT на проді |
+| AC-DOC-01…11 (#34) | не входять у зріз 3: рішення PM 2026-11-06 — «у WS9 не реалізуємо» | реалізацію збережено в гілці `task/consent-documents` (PR #46 закрито без злиття) | немає: на проді документів згоди немає, підтвердження — як у зрізі 1 |
 
-### Доказ мутацією
+## A. Вимоги й спека
 
-Вижилі мутанти на рядках 3 AC → тест, посилений з тексту AC → повторний прогін:
+- `/requirements-sync` — PR «Оновлення вимог»: [#42](https://github.com/maryan-qc/therapy-scheduling/pull/42)
+  (2026-11-06) і після уточнень PM — [#47](https://github.com/maryan-qc/therapy-scheduling/pull/47) (2026-11-08:
+  #34 перенесено на пізніший зріз, AC не змінено).
+- Спека `add-insurance-consent` — PR «Специфікація»: [#43](https://github.com/maryan-qc/therapy-scheduling/pull/43)
+  (3 знахідки CodeRabbit — виправлено з тексту PM); план `impl-insurance-consent` —
+  [#44](https://github.com/maryan-qc/therapy-scheduling/pull/44).
+- Зміна `clarify-<зріз3>`: не потрібна — PM AC не змінював (лише переніс #34).
+- Питання PM: питань не було — вимоги #33 і #34 PM перевірив за чеклістом, тексти й межі задано; обидва «Відкриті
+  питання» #34 PM сам закрив «не в цьому зрізі».
 
-| Мутант (файл:рядок, що змінено) | AC під загрозою | До | Тест, посилений з тексту AC | Після |
+## B. Реалізація
+
+| PR «Реалізація» | Задача з `tasks.md` | AC | Відповіді на знахідки CodeRabbit | `db-deploy` |
 |---|---|---|---|---|
-| C5 · `supabase/migrations/20261012000000_profiles_and_roles.sql:45` `grant update (full_name)` → `grant update (full_name, role, email)` | AC-CARD-11 (і AC-CARD-05) | вижив | [client-access.test.ts#L236](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-access.test.ts#L236): newuser1 не видає собі роль і email терапевта, профіль без змін, даних клієнтів немає; [#L255](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-access.test.ts#L255): therapist1 не бере собі email therapist2 | убитий |
-| C7 · `20261023104436_client_cards.sql:62` тригер дати `>` → `>=` | AC-CARD-12 (межа: «дата, що дорівнює сьогоднішній, коректна») | вижив | [client-cards.test.ts#L228](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-cards.test.ts#L228): завтра — 23514, сьогодні — картку створено | убитий |
-| C8 · `20261023104436_client_cards.sql:43` `clients_contact_by_type` без `session_language is not null` | AC-CARD-12 («Select a session language.») | вижив | [client-cards.test.ts#L237](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-cards.test.ts#L237): дитина без мови — 23514, карток не додалося | убитий |
-| C9 · `20261021150100_slot_holds.sql:47` `clients_name_not_blank` → `check (true)` | AC-CARD-12 («Enter the client's name.») | вижив | [client-cards.test.ts#L223](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/db/client-cards.test.ts#L223): порожнє ім'я дитини — 23514, карток не додалося | убитий |
-| Stryker · `src/app/clients/actions.ts:22` `field("guardian_name")` → `field("")` | AC-CARD-12 (рівно три повідомлення; «всі введені дані лишаються у формі») | вижив | [actions.test.ts#L88](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/actions.test.ts#L88): рівно три тексти з «Тоді» і рівно введені значення | убитий |
-| Stryker · `src/app/clients/actions.ts:15` `?? ""` → `?? "Stryker was here!"` | AC-CARD-12 (у форму не повертається email, якого не вводили) | вижив | той самий [actions.test.ts#L88](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/actions.test.ts#L88) | убитий |
+| [#45](https://github.com/maryan-qc/therapy-scheduling/pull/45) | 1. Статус перевірки страхування | AC-INS-01…06 | 4 знахідки: 3 виправлено (тести дії, тест без ролі, тест без залежності від дати сиду), 1 — аргумент у треді (структура плану) | [run 42527688004](https://github.com/maryan-qc/therapy-scheduling/actions/runs/42527688004) — success |
+| PR «UAT зрізу 3» | 3. UAT і archive плану | AC-INS-01…06 | — | міграцій немає |
 
-- **Stryker** (`npm run mutation:ts -- --mutate <файл>`, 10.1.1):
-  - `src/app/clients/actions.ts`: 67,65 % → **73,53 %** (вижило 7 → 5). Лишились поза 3 AC: шлях помилки бази після
-    успішної форми (`:39`, два мутанти — це AC-CARD-06/13, їх доводять тести бази через той самий шлях),
-    `revalidatePath` (`:41`, `:42` — кеш сторінок, AC-CARD-01) і `select("id")` (`:38` — мок не перевіряє колонок; потрібен
-    для переходу на нову картку, AC-CARD-01).
-  - `src/lib/clients/card.ts`: 85,56 % (154 убито, 15 вижило, 11 без покриття) і до, і після. На рядках AC-CARD-12
-    (`validateClientCard`, `isBirthDate`, 114–160) вижили лише 3 еквівалентні (нижче). Решта 12 поза 3 AC: підписи типу
-    `CLIENT_TYPE_LABEL` (AC-CARD-01/02/10), `NOT_PROVIDED` (картки зрізу 1), власні тексти `CARD_DATA_INVALID` і
-    `SAVE_FAILED` (PM текстів не дала), початкові значення `EMPTY_CARD_FORM` (чотири — порожня форма до введення),
-    типовий `message` і `42501` у `cardErrorCode` (мапа кодів бази AC-CARD-06/13).
-  - Ручні TS-мутанти на межах AC-CARD-12 (`node scripts/mutation-check.mjs --kind ts`): T1 `value <= today` → `<` —
-    KILLED тестом [card.test.ts#L129](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/card.test.ts#L129); T2 «зупинитись після першої помилки» — KILLED тестом
-    [card.test.ts#L117](https://github.com/maryan-qc/therapy-scheduling/blob/061c836607b73ad77fd14e8ee112068ff2901e4b/tests/clients/card.test.ts#L117).
-- **SQL-мутації** (`npm run mutation:sql` — лише `kind: "sql"`, C1–C9; `scripts/mutants.mjs`): до — **5 з 9 вбито
-  (56 %)**, вижили C5, C7, C8, C9; після — **9 з 9 (100 %)**. Разом із ручними TS-мутантами T1–T2
-  (`node scripts/mutation-check.mjs` без `--kind`): до — 7 з 11 (64 %), після — **11 з 11 (100 %)**, ≈11 с. Таблиця
-  `--markdown` — в описі PR.
-
-  | Мутант | AC | Що зламано | До | Після |
-  |---|---|---|---|---|
-  | C1 | AC-CARD-05 | `clients_select` → `using (true)` | KILLED | KILLED |
-  | C2 | AC-CARD-05 | «свій клієнт» без умови терапевта | KILLED | KILLED |
-  | C3 | AC-CARD-05 | `grant update` + політика `using (true)` на `clients` | KILLED | KILLED |
-  | C4 | AC-CARD-11 | `current_therapist_id()` без `role = 'therapist'` | KILLED | KILLED |
-  | C5 | AC-CARD-11 | колонковий grant `profiles` + `role`, `email` | SURVIVED | KILLED |
-  | C6 | AC-CARD-11 | `clients_insert_staff` → `with check (true)` | KILLED | KILLED |
-  | C7 | AC-CARD-12 | тригер дати `>` → `>=` | SURVIVED | KILLED |
-  | C8 | AC-CARD-12 | дитина без мови сеансів | SURVIVED | KILLED |
-  | C9 | AC-CARD-12 | `clients_name_not_blank` → `true` | SURVIVED | KILLED |
-  | T1 | AC-CARD-12 | `isBirthDate`: `<=` → `<` | KILLED | KILLED |
-  | T2 | AC-CARD-12 | не всі помилки одразу | KILLED | KILLED |
-
-- **Еквівалентні мутанти:** Stryker на `src/lib/clients/card.ts` — `:115` `if (!ISO_DATE.test(value))` → `if (false)` і два
-  мутанти якорів регексу `ISO_DATE` (`:111`). Еквівалентні через рядок 117: `parsed.toISOString().slice(0, 10) === value`
-  приймає лише рядок рівно у вигляді РРРР-ММ-ДД, тож без регексу результат той самий. `Stryker disable` не ставили — пояснення тут.
-- Ще з відгуку викладача до WS7: з тестів бази прибрано перевірки, що порівнювали TS-константу з її ж текстом
-  (`client-access.test.ts`: AC-CARD-05, 09, 11, 16, AC-HOLD-44; `client-cards.test.ts`: AC-CARD-15). Вони нічого не
-  доводили про базу, а текст на сторінці доводять `tests/clients/pages.test.tsx` і UAT.
+- Ворота на `main` (`quality`): [run 42527687997](https://github.com/maryan-qc/therapy-scheduling/actions/runs/42527687997)
+  — success; `src/lib/clients/insurance.ts` під підлогою покриття (рядки 100 %, гілки 85,7 %).
+- Мутації: `npm run mutation:sql` — C10–C13 на `20261106170000_insurance_status.sql`: 4 з 4 KILLED
+  (C10 — без перевірки ролі, C11 — прямий update дозволено, C12 — «Not set» повертається, C13 — anon має доступ до
+  функції).
 
 ## C. UAT на проді
 
-| AC | Специфікація | Тест (твердження) | Агент | Вердикт | Кадр |
-|---|---|---|---|---|---|
-| AC-CARD-05 | [client-cards.spec.ts#L61](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L61) | passed | Haiku: PASS | **PASS** — R6 | [AC-CARD-05-then-1.png](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-05-then-1.png) |
-| AC-CARD-11 | [client-cards.spec.ts#L130](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L130) | passed | Haiku: PASS | **PASS** — R6 | [then-1](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-1.png) (застосунок), [then-2](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-11-then-2.png) (картка client6 за посиланням) |
-| AC-CARD-12 | [client-cards.spec.ts#L183](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/client-cards.spec.ts#L183) | passed | Haiku: PASS | **PASS** — R6 | [AC-CARD-12-then-1.png](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/frames/AC-CARD-12-then-1.png) |
-
-- Звіт: [docs/qa/uat/2026-11-03/report.md](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/docs/qa/uat/2026-11-03/report.md) (+ `manifest.json`, `frames/`);
-  код тестів `task/uat` @ `f4690ce`, прод `07b01cf`, прогін 03.11.2026 17:49 (Київ), Playwright 27,9 с.
-- Відео: вкладення в описі PR UAT — ассети pre-release `uat-2026-11-03` (у git їх немає). Вони з того самого прогону, що й
-  звіт: код тестів `f4690ce`, 03.11.2026 17:49 (Київ). SHA-256 файлів:
-  - [AC-CARD-05.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-05.webm) — `1cdd87467a3da54b27e121a9e0d0b4fd481ea6fb5c5b3c1973df99012f1b18e8`;
-  - [AC-CARD-11.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-11.webm) — `a8e3467ae79952a2b628fc65c93a990bbe8dd8006e9a7b60a5bbf07e1150de7e`;
-  - [AC-CARD-12.webm](https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-03/AC-CARD-12.webm) — `8e99b7554b9a475fec06b5cf39f95da78688eb47f58f3ddcca8082d02d66c079`.
-- Відтворити прогін з чистого клону (Node 24):
-  1. `npm ci`;
-  2. `npx playwright install chromium` — `npm ci` браузера не ставить;
-  3. `DEMO_USER_PASSWORD` у `.env.local` — пароль акаунтів з `accounts.zip`;
-  4. `SUPABASE_SECRET_KEY= npm run uat -- --url https://therapy-scheduling-sigma.vercel.app`, негативні контролі —
-     `SUPABASE_SECRET_KEY= npm run uat:nc -- --url …`. Порожній секретний ключ — навмисно: усі три AC лише читають, а з
-     ключем teardown `cleanup` видалив би всіх `uat-*@example.test`, не лише цього прогону.
-- Рецензент: `claude-haiku-5-5` на кожен AC, суперечок не було, тож до `claude-sonnet-5-5` не дійшло. Промпт і схема — з
-  materials без змін. Разом за розбір — $0,0065 (ціни API; прогін — за підпискою). Конвеєр запускав агент: змінні
-  `CLAUDECODE` / `CLAUDE_*` прибрано, `SUPABASE_SECRET_KEY` порожній.
-- Негативний контроль (`npm run uat:nc`, [negative-controls.spec.ts](https://github.com/maryan-qc/therapy-scheduling/blob/3493210754d28c3ba4b57eca72aa3a819850d8e8/tests/e2e/negative-controls.spec.ts)), обидва на AC-CARD-05:
-  - **NC-1** — у твердженні «You do not have access to this client.» замість тексту AC: перевірки впали, Haiku сказав
-    PASS → **FAIL** (R1, агент не перекриває впале твердження);
-  - **NC-2** — анотація `ac-text` з іншим «Тоді» («This client card is private.»), тест і застосунок без змін: перевірки
-    пройшли, Haiku й Sonnet — FAIL → **NEEDS-HUMAN** (R3).
-
-  Рядки звіту — в описі PR UAT.
-- Дані: **лише читання**. UAT нічого не створює (прибирання не запускалось: прогін без секретного ключа). «Дано» на проді —
-  синтетичні дані, створені один раз 03.11 через застосунок під scheduler1 (з RLS) і залишені для приймання PM:
-  - картки «Client Six» (client6@example.test, дані AC-CARD-01) і «Client Nine» (client9@example.test);
-  - сеанс «Confirmed» Client Nine у Therapist Two 2026-11-05 о 11:00 — тож client9 лишається своїм лише для therapist2.
-
-  Специфікація щоразу перевіряє «Дано»: картку бачить scheduler1, вона є в «My clients» therapist2 і її немає в therapist1.
-- `docs/conformance.md`: AC-CARD-05, AC-CARD-11, AC-CARD-12 — `реалізовано` зі шляхом `tests/e2e/client-cards.spec.ts`.
-  Рядків `відкладено (e2e — WS8)` у матриці немає: усі 60 AC зрізів 1–2 «реалізовано» ще з WS7.
+- Звіт: [`docs/qa/uat/2026-11-09/report.md`](uat/2026-11-09/report.md) — 6 AC, PASS 6, FAIL 0, NEEDS-HUMAN 0; код тестів
+  `fb9b7e2`, без незакомічених змін.
+- Відео: ассети pre-release [uat-2026-11-09](https://github.com/maryan-qc/therapy-scheduling/releases/tag/uat-2026-11-09) (у git відео не кладемо), посилання — в описі PR «UAT зрізу 3».
+- Рецензент: `claude-haiku-5-5`, суперечки → `claude-sonnet-5-5`; розбір — $0.0128 (ціни API); негативні контролі — ще $0.0377.
+- Негативний контроль (`npm run uat:nc`): NC-1 (AC-CARD-05, хибний текст) → **FAIL** (R1); NC-2 (уточнений «Тоді») →
+  **NEEDS-HUMAN** (R3); NC-3 (AC-INS-01, тест чекає «Verified» на свіжій картці) → **FAIL** (R1). Агент Haiku на NC-1 і
+  NC-3 сказав PASS — R1 його перекрив, і саме це контроль і перевіряє.
+- Дані: `@writes` — тести створюють синтетичні картки «Client Six/Seven <прогін>-<n>» з адресами
+  `uat-<прогін>-…@example.test` і утримання «Held» у Therapist One (прострочуються за 24 години); вони лишаються на
+  проді. Прибирання (видаляє лише користувачів Auth `uat-*`) не запускалось: прогін без `SUPABASE_SECRET_KEY`,
+  користувачів Auth тести не створюють.
 
 ### Приймання PM
 
 | AC | Рішення PM | Посилання |
 |---|---|---|
-| AC-CARD-05 | очікує приймання PM (звіт подано 03.11.2026) | — |
-| AC-CARD-12 | очікує приймання PM (звіт подано 03.11.2026) | — |
-| AC-CARD-11 | очікує приймання PM (звіт подано 03.11.2026) | — |
+| AC-INS-01…06 | чекає PM | таблиця приймання PM; issues «Відхилення від вимог» — у цьому репо |
 
-Оцінки 0–3 PM ставить у таблиці приймання курсу; підпис і issues «Відхилення від вимог» (форма
-`.github/ISSUE_TEMPLATE/deviation.yml`, мітка `відхилення`) — у цьому репо. Виправлення — до кінця Сб 07.11.
+## D. Прод і ретро
 
-## D. Eval рецензента
+- `/api/health` після злиття всіх задач: sha `main` (у файлі здачі), db ok.
+- Нові ролі й акаунти: нових ролей зріз 3 не додає; ролі зрізів 1–3 — admin1, scheduler1, scheduler2, therapist1,
+  therapist2 (`*@example.test`) — уже в [`accounts.zip`](../../accounts.zip).
+- `docs/conformance.md`: [рядки AC-INS-01…06](../conformance.md) — «реалізовано» з кодом, тестом і UAT; AC-DOC-01…11 —
+  «відкладено (рішення PM: пізніший зріз, …#34)».
 
-- PR з вадами (не злитий, закритий після eval): https://github.com/maryan-qc/therapy-scheduling/pull/36 — гілка
-  `task/refactor-schedule-names`, нейтральні назва, коміт і опис; вади пройшли весь обов'язковий CI
-- Ключ і таблиця: https://github.com/maryan-qc/therapy-scheduling/pull/36#issuecomment-6608519705
-- Рецензенти: CodeRabbit (`@coderabbitai review`) і `/code-review high 36` у Claude Code неінтерактивно (команда з
-  гайду, `--setting-sources project`; модель рецензента — `claude-sonnet-5-5`, 26 с, $0,16)
+### Ретро: що б ми взяли з фабрики у свій звичайний процес
 
-| # | Вада (ключ) | CodeRabbit | `/code-review high` |
-|---|---|---|---|
-| 1 | права в даних — `supabase/migrations/20261103120000_schedule_client_names.sql`: `public.schedule_client_names` — `security definer` без перевірки доступу й без `set search_path = ''`, `execute` для `authenticated` | **знайшов** (Major, IDOR): «Функція `schedule_client_names` обходить RLS для `clients` і повертає імена за довільними ID.» | **знайшов**: «The function has no role or ownership check, so the definer bypasses the RLS on clients. Any authenticated user can read the name of any client by id.» |
-| 2 | авторизація в дії — `src/lib/supabase/viewer.ts:23`: роль спершу з `claims.user_metadata.role` | **знайшов, але як Minor**: «Не використовуйте `claims.user_metadata.role` як джерело ролі.» … «Доступ до даних це не відкриває.» | **знайшов**: «user_metadata can be edited by the signed-in user, so this is a privilege escalation.» |
-| 3 | тести — `tests/db/therapist-visibility.test.ts`, «AC-HOLD-40: … лише імена клієнтів своїх утримань» лише з власними id | **пропустив** (лише побічно, у знахідці 1: «Перевірте … що прямий виклик з ID клієнтів `Expired Client` і `Released Client` повертає порожній результат для `therapist1`.») | **знайшов**: «The new AC-HOLD-40 test covers only the happy path. It never checks that a therapist cannot fetch names of clients outside their holds…» |
-| П | приманка: `isCardId` у `src/lib/clients/card.ts` — винесення регексу без зміни поведінки | хибної тривоги немає (жодного зауваження) | м'яка хибна тривога: «The UUID regex extraction into `isCardId` is unrelated churn in a PR about schedule names.» |
-
-- Інші знахідки:
-  - CodeRabbit, рядок AC-HOLD-40 у `docs/conformance.md` не оновлено — **слушна**;
-  - CodeRabbit, «додайте тест для пріоритету `user_metadata.role`» — **шум**: тест закріпив би ваду 2;
-  - `/code-review`, помилку `rpc` не перевірено — **слушна**;
-  - `/code-review`, два послідовні запити замість одного з RLS — **слушна**;
-  - `/code-review`, `database.types.ts` змінено руками — **слушна** (процес).
-- Правило, що закриває пропуск (ваду 3 пропустив CodeRabbit): рядок в `AGENTS.md`, розділ «Процес і ролі» — «Тест з AC ID
-  на правило доступу … перевіряє й заборонений випадок … Тест лише з власними даними користувача межі не доводить … для
-  рецензента це знахідка рівня «must fix» (Major)». PR https://github.com/maryan-qc/therapy-scheduling/pull/37, коміт `48cbd82` у `main`
-- Повторний прогін (`git merge main` → `@coderabbitai full review` і `/code-review high 36`):
-  https://github.com/maryan-qc/therapy-scheduling/pull/36#issuecomment-6610619853
-  - **CodeRabbit** знайшов ваду 3 окремою знахідкою, але як Trivial: «Додайте прямий виклик RPC із чужим ID. Тест передає
-    лише ID, які `therapist1` уже отримав через RLS. Тому він проходить, навіть якщо RPC повертає імена інших клієнтів.»
-    Застереження: ключ уже був опублікований у PR, і підсумок CodeRabbit на нього відповідає, тож прогін не сліпий.
-  - **`/code-review high`** знову знайшов усі три вади й послався на правило: «It does not check the forbidden cases that
-    AGENTS.md requires».
-  - Висновок: правило закрило пропуск, але CodeRabbit і далі занижує рівень. Таку ваду блокують SQL-мутація й тест
-    відмови (трек B), а не дорадче рев'ю.
+- Допуск: уже є — PM перевіряє вимогу за чеклістом, у нас `/requirements-sync` → `spec-review` до коду.
+- Захищені тести: візьмемо — червоні тести AC окремим PR перед «Реалізацією» (гілка `tests/<зріз>`), щоб тест писала не
+  та сесія, що код (у WS9 це не дотримано — див. «Не перевірено»).
+- Приховані сценарії: не потрібно в соло-репо — ховати нема від кого; ту саму роль грають мутанти.
+- Мутації й повтор: уже є (`scripts/mutants.mjs`, C1–C13); візьмемо — job `mutation:sql` у `.github/workflows/quality.yml`
+  на PR, що змінює `supabase/migrations/**`, а не ручний запуск.
+- Рев'ю-спростування: уже є — CodeRabbit і відповідь у треді; візьмемо — його ліміт закладати в план (одна рецензія
+  ~раз на 30–60 хв), бо черга рецензій у WS9 забрала більше часу, ніж код.
+- Пакет доказів з «Не перевірено»: уже є — цей proof pack і `manifest.json` звіту UAT.
+- Рівні автономії й автозлиття: не потрібно для основного проду — міграції йдуть через `db-deploy` після рішення людини.
+- Бюджети: візьмемо — підсумок вартості рецензента зі звіту UAT у PR, щоб бачити ціну доказу (тут $0.013 на 6 AC).

@@ -19,6 +19,8 @@ const ROLES = {
   therapist: { email: "therapist1@example.test", signedIn: viewer("therapist1@example.test") }, // AC-CARD-05
   therapist2: { email: "therapist2@example.test", signedIn: viewer("therapist2@example.test") }, // «Дано» AC-CARD-05
   scheduler: { email: "scheduler1@example.test", signedIn: viewer("scheduler1@example.test") }, // AC-CARD-12
+  scheduler2: { email: "scheduler2@example.test", signedIn: viewer("scheduler2@example.test") }, // AC-INS-03
+  admin: { email: "admin1@example.test", signedIn: viewer("admin1@example.test") }, // AC-INS-03
   norole: { email: "newuser1@example.test", signedIn: (page: Page) => page.getByTestId("no-role") }, // AC-CARD-11
 } as const;
 
