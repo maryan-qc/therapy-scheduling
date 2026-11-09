@@ -11,7 +11,7 @@
   (HryhoriiHaponiukQuitCode/therapy-scheduling-spec#33). Вимогу #34 (документи згоди, AC-DOC-01…11) PM 2026-11-06
   переніс на пізніший зріз — у WS9 її не реалізуємо (рядки матриці — «відкладено (рішення PM…)»).
 - Спека: [`openspec/specs/insurance-status/spec.md`](../../openspec/specs/insurance-status/spec.md)
-- `/api/health` на момент UAT: sha `60b0bc0`, db ok, 09.11.2026 11:02 (Київ).
+- `/api/health` на момент UAT: sha `60b0bc0`, db ok, 09.11.2026 11:15 (Київ).
 
 ## Доказ на кожен AC зрізу 3
 
@@ -61,15 +61,16 @@
 ## C. UAT на проді
 
 - Звіт: [`docs/qa/uat/2026-11-09/report.md`](uat/2026-11-09/report.md) — 6 AC, PASS 6, FAIL 0, NEEDS-HUMAN 0; код тестів
-  `5964158`, без незакомічених змін.
+  `fb9b7e2`, без незакомічених змін.
 - Відео: ассети pre-release [uat-2026-11-09](https://github.com/maryan-qc/therapy-scheduling/releases/tag/uat-2026-11-09) (у git відео не кладемо), посилання — в описі PR «UAT зрізу 3».
-- Рецензент: `claude-haiku-5-5`, суперечки → `claude-sonnet-5-5`; розбір — $0.0129 (ціни API); негативні контролі — ще $0.0377.
+- Рецензент: `claude-haiku-5-5`, суперечки → `claude-sonnet-5-5`; розбір — $0.0128 (ціни API); негативні контролі — ще $0.0377.
 - Негативний контроль (`npm run uat:nc`): NC-1 (AC-CARD-05, хибний текст) → **FAIL** (R1); NC-2 (уточнений «Тоді») →
   **NEEDS-HUMAN** (R3); NC-3 (AC-INS-01, тест чекає «Verified» на свіжій картці) → **FAIL** (R1). Агент Haiku на NC-1 і
   NC-3 сказав PASS — R1 його перекрив, і саме це контроль і перевіряє.
 - Дані: `@writes` — тести створюють синтетичні картки «Client Six/Seven <прогін>-<n>» з адресами
-  `uat-<прогін>-…@example.test` і утримання «Held» у Therapist One (прострочуються за 24 години). Прибирання (видаляє
-  лише користувачів Auth `uat-*`) не запускалось: прогін без `SUPABASE_SECRET_KEY`, користувачів тести не створюють.
+  `uat-<прогін>-…@example.test` і утримання «Held» у Therapist One (прострочуються за 24 години); вони лишаються на
+  проді. Прибирання (видаляє лише користувачів Auth `uat-*`) не запускалось: прогін без `SUPABASE_SECRET_KEY`,
+  користувачів Auth тести не створюють.
 
 ### Приймання PM
 
