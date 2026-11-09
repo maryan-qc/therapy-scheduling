@@ -261,7 +261,8 @@ test.describe("статус перевірки страхування — тер
         answer = (await supabase.rpc("set_insurance_status", { p_client_id: clientId, p_status: "verified" })).data;
         const update = await supabase.from("clients").update({ insurance_status: "verified" }).eq("id", clientId);
         expect(update.error?.message).toMatch(/permission denied/);
-        await supabase.auth.signOut();
+        // Лише локальна сесія цього клієнта: типовий global відкликав би й сесію therapist1, з якою працюють інші тести.
+        await supabase.auth.signOut({ scope: "local" });
       });
       await asRole(browser, "scheduler", async (scheduler) => {
         await scheduler.goto(href);

@@ -91,7 +91,9 @@ export function report(rows = combine(), { out } = {}) {
     `- **Рецензент:** \`${HAIKU}\`; суперечки → \`${SONNET}\`. Разом за розбір: ${usd(totalCost)} (ціни API; за підпискою — у межах ліміту плану)`,
     cleanup
       ? `- **Прибирання:** синтетичних uat-*@example.test видалено ${cleanup.deleted.length}, лишилось ${cleanup.remaining.length}, їхніх рядків, що лишились: ${cleanup.leftoverRequests}`
-      : "- **Прибирання:** не запускалось (прогін без SUPABASE_SECRET_KEY — лише AC, що нічого не пишуть)",
+      : // Наше (WS9): без ключа прибирання не запускається, а тести з @writes лишають синтетичні дані на проді — так і пишемо,
+      // а не «лише AC, що нічого не пишуть» (знахідка CodeRabbit у #48).
+      "- **Прибирання:** не запускалось (прогін без SUPABASE_SECRET_KEY): користувачів Auth `uat-*` не видалено; дані тестів з `@writes` — синтетичні `*@example.test` — лишились на проді",
     "- **Відео й траси:** не в git — `test-results/` локально або артефакт CI; трасу відкриває `npx playwright show-trace <trace.zip>`",
     "",
     "| AC | Перевірки | Агент | Підсумок | Чому | Playwright | Розбір |",
