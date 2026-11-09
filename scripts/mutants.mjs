@@ -19,6 +19,8 @@ const NO_ROLE = "supabase/migrations/20261023105250_users_without_role.sql";
 const CARDS_CLARIFY = "supabase/migrations/20261027073004_client_cards_clarify.sql";
 const ACCESS_DB = "tests/db/client-access.test.ts";
 const CARDS_DB = "tests/db/client-cards.test.ts";
+const INSURANCE = "supabase/migrations/20261106170000_insurance_status.sql";
+const INSURANCE_DB = "tests/db/insurance-status.test.ts";
 const CARD_TS = "src/lib/clients/card.ts";
 const CARD_UNIT = "tests/clients/card.test.ts";
 
@@ -82,6 +84,37 @@ export const mutants = [
     what: "clients_name_not_blank послаблене до true: картка з порожнім ім'ям («Enter the client's name.»)",
     find: "constraint clients_name_not_blank check (btrim(name) <> '')",
     replace: "constraint clients_name_not_blank check (true)",
+  },
+  // ── AC-INS-05 / AC-INS-06 (WS9, зріз 3): статус страхування змінює лише персонал і лише функцією бази ─────────────
+  {
+    id: "C10", kind: "sql", ac: "AC-INS-05", file: INSURANCE, tests: [INSURANCE_DB],
+    what: "set_insurance_status без перевірки ролі: therapist1 напряму змінює статус свого клієнта",
+    find: "  if not (select private.is_staff()) then\n    return jsonb_build_object('code', 'INSURANCE_FORBIDDEN');\n  end if;\n",
+    replace: "",
+  },
+  {
+    id: "C11", kind: "sql", ac: "AC-INS-05", file: INSURANCE, tests: [INSURANCE_DB],
+    what: "прямий update статусу дозволено будь-кому з входом (колонковий grant і політика using (true))",
+    find: "revoke execute on function private.set_insurance_status(uuid, text) from public, anon;",
+    replace:
+      "revoke execute on function private.set_insurance_status(uuid, text) from public, anon;\n" +
+      "grant update (insurance_status) on table public.clients to authenticated;\n" +
+      "create policy clients_update_any on public.clients for update to authenticated using (true) with check (true);",
+  },
+  {
+    id: "C12", kind: "sql", ac: "AC-INS-05", file: INSURANCE, tests: [INSURANCE_DB],
+    what: "«Not set» можна повернути: функція приймає not_set (припущення PM: лише початковий)",
+    find: "p_status not in ('verified', 'not_accepted', 'private_pay')",
+    replace: "p_status not in ('not_set', 'verified', 'not_accepted', 'private_pay')",
+  },
+  {
+    id: "C13", kind: "sql", ac: "AC-INS-06", file: INSURANCE, tests: [INSURANCE_DB],
+    what: "без входу (anon) функція статусу доступна: execute і usage схеми private для anon",
+    find: "grant execute on function public.set_insurance_status(uuid, text) to authenticated;",
+    replace:
+      "grant execute on function public.set_insurance_status(uuid, text) to authenticated, anon;\n" +
+      "grant execute on function private.set_insurance_status(uuid, text) to anon;\n" +
+      "grant usage on schema private to anon;",
   },
   // ── AC-CARD-12, TS: ручні мутанти на межах з AC (повний перебір — npm run mutation:ts, Stryker) ─────────────────
   {
