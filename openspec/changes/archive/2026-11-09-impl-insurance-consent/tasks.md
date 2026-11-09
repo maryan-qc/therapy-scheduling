@@ -37,8 +37,8 @@
 
 ## 3. UAT зрізу 3 на проді (`task/uat-slice-3`)
 
-- [ ] 3.1 e2e-специфікації кожного AC зрізу 3 (`tests/e2e/`), прогін `npm run uat` на проді, звіт і кадри в
+- [x] 3.1 e2e-специфікації кожного AC зрізу 3 (`tests/e2e/`), прогін `npm run uat` на проді, звіт і кадри в
   `docs/qa/uat/<дата>/`, рядки матриці з посиланням на UAT.
   Done when: AC-INS-01, AC-INS-02, AC-INS-03, AC-INS-04, AC-INS-05, AC-INS-06 — вердикт агента «PASS».
-- [ ] 3.2 archive `impl-insurance-consent`.
+- [x] 3.2 archive `impl-insurance-consent`.
   Done when: `npx openspec archive impl-insurance-consent -y`, `npm run spec:validate` зелений.
