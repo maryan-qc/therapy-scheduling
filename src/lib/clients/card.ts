@@ -112,7 +112,7 @@ export function cardRoleError(role: Role | null): CardErrorCode | null {
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Справжня дата РРРР-ММ-ДД, не пізніша за `today` (сьогодні в America/Los_Angeles, включно). */
-function isBirthDate(value: string, today: string): boolean {
+export function isBirthDate(value: string, today: string): boolean {
   if (!ISO_DATE.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value && value <= today;
