@@ -4,6 +4,7 @@ import {
   CARD_NOT_FOUND,
   cardErrorCode,
   cardRoleError,
+  clientTypeLabel,
   EMPTY_CARD_FORM,
   NO_ACCESS_TO_CLIENT,
   NO_CARDS_YET,
@@ -113,6 +114,26 @@ describe("картка клієнта — перевірка форми (openspe
 });
 
 // Рішення PM на Q5 (Sofiia-pm/therapy-scheduling-spec#21): окреме повідомлення на кожну проблему, усі одразу.
+describe("картка клієнта — підпис типу й відповіді бази (openspec/specs/client-cards)", () => {
+  it("AC-CARD-01: тип у картці — «Adult» для adult і для рядків зрізу 1 без типу, «Child» лише для child", () => {
+    expect(clientTypeLabel("adult")).toBe("Adult");
+    expect(clientTypeLabel("child")).toBe("Child");
+    expect(clientTypeLabel("")).toBe("Adult");
+  });
+
+  it("AC-CARD-12: check-обмеження чи тригер дати в базі (23514) — «Check the client card fields and try again.»", () => {
+    expect(cardErrorCode("23514")).toBe("CARD_DATA_INVALID");
+    expect(CARD_MESSAGES[cardErrorCode("23514")]).toBe("Check the client card fields and try again.");
+  });
+
+  it("AC-CARD-06: відмова RLS (42501) — «Only schedulers and admins …»; невідома помилка чи її відсутність — SAVE_FAILED", () => {
+    expect(CARD_MESSAGES[cardErrorCode("42501")]).toBe("Only schedulers and admins can create client cards.");
+    expect(cardErrorCode("08006")).toBe("SAVE_FAILED");
+    expect(cardErrorCode(undefined)).toBe("SAVE_FAILED");
+    expect(CARD_MESSAGES.SAVE_FAILED).toBe("The client card was not saved. Try again.");
+  });
+});
+
 describe("картка клієнта — обов'язкові поля (openspec/specs/client-cards)", () => {
   it("AC-CARD-12: сьогодні 2026-11-03 — дитина без імені, з датою 2026-11-04, без мови: три повідомлення одразу", () => {
     const input = validateClientCard(
