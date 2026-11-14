@@ -8,15 +8,15 @@
     "model": "claude-haiku-5-5",
     "disputes": "claude-sonnet-5-5"
   },
-  "note": "Відео й траси не в git (test-results/ локально, артефакт CI). check-recordings конвеєра WS9 вимагає відео на диску — для нього цей manifest треба доповнити.",
+  "note": "Відео кожного AC — assets pre-release uat-2026-11-09 (посилання в results[].video). Траси не збережено (test-results/ поза git). Негативні контролі — окремий прогін npm run uat:nc 09.11 10:59 Київ на проді 60b0bc0 (звіт negative-controls.md, кадри frames/NC-*.png); їхні відео перезаписав наступний прогін, тож video: null.",
   "results": [
     {
       "id": "AC-INS-01",
       "proof": "AC-INS-01",
       "title": "AC-INS-01: scheduler1 відкриває щойно створену картку client6 — «Insurance: Not set»",
       "screenshot": "docs/qa/uat/2026-11-09/frames/AC-INS-01-then-1.png",
-      "video": "test-results/artifacts/insurance-статус-перевірки-81e1e-ient6-—-«Insurance-Not-set»-chromium/video.webm",
-      "trace": "test-results/artifacts/insurance-статус-перевірки-81e1e-ient6-—-«Insurance-Not-set»-chromium/trace.zip",
+      "video": "https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-09/AC-INS-01.webm",
+      "trace": null,
       "asserted": true,
       "vision": {
         "met": true,
@@ -47,8 +47,8 @@
       "proof": "AC-INS-02",
       "title": "AC-INS-02: scheduler1 позначає «Verified» — «Insurance status saved.» і «Insurance: Verified» після повторного відкриття",
       "screenshot": "docs/qa/uat/2026-11-09/frames/AC-INS-02-then-1.png",
-      "video": "test-results/artifacts/insurance-статус-перевірки-c3fbf--після-повторного-відкриття-chromium/video.webm",
-      "trace": "test-results/artifacts/insurance-статус-перевірки-c3fbf--після-повторного-відкриття-chromium/trace.zip",
+      "video": "https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-09/AC-INS-02.webm",
+      "trace": null,
       "asserted": true,
       "vision": {
         "met": true,
@@ -87,8 +87,8 @@
       "proof": "AC-INS-03",
       "title": "AC-INS-03: admin1 змінює «Verified» на «Private pay» — admin1 і scheduler2 бачать «Insurance: Private pay»",
       "screenshot": "docs/qa/uat/2026-11-09/frames/AC-INS-03-then-1.png",
-      "video": "test-results/artifacts/insurance-статус-перевірки-75f58-ать-«Insurance-Private-pay»-chromium/video.webm",
-      "trace": "test-results/artifacts/insurance-статус-перевірки-75f58-ать-«Insurance-Private-pay»-chromium/trace.zip",
+      "video": "https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-09/AC-INS-03.webm",
+      "trace": null,
       "asserted": true,
       "vision": {
         "met": true,
@@ -127,8 +127,8 @@
       "proof": "AC-INS-04",
       "title": "AC-INS-04: therapist1 відкриває картку свого client6 — «Insurance: Not accepted» без можливості змінити",
       "screenshot": "docs/qa/uat/2026-11-09/frames/AC-INS-04-then-1.png",
-      "video": "test-results/artifacts/insurance-статус-перевірки-09367-ted»-без-можливості-змінити-chromium/video.webm",
-      "trace": "test-results/artifacts/insurance-статус-перевірки-09367-ted»-без-можливості-змінити-chromium/trace.zip",
+      "video": "https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-09/AC-INS-04.webm",
+      "trace": null,
       "asserted": true,
       "vision": {
         "met": true,
@@ -163,8 +163,8 @@
       "proof": "AC-INS-05",
       "title": "AC-INS-05: therapist1 напряму, оминаючи сторінки, пробує змінити статус client6 на «Verified» — scheduler1 бачить «Insurance: Not accepted»",
       "screenshot": "docs/qa/uat/2026-11-09/frames/AC-INS-05-then-1.png",
-      "video": "test-results/artifacts/insurance-статус-перевірки-de2c9-ть-«Insurance-Not-accepted»-chromium/video.webm",
-      "trace": "test-results/artifacts/insurance-статус-перевірки-de2c9-ть-«Insurance-Not-accepted»-chromium/trace.zip",
+      "video": "https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-09/AC-INS-05.webm",
+      "trace": null,
       "asserted": true,
       "vision": {
         "met": true,
@@ -199,8 +199,8 @@
       "proof": "AC-INS-06",
       "title": "AC-INS-06: користувач без входу відкриває картку client6 — лише сторінка входу, scheduler1 бачить «Insurance: Verified»",
       "screenshot": "docs/qa/uat/2026-11-09/frames/AC-INS-06-then-1.png",
-      "video": "test-results/artifacts/insurance-без-входу-AC-INS-f39eb-бачить-«Insurance-Verified»-chromium/video.webm",
-      "trace": "test-results/artifacts/insurance-без-входу-AC-INS-f39eb-бачить-«Insurance-Verified»-chromium/trace.zip",
+      "video": "https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-09/AC-INS-06.webm",
+      "trace": null,
       "asserted": true,
       "vision": {
         "met": true,
@@ -243,6 +243,116 @@
       "reviewWallMs": 9565
     }
   ],
-  "negativeControls": [],
+  "negativeControls": [
+    {
+      "id": "NC-1",
+      "proof": "AC-CARD-05",
+      "title": "NC-1 (AC-CARD-05, навмисно хибне очікування в тесті: інший текст повідомлення)",
+      "screenshot": "docs/qa/uat/2026-11-09/frames/NC-1-then-1.png",
+      "video": null,
+      "trace": null,
+      "asserted": false,
+      "vision": {
+        "met": true,
+        "readable": true,
+        "notes": "На кадрі frame-then-1.png у червоній рамці видно текст «You don't have access to this client.», дослівно збігається з критерієм. Під повідомленням немає жодних даних клієнта, видно лише навігацію (My clients) і шапку therapist1@example.test. Те, що картка client9 не змінилася, одним кадром не перевірити; це не входить до переліку видимих частин, тож не оцінювалося."
+      },
+      "agentModel": "claude-haiku-5-5",
+      "agentVerdicts": {
+        "claude-haiku-5-5": "PASS",
+        "claude-sonnet-5-5": null
+      },
+      "escalated": false,
+      "quotesVerified": [
+        {
+          "quote": "You don't have access to this client.",
+          "onPage": true
+        }
+      ],
+      "verdict": "FAIL",
+      "factoryGate": "FAIL",
+      "rule": "R1: перевірка впала — FAIL завжди, агент не перекриває",
+      "playwrightMs": 6868,
+      "reviewCostUsd": 0.00179,
+      "reviewWallMs": 7490,
+      "run": {
+        "generatedAt": "2026-11-09T09:00:00.884Z",
+        "deployedSha": "60b0bc00271213db4d62bbd9a4f5e12d8e00bb26",
+        "testsCommit": "ab51d0c87cce475f1edcb1f1f306c55c3b41df1c",
+        "report": "docs/qa/uat/2026-11-09/negative-controls.md"
+      }
+    },
+    {
+      "id": "NC-2",
+      "proof": "AC-CARD-05",
+      "title": "NC-2 (AC-CARD-05, текст «Тоді» у вимозі уточнено, тест і застосунок — ні)",
+      "screenshot": "docs/qa/uat/2026-11-09/frames/NC-2-then-1.png",
+      "video": null,
+      "trace": null,
+      "asserted": true,
+      "vision": {
+        "met": false,
+        "readable": true,
+        "notes": "На кадрі сторінка therapist1 з червоним банером «You don't have access to this client.», даних client9 не видно. Очікуваного за критерієм тексту «This client card is private.» на кадрі немає, тому посимвольне порівняння не проходить."
+      },
+      "agentModel": "claude-sonnet-5-5",
+      "agentVerdicts": {
+        "claude-haiku-5-5": "NEEDS-HUMAN",
+        "claude-sonnet-5-5": "FAIL"
+      },
+      "escalated": true,
+      "quotesVerified": [],
+      "verdict": "NEEDS-HUMAN",
+      "factoryGate": "NOT-EARNED",
+      "rule": "R3: перевірки пройшли, агент не погоджується — вирішує людина",
+      "playwrightMs": 2243,
+      "reviewCostUsd": 0.03418,
+      "reviewWallMs": 23348,
+      "run": {
+        "generatedAt": "2026-11-09T09:00:00.884Z",
+        "deployedSha": "60b0bc00271213db4d62bbd9a4f5e12d8e00bb26",
+        "testsCommit": "ab51d0c87cce475f1edcb1f1f306c55c3b41df1c",
+        "report": "docs/qa/uat/2026-11-09/negative-controls.md"
+      }
+    },
+    {
+      "id": "NC-3",
+      "proof": "AC-INS-01",
+      "title": "NC-3 (AC-INS-01, навмисно хибне очікування в тесті: «Verified» замість «Not set»)",
+      "screenshot": "docs/qa/uat/2026-11-09/frames/NC-3-then-1.png",
+      "video": null,
+      "trace": null,
+      "asserted": false,
+      "vision": {
+        "met": true,
+        "readable": true,
+        "notes": "На кадрі видно картку «Client Six 261109085901-1» з рядком «Insurance: Not set» над полем «Insurance status» і кнопкою «Save insurance status». Текст збігається з критерієм посимвольно. Стан «Дано» я не оцінював, бо він не є видимою частиною «Тоді»."
+      },
+      "agentModel": "claude-haiku-5-5",
+      "agentVerdicts": {
+        "claude-haiku-5-5": "PASS",
+        "claude-sonnet-5-5": null
+      },
+      "escalated": false,
+      "quotesVerified": [
+        {
+          "quote": "Insurance: Not set",
+          "onPage": true
+        }
+      ],
+      "verdict": "FAIL",
+      "factoryGate": "FAIL",
+      "rule": "R1: перевірка впала — FAIL завжди, агент не перекриває",
+      "playwrightMs": 13190,
+      "reviewCostUsd": 0.00169,
+      "reviewWallMs": 6638,
+      "run": {
+        "generatedAt": "2026-11-09T09:00:00.884Z",
+        "deployedSha": "60b0bc00271213db4d62bbd9a4f5e12d8e00bb26",
+        "testsCommit": "ab51d0c87cce475f1edcb1f1f306c55c3b41df1c",
+        "report": "docs/qa/uat/2026-11-09/negative-controls.md"
+      }
+    }
+  ],
   "cleanup": null
 }

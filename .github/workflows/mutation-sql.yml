@@ -1,0 +1,63 @@
+# Мутанти SQL (WS9, зауваження викладача п. 3): правила бази (RLS, GRANT, функції, тригери) доводимо тим, що тести
+# ПАДАЮТЬ, коли правило зламати. scripts/mutation-check.mjs по черзі робить одну заміну в міграції (scripts/mutants.mjs),
+# проганяє лише тести цього мутанта на PGlite і повертає файл. Вердикти — у Summary прогону (таблиця --markdown) і в
+# артефакті sql-mutation.json.
+# Окремий workflow, а не job у quality.yml: фільтр paths діє на весь workflow, а jobs quality.yml — обов'язкові
+# перевірки ruleset для КОЖНОГО PR. Тут прогін лише тоді, коли змінюються міграції, тести бази чи самі мутанти.
+name: mutation-sql
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/**"
+      - "tests/db/**"
+      - "scripts/mutants.mjs"
+      - "scripts/mutation-check.mjs"
+      - ".github/workflows/mutation-sql.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "tests/db/**"
+      - "scripts/mutants.mjs"
+      - "scripts/mutation-check.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-sql-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  mutation-sql:
+    name: "Мутанти SQL: правила бази"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Код виходу 1 — є SURVIVED чи ERROR (тести правила не доводять), 2 — помилка запуску: job червоний в обох випадках.
+      - name: npm run mutation:sql (кожен мутант має бути KILLED)
+        run: |
+          set -o pipefail
+          npm run -s mutation:sql -- --json reports/sql-mutation.json --markdown | tee mutation.log
+      - name: Вердикти → Summary
+        if: always()
+        run: |
+          {
+            echo "## Мутанти SQL"
+            echo
+            grep -E "^(Мутаційний бал|\| )" mutation.log || echo "Звіту немає — див. лог кроку вище."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: sql-mutation
+          path: reports/sql-mutation.json
+          if-no-files-found: ignore
