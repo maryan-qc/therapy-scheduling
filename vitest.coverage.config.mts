@@ -17,6 +17,10 @@ import base from "./vitest.config.mjs";
 const FLOORED: string[] = [
   "health",
   "clients/insurance", // WS9, зріз 3: статус перевірки страхування
+  "clients/intake", // WS10, зріз 4: правила чернетки з тексту звернення
+  "clients/intake-draft",
+  "ai/draft",
+  "ai/prompts/draft",
   "clients/search",
   "holds/clients",
   "holds/messages",

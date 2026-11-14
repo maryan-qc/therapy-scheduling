@@ -12,22 +12,22 @@
 
 ## 1. Чернетка картки з тексту звернення (`tests/intake-draft` → PR «Реалізація»)
 
-- [ ] 1.1 Червоні тести окремою сесією: `tests/clients/intake.test.ts`, `tests/clients/intake-draft.test.ts`,
+- [x] 1.1 Червоні тести окремою сесією: `tests/clients/intake.test.ts`, `tests/clients/intake-draft.test.ts`,
   `tests/clients/intake-panel.test.tsx`, `tests/golden.test.ts` (реплей, записи-заглушки до 2.1), `tests/ai-key.test.ts`
   (набір). Червоний прогін CI на `main` + тести.
   Done when: усі тести з AC ID у назвах, CI червоний лише через відсутній код.
-- [ ] 1.2 Залежності за ADR 0002 (точні версії), `.env.example` (`OPENROUTER_API_KEY=` без значення), скрипти `eval`,
+- [x] 1.2 Залежності за ADR 0002 (точні версії), `.env.example` (`OPENROUTER_API_KEY=` без значення), скрипти `eval`,
   `ai:models`, `ai:quota`; файли набору `src/lib/ai/*`, `evals/`, `scripts/`, `vitest.eval.config.mts`.
   Done when: `npm run ai:models` — усі моделі ланцюжка є; `tests/ai-key.test.ts` зелений.
-- [ ] 1.3 Схема, промпт, `proposeDraft`, домен `src/lib/clients/intake.ts`, оркестрація `src/lib/clients/intake-draft.ts`.
+- [x] 1.3 Схема, промпт, `proposeDraft`, домен `src/lib/clients/intake.ts`, оркестрація `src/lib/clients/intake-draft.ts`.
   Done when: AC-INTAKE-04, AC-INTAKE-05, AC-INTAKE-06, AC-INTAKE-07, AC-INTAKE-08 (unit) зелені.
-- [ ] 1.4 Дія `requestIntakeDraft`, панель чернетки у формі `/clients/new`, без панелі для терапевта.
+- [x] 1.4 Дія `requestIntakeDraft`, панель чернетки у формі `/clients/new`, без панелі для терапевта.
   Done when: AC-INTAKE-01, AC-INTAKE-02, AC-INTAKE-03, AC-INTAKE-09; без ключа сторінка показує стан AC-INTAKE-08, а
   форма працює вручну.
 
 ## 2. Живий eval і записи (`eval/intake-draft`)
 
-- [ ] 2.1 `RECORD=1 npm run eval` (запускає людина зі своїм ключем, не в добу приймання PM) → `recorded.json` без
+- [x] 2.1 `RECORD=1 npm run eval` (запускає людина зі своїм ключем, не в добу приймання PM) → `recorded.json` без
   заглушок, звіт `evals/reports/<дата й час>.md`, розбір кожного FAIL.
   Done when: офлайн-реплей golden cases зелений на справжніх записах; звіт з моделлю на кожен кейс, pass rate, датою й
   версією промпту.
