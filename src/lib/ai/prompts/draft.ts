@@ -28,7 +28,13 @@ export const DRAFT_INSTRUCTIONS = [
 const BOUNDARY_TAG = /<\s*\/?\s*document\b[^>]*>/gi;
 
 export function sanitizeIntakeText(text: string): string {
-  return text.replace(BOUNDARY_TAG, "").slice(0, INTAKE_MAX_LENGTH);
+  // Вирізаємо, доки нічого не лишиться: «<</document>/document>» після одного проходу знову склався б у тег.
+  let clean = text;
+  for (let previous = ""; previous !== clean; ) {
+    previous = clean;
+    clean = clean.replace(BOUNDARY_TAG, "");
+  }
+  return clean.slice(0, INTAKE_MAX_LENGTH);
 }
 
 // Недовірений текст завжди загортаємо як дані: модель бачить межу, а тест перевіряє, що межа є.
