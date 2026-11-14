@@ -49,8 +49,9 @@ export function IntakeDraftPanel({ requestDraft, onDraft }: { requestDraft: Requ
   const ButtonIcon = pending ? Loader2Icon : SparklesIcon;
 
   return (
-    <section aria-labelledby="intake-heading" className="flex flex-col gap-3">
-      <h2 id="intake-heading" className="text-base font-semibold">
+    // Без aria-labelledby: інакше назва секції («…client's request») збігалася б з підписом поля «Client's request».
+    <section className="flex flex-col gap-3">
+      <h2 className="text-base font-semibold">
         Draft from the client&apos;s request
       </h2>
       <div className="flex flex-col gap-1.5">
