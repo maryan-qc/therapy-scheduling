@@ -73,7 +73,7 @@ describe("панель чернетки з тексту звернення", () 
 
     expect(textarea).not.toBe("");
     expect(INTAKE_MAX_LENGTH).toBe(2000);
-    expect(textarea).toMatch(/\bmaxlength="2000"/);
+    expect(textarea).toMatch(/\bmaxlength="2000"/i); // React рендерить maxLength; назви атрибутів HTML — без регістру
     expect(labelFor(html, "intake-text")).toBe(escaped("Client's request"));
     expect(describedBy(html, textarea)).toContain(escaped(INTAKE_HINT));
     expect(escaped(INTAKE_HINT)).toBe(
