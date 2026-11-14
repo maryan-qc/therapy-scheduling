@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cardErrorCode, cardRoleError, validateClientCard, type CardErrorCode, type CardForm } from "@/lib/clients/card";
-import { productModel } from "@/lib/ai/openrouter";
 import { insuranceResult } from "@/lib/clients/insurance";
 import { draftIntake, type IntakeDraftResponse } from "@/lib/clients/intake-draft";
 import { practiceDate } from "@/lib/holds/time";
@@ -51,6 +50,9 @@ export async function createClientCard(_previous: CardFormState, formData: FormD
 // createClientCard, коли людина натисне «Create client card» (AC-INTAKE-03).
 export async function requestIntakeDraft(text: string): Promise<IntakeDraftResponse> {
   const viewer = await requireViewer();
+  // Обгортку з ключем (server-only) вантажимо лише тут: модуль дій імпортують і тести інших дій, а поза сервером
+  // маркер server-only має кидати помилку (tests/ai-key.test.ts).
+  const { productModel } = await import("@/lib/ai/openrouter");
   return draftIntake({
     role: viewer.role,
     text: typeof text === "string" ? text : "",

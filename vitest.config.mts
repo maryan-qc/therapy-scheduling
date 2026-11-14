@@ -1,14 +1,8 @@
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  resolve: {
-    // Vite 8: аліас @/* з tsconfig.json без окремого плагіна.
-    tsconfigPaths: true,
-    // Маркер server-only (src/lib/ai/openrouter.ts) у тестах — як на сервері Next.js: умова react-server дає
-    // порожній empty.js пакета; без неї index.js кидає помилку для будь-якого тесту, що імпортує Server Actions.
-    alias: { "server-only": fileURLToPath(new URL("./node_modules/server-only/empty.js", import.meta.url)) },
-  },
+  // Vite 8: аліас @/* з tsconfig.json без окремого плагіна.
+  resolve: { tsconfigPaths: true },
   test: {
     environment: "node",
     // Тест без жодної перевірки (порожній it("AC-…", () => {})) падає: ac:coverage рахує тест, тож він має щось перевіряти.
