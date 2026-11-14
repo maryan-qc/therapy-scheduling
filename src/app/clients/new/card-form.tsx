@@ -16,7 +16,10 @@ import {
   type CardErrorCode,
   type CardForm,
 } from "@/lib/clients/card";
+import { draftToCardForm } from "@/lib/clients/intake";
+import type { IntakeDraftResponse } from "@/lib/clients/intake-draft";
 import { createClientCard, type CardFormState } from "../actions";
+import { IntakeDraftPanel } from "./intake-draft-panel";
 
 type FieldName = keyof CardForm;
 
@@ -59,7 +62,15 @@ function Field({ id, label, error, children }: { id: string; label: string; erro
 
 // Форма картки: значення керовані станом, тож якщо картку не створено, усе введене лишається у формі (AC-CARD-03,
 // AC-CARD-12, AC-CARD-13). Дорослий — email; дитина — ім'я та email опікуна (AC-CARD-01, AC-CARD-02).
-export function ClientCardForm({ today }: { today: string }) {
+// Над формою — панель чернетки з тексту звернення: чернетка замінює всі значення форми, а створює картку лише людина
+// цією ж кнопкою «Create client card» з тими самими перевірками (AC-INTAKE-01…05).
+export function ClientCardForm({
+  today,
+  requestDraft,
+}: {
+  today: string;
+  requestDraft: (text: string) => Promise<IntakeDraftResponse>;
+}) {
   const [state, formAction, pending] = useActionState(createClientCard, INITIAL);
   const [values, setValues] = useState<CardForm>(EMPTY_CARD_FORM);
 
@@ -87,7 +98,9 @@ export function ClientCardForm({ today }: { today: string }) {
 
   return (
     <Card className="max-w-2xl">
-      <CardContent>
+      <CardContent className="flex flex-col gap-6">
+        <IntakeDraftPanel requestDraft={requestDraft} onDraft={(draft) => setValues(draftToCardForm(draft))} />
+        <hr className="border-border" />
         <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
           {formErrors.length > 0 ? (
             <Alert variant="destructive">

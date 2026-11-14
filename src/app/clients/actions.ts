@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cardErrorCode, cardRoleError, validateClientCard, type CardErrorCode, type CardForm } from "@/lib/clients/card";
+import { productModel } from "@/lib/ai/openrouter";
 import { insuranceResult } from "@/lib/clients/insurance";
+import { draftIntake, type IntakeDraftResponse } from "@/lib/clients/intake-draft";
 import { practiceDate } from "@/lib/holds/time";
 import { requireViewer } from "@/lib/supabase/viewer";
 
@@ -42,6 +44,19 @@ export async function createClientCard(_previous: CardFormState, formData: FormD
   revalidatePath("/clients");
   revalidatePath("/slots");
   redirect(`/clients/${data.id}?ok=created`);
+}
+
+// Чернетка картки з тексту звернення (AC-INTAKE-01…09): вхід і роль — requireViewer (getClaims + profiles) ДО
+// звернення до моделі; роль перевіряє draftIntake. Дія нічого не пише й текст не зберігає: картку створює лише
+// createClientCard, коли людина натисне «Create client card» (AC-INTAKE-03).
+export async function requestIntakeDraft(text: string): Promise<IntakeDraftResponse> {
+  const viewer = await requireViewer();
+  return draftIntake({
+    role: viewer.role,
+    text: typeof text === "string" ? text : "",
+    model: productModel(),
+    today: practiceDate(new Date()),
+  });
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
