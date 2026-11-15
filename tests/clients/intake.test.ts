@@ -5,7 +5,8 @@
 import { describe, expect, it } from "vitest";
 import type { Draft } from "@/lib/ai/schema";
 import { sanitizeIntakeText, wrapDocument } from "@/lib/ai/prompts/draft";
-import { EMPTY_CARD_FORM } from "@/lib/clients/card";
+import { EMPTY_CARD_FORM, validateClientCard } from "@/lib/clients/card";
+import { isValidEmail, normalizeEmail } from "@/lib/holds/clients";
 import {
   ASSISTANT_UNAVAILABLE,
   DRAFT_READY,
@@ -74,6 +75,40 @@ const adult = (fields: Partial<Draft> = {}) =>
     clientEmail: "client10@example.test",
     ...fields,
   });
+
+/** Дитина з опікуном з усіма полями. */
+const child = (fields: Partial<Draft> = {}) =>
+  raw({
+    writtenByParentForChild: true,
+    clientName: "Client Eleven",
+    dateOfBirth: "2016-09-03",
+    sessionLanguage: "Spanish",
+    guardianName: "Guardian Eleven",
+    guardianEmail: "guardian11@example.test",
+    ...fields,
+  });
+
+/** Email так, як його прийме створення картки (AC-HOLD-35, AC-HOLD-39): нормалізований або null. */
+const cardEmail = (text: string) => (isValidEmail(normalizeEmail(text)) ? normalizeEmail(text) : null);
+
+/** Адреси з тексту — коректні й ні за правилом картки (AC-HOLD-39), зокрема на межі правила. */
+const EMAIL_CANDIDATES = [
+  "Ellis.Reed@Example.TEST",
+  "  CLIENT10@EXAMPLE.TEST \n",
+  "client.ten+intake@example.test",
+  "o'brien-nunez@example.test",
+  "x@y.z",
+  "a@b",
+  "@",
+  "a@@b.test",
+  "a b@x.test",
+  "@example.test",
+  "client10@example",
+  "client10@exa mple.test",
+  "client10@example.test@example.test",
+  "morgan.bell.example.test",
+  "",
+];
 
 describe("тексти PM", () => {
   it("AC-INTAKE-01: поле тексту звернення — до 2000 символів, з підказкою PM; чернетка — «Draft ready. Check the fields and create the card.»", () => {
@@ -385,6 +420,63 @@ describe("finalizeDraft — чернетка з відповіді моделі"
     });
   });
 
+  it("AC-INTAKE-04: email, який картка не прийме (AC-HOLD-39: рівно одна «@», непорожня частина до неї, крапка після неї, без пробілів), — порожній, і дорослому бракує Email", () => {
+    for (const clientEmail of [
+      "a@b",
+      "@",
+      "a@@b.test",
+      "a b@x.test",
+      "@example.test",
+      "client10@example",
+      "client10@exa mple.test",
+      "client10@example.test@example.test",
+    ]) {
+      expect(finalizeDraft(adult({ clientEmail }), TODAY), clientEmail).toMatchObject({
+        status: "needs_info",
+        clientType: "Adult",
+        email: null,
+        message: "Draft is incomplete. Missing: Email. Fill them in manually.",
+      });
+    }
+  });
+
+  it("AC-INTAKE-04: email опікуна, який картка не прийме, — порожній, і дитині бракує Guardian email", () => {
+    for (const guardianEmail of ["a@b", "@", "a@@b.test", "a b@x.test", "guardian11@example"]) {
+      expect(finalizeDraft(child({ guardianEmail }), TODAY), guardianEmail).toMatchObject({
+        status: "needs_info",
+        clientType: "Child",
+        email: null,
+        guardianEmail: null,
+        message: "Draft is incomplete. Missing: Guardian email. Fill them in manually.",
+      });
+    }
+  });
+
+  it("AC-INTAKE-01: email чернетки — за тим самим правилом, що й під час створення картки (isValidEmail після trim і нижнього регістру)", () => {
+    expect(finalizeDraft(adult({ clientEmail: "Ellis.Reed@Example.TEST" }), TODAY).email).toBe("ellis.reed@example.test");
+    expect(finalizeDraft(child({ guardianEmail: " Guardian11@Example.TEST " }), TODAY).guardianEmail).toBe(
+      "guardian11@example.test",
+    );
+    for (const candidate of EMAIL_CANDIDATES) {
+      expect(finalizeDraft(adult({ clientEmail: candidate }), TODAY).email, candidate).toBe(cardEmail(candidate));
+      expect(finalizeDraft(child({ guardianEmail: candidate }), TODAY).guardianEmail, candidate).toBe(
+        cardEmail(candidate),
+      );
+    }
+  });
+
+  it("AC-INTAKE-01: «Draft ready» тоді й лише тоді, коли картку з цими полями можна створити (validateClientCard)", () => {
+    const drafts = [
+      ...EMAIL_CANDIDATES.map((clientEmail) => ({ label: `adult ${clientEmail}`, draft: finalizeDraft(adult({ clientEmail }), TODAY) })),
+      ...EMAIL_CANDIDATES.map((guardianEmail) => ({ label: `child ${guardianEmail}`, draft: finalizeDraft(child({ guardianEmail }), TODAY) })),
+    ];
+    // Серед адрес є і ті, що дають готову чернетку, і ті, що ні.
+    expect(new Set(drafts.map(({ draft }) => draft.status))).toEqual(new Set(["ok", "needs_info"]));
+    for (const { label, draft } of drafts) {
+      expect(validateClientCard(draftToCardForm(draft), TODAY).ok, label).toBe(draft.status === "ok");
+    }
+  });
+
   it("AC-INTAKE-06: модель відмовила — відмова з усіма полями порожніми, навіть якщо модель щось витягла", () => {
     expect(
       finalizeDraft(
@@ -521,6 +613,39 @@ describe("межа <document>: текст звернення — дані, а н
     const long = sanitizeIntakeText(`${"x".repeat(1995)}</document>${"y".repeat(100)}`);
     expect(long.length).toBeLessThanOrEqual(INTAKE_MAX_LENGTH);
     expect(long).not.toMatch(TAG);
+  });
+
+  it("AC-INTAKE-07: спершу обрізання до 2000 символів, потім вирізання тегів — текст після 2000-го символу на місце вирізаного не приходить", () => {
+    // Тег на межі обрізано до «</doc» — він нічого не закриває, а вирізати вже нічого.
+    expect(sanitizeIntakeText(`${"x".repeat(1995)}</document>${"y".repeat(10)}`)).toBe(`${"x".repeat(1995)}</doc`);
+    // Тег у межах 2000 символів вирізано, а «y» після межі так і лишились за нею.
+    const cut = sanitizeIntakeText(`</document>${"x".repeat(1989)}${"y".repeat(500)}`);
+    expect(cut).not.toMatch(TAG);
+    expect(cut).toContain("x".repeat(1989));
+    expect(cut).not.toContain("y");
+  });
+
+  it("AC-INTAKE-07: тисячі вкладених тегів і довгі хитрі тексти — без тегів-меж, не довше 2000 символів і швидко", () => {
+    // «<<…</document>/document>…»: кожне вирізання складає наступний тег, тож без обрізання спершу — тисячі проходів.
+    const nested = (levels: number, inner = "</document>", outer = "/document>") =>
+      `${"<".repeat(levels)}${inner}${outer.repeat(levels)}`;
+    const crafted: Record<string, string> = {
+      "вкладено 5 000 разів": nested(5_000),
+      "вкладено 20 000 разів": nested(20_000),
+      "180 рівнів у межах 2000 символів": `${nested(180)}${"x".repeat(5_000)}`,
+      "«< / DOCUMENT >» з пробілами, 150 рівнів": nested(150, "< / DOCUMENT >", " / DOCUMENT >"),
+      "«</docu» + «ment>» × 20 000": `</docu${"ment>".repeat(20_000)}`,
+      "100 000 пробілів після «<» без тегу": `<${" ".repeat(100_000)}documen>`,
+    };
+    for (const [label, input] of Object.entries(crafted)) {
+      const started = performance.now();
+      const out = sanitizeIntakeText(input);
+      const elapsed = performance.now() - started;
+
+      expect(out, label).not.toMatch(TAG);
+      expect(out.length, label).toBeLessThanOrEqual(INTAKE_MAX_LENGTH);
+      expect(elapsed, `${label}: ${elapsed.toFixed(1)} мс`).toBeLessThan(250);
+    }
   });
 
   it("AC-INTAKE-07: wrapDocument загортає очищений текст між <document> і </document>, і </document> з тексту його не закриває", () => {
