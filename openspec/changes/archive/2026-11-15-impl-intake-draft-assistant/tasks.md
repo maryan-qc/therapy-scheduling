@@ -35,10 +35,10 @@
 
 ## 3. Прод, UAT, conformance (`uat/intake-draft`)
 
-- [ ] 3.1 `OPENROUTER_API_KEY` у Vercel Production; прод `/api/health` = SHA `main`; руками — один кейс, що проходить,
+- [x] 3.1 `OPENROUTER_API_KEY` у Vercel Production; прод `/api/health` = SHA `main`; руками — один кейс, що проходить,
   одна відмова.
   Done when: AC-INTAKE-01 і AC-INTAKE-06 на прод-URL руками, AC-INTAKE-08 не спрацьовує через відсутній ключ.
-- [ ] 3.2 UAT на проді: AC-INTAKE-03 і AC-INTAKE-06 (`tests/e2e/intake-draft.spec.ts`, `npm run uat`), звіт
+- [x] 3.2 UAT на проді: AC-INTAKE-03 і AC-INTAKE-06 (`tests/e2e/intake-draft.spec.ts`, `npm run uat`), звіт
   `docs/qa/uat/<дата>/`; рядки AC-INTAKE у `docs/conformance.md` з чесним статусом; archive `impl-intake-draft-assistant`.
   Done when: AC-INTAKE-03 і AC-INTAKE-06 — UAT PASS на проді; `npm run ac:coverage` зелений; у чаті команди —
   «eval готовий».
