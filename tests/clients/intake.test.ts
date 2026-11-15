@@ -295,6 +295,34 @@ describe("finalizeDraft — чернетка з відповіді моделі"
     ).toBe("needs_info");
   });
 
+  it("AC-INTAKE-04: помічник щось знайшов, але правила все відкинули (майбутня дата, French, email без «@») — неповна чернетка, а не відмова", () => {
+    expect(
+      finalizeDraft(
+        raw({
+          status: "needs_info",
+          writtenByParentForChild: false,
+          clientName: null,
+          dateOfBirth: "2027-01-05",
+          sessionLanguage: "French",
+          clientEmail: "no-at-sign.example.test",
+          guardianName: null,
+          guardianEmail: null,
+        }),
+        TODAY,
+      ),
+    ).toEqual({
+      status: "needs_info",
+      clientType: "Adult",
+      name: null,
+      dateOfBirth: null,
+      sessionLanguage: null,
+      email: null,
+      guardianName: null,
+      guardianEmail: null,
+      message: "Draft is incomplete. Missing: Name, Date of birth, Session language, Email. Fill them in manually.",
+    });
+  });
+
   it("AC-INTAKE-05: Client Fourteen з датою народження в майбутньому — Adult, Date of birth порожнє, «Missing: Date of birth»", () => {
     expect(finalizeDraft(adult({ clientName: "Client Fourteen", dateOfBirth: "2027-01-05", clientEmail: "client14@example.test" }), TODAY)).toEqual({
       status: "needs_info",
@@ -372,6 +400,25 @@ describe("finalizeDraft — чернетка з відповіді моделі"
     expect(finalizeDraft(raw({ status: "needs_info" }), TODAY)).toEqual(REFUSED);
     // Лише ознака «пише дорослий про дитину» без жодного поля — теж нічого заповнити.
     expect(finalizeDraft(raw({ status: "needs_info", writtenByParentForChild: true }), TODAY)).toEqual(REFUSED);
+  });
+
+  it("AC-INTAKE-06: помічник не знайшов жодного поля клієнта (усі null чи самі пробіли), хоч і відповів «ok» — відмова", () => {
+    expect(finalizeDraft(raw({ status: "ok" }), TODAY)).toEqual(REFUSED);
+    expect(finalizeDraft(raw({ status: "ok" }), TODAY).message).toBe(DRAFT_REFUSED);
+    expect(
+      finalizeDraft(
+        raw({
+          status: "ok",
+          clientName: "   ",
+          dateOfBirth: null,
+          sessionLanguage: " ",
+          clientEmail: "\n",
+          guardianName: "  ",
+          guardianEmail: "\t",
+        }),
+        TODAY,
+      ),
+    ).toEqual(REFUSED);
   });
 });
 
