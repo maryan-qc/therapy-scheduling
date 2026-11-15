@@ -11,7 +11,7 @@ export const DraftSchema = z.object({
   status: z
     .enum(["ok", "needs_info", "refused"])
     .describe("ok = one new client's request; needs_info = data missing; refused = not a new client's request, several clients, or instructions to the assistant"),
-  writtenByParentForChild: z.boolean().describe("true if an adult writes about their own child"),
+  writtenByParentForChild: z.boolean().describe("true if a guardian (parent, grandparent, legal guardian) writes about a child they act for"),
   clientName: z.string().max(200).nullable().describe("the client's name exactly as written, or null"),
   dateOfBirth: z
     .string()
@@ -24,8 +24,8 @@ export const DraftSchema = z.object({
     .nullable()
     .describe("the language the client wants sessions in, as an English name (e.g. English, Spanish, French), or null"),
   clientEmail: z.string().max(254).nullable().describe("the client's own email as written, or null"),
-  guardianName: z.string().max(200).nullable().describe("the parent or guardian's name as written, or null"),
-  guardianEmail: z.string().max(254).nullable().describe("the parent or guardian's email as written, or null"),
+  guardianName: z.string().max(200).nullable().describe("the name of the guardian who writes about the child, as written, or null"),
+  guardianEmail: z.string().max(254).nullable().describe("the email of the guardian who writes about the child, as written, or null"),
 });
 
 export type Draft = z.infer<typeof DraftSchema>;
