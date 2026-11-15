@@ -10,12 +10,20 @@ import { existsSync, readFileSync } from "node:fs";
 const URL = "https://openrouter.ai/api/v1/models";
 const MODELS_FILE = "src/lib/ai/models.ts";
 
-const res = await fetch(URL);
-if (!res.ok) {
-  console.error(`GET ${URL} → HTTP ${res.status}`);
+let data;
+try {
+  const res = await fetch(URL);
+  if (!res.ok) {
+    console.error(`ai:models — GET ${URL} → HTTP ${res.status}`);
+    process.exit(1);
+  }
+  ({ data } = await res.json());
+  if (!Array.isArray(data)) throw new Error("немає списку data");
+} catch {
+  // Мережа впала чи відповідь не JSON: зрозуміле повідомлення й код 1 замість необробленого винятку.
+  console.error(`ai:models — не вдалося отримати список моделей з ${URL}: немає з'єднання або відповідь не у форматі OpenRouter.`);
   process.exit(1);
 }
-const { data } = await res.json();
 
 const isZero = (v) => v === undefined || v === null || Number(v) === 0;
 const rows = data

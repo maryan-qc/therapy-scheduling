@@ -16,7 +16,7 @@ import {
   type CardErrorCode,
   type CardForm,
 } from "@/lib/clients/card";
-import { draftToCardForm } from "@/lib/clients/intake";
+import { draftToCardForm, type IntakeDraft } from "@/lib/clients/intake";
 import type { IntakeDraftResponse } from "@/lib/clients/intake-draft";
 import { createClientCard, type CardFormState } from "../actions";
 import { IntakeDraftPanel } from "./intake-draft-panel";
@@ -73,9 +73,17 @@ export function ClientCardForm({
 }) {
   const [state, formAction, pending] = useActionState(createClientCard, INITIAL);
   const [values, setValues] = useState<CardForm>(EMPTY_CARD_FORM);
+  // Помилки попереднього «Create client card» не стосуються нових значень із чернетки: ховаємо їх, доки людина
+  // не збереже форму знову (новий результат дії — новий об'єкт state, і його помилки знову видно).
+  const [draftAppliedOver, setDraftAppliedOver] = useState<CardFormState | null>(null);
+  const errors = state === draftAppliedOver ? [] : state.errors;
+  const applyDraft = (draft: IntakeDraft) => {
+    setValues(draftToCardForm(draft));
+    setDraftAppliedOver(state);
+  };
 
   const fieldError = (field: FieldName) => {
-    const code = state.errors.find(
+    const code = errors.find(
       (candidate) => ERROR_FIELD[candidate] === field || ALSO_INVALID[candidate]?.includes(field),
     );
     return code ? CARD_MESSAGES[code] : undefined;
@@ -88,7 +96,7 @@ export function ClientCardForm({
   });
   const set = (field: FieldName) => (event: { target: { value: string } }) =>
     setValues((current) => ({ ...current, [field]: event.target.value }));
-  const formErrors = state.errors.filter((code) => !ERROR_FIELD[code]);
+  const formErrors = errors.filter((code) => !ERROR_FIELD[code]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -99,7 +107,7 @@ export function ClientCardForm({
   return (
     <Card className="max-w-2xl">
       <CardContent className="flex flex-col gap-6">
-        <IntakeDraftPanel requestDraft={requestDraft} onDraft={(draft) => setValues(draftToCardForm(draft))} />
+        <IntakeDraftPanel requestDraft={requestDraft} onDraft={applyDraft} />
         <hr className="border-border" />
         <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
           {formErrors.length > 0 ? (
