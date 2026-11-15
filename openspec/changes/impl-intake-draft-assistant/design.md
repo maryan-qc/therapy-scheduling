@@ -101,7 +101,10 @@ export type Draft = z.infer<typeof DraftSchema>;
   4. мова — `english` → «English», `spanish` → «Spanish» (без регістру й пробілів по краях), інше → `null`;
   5. email — `trim` + нижній регістр; без «@» чи з пробілом усередині → `null`; дорослий — `email` з `clientEmail`,
      поля опікуна `null`; дитина — `email: null`, `guardianName` / `guardianEmail` з полів опікуна;
-  6. жодного поля клієнта (ім'я, дата, мова, email, ім'я й email опікуна — усі `null`) → `refused` (AC-INTAKE-06);
+  6. помічник **не знайшов у тексті жодного** поля клієнта — у відповіді моделі `clientName`, `dateOfBirth`,
+     `sessionLanguage`, `clientEmail`, `guardianName`, `guardianEmail` усі `null` (до кроків 2–5) → `refused`
+     (AC-INTAKE-06); якщо щось знайдено, але правила 2–5 це відкинули (дата в майбутньому, French, email без «@»), —
+     це неповна чернетка, а не відмова (AC-INTAKE-04, 05);
   7. «Missing» у порядку форми: Name, Date of birth, Session language, далі Email (дорослий) або Guardian name,
      Guardian email (дитина); порожньо → `ok` + `DRAFT_READY`, інакше `needs_info` + `draftIncompleteMessage`;
 - `hasAssistantInstructions(text: string): boolean`;
