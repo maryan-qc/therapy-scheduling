@@ -76,6 +76,11 @@ function sessionLanguage(value: string | null): IntakeDraft["sessionLanguage"] {
  */
 export function finalizeDraft(raw: Draft, today: string): IntakeDraft {
   if (raw.status === "refused") return REFUSED;
+  // Помічник не знайшов у тексті жодного поля клієнта — це не звернення нового клієнта (AC-INTAKE-06). Дивимось на
+  // відповідь моделі ДО правил: знайдене, але відкинуте правилами (майбутня дата, French, email без «@»), — неповна
+  // чернетка (AC-INTAKE-04, 05), а не відмова.
+  const extracted = [raw.clientName, raw.dateOfBirth, raw.sessionLanguage, raw.clientEmail, raw.guardianName, raw.guardianEmail];
+  if (extracted.every((value) => !value?.trim())) return REFUSED;
 
   const name = text(raw.clientName);
   const dateOfBirth = raw.dateOfBirth && isBirthDate(raw.dateOfBirth, today) ? raw.dateOfBirth : null;
@@ -90,9 +95,6 @@ export function finalizeDraft(raw: Draft, today: string): IntakeDraft {
     guardianEmail: child ? email(raw.guardianEmail) : null,
   };
 
-  // Жодного поля клієнта — це не звернення нового клієнта (AC-INTAKE-06, власне припущення розробника).
-  const clientFields = [fields.name, fields.dateOfBirth, fields.sessionLanguage, fields.email, fields.guardianName, fields.guardianEmail];
-  if (clientFields.every((value) => value === null)) return REFUSED;
 
   const required: [string, string | null][] = [
     ["Name", fields.name],
