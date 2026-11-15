@@ -2,7 +2,7 @@
 // кадр екрана, aria-знімок сторінки і список частин «Тоді», які людина БАЧИТЬ (агент має їх процитувати з кадру).
 // Невидимі частини (буфер обміну, рядки в базі, «даних немає») вирішують лише автоматичні перевірки.
 // Джерело: демо-репо курсу, tests/e2e/support/uat.ts (тег ws8-03-uat) через materials/uat. Змінено signIn (форма входу)
-// і очікування відповідей в attachRuntimeErrors (див. коментар там).
+// і очікування відповідей в attachRuntimeErrors (див. коментар там); додано ThenSpec.fullPage — кадр на всю сторінку.
 import { test, type Locator, type Page, type Request } from "@playwright/test";
 
 export type ThenSpec = {
@@ -14,6 +14,11 @@ export type ThenSpec = {
   hidden?: string[];
   /** Що замазати на кадрі: живі облікові дані, наприклад посилання для активації. */
   mask?: Locator[];
+  /**
+   * Кадр на всю сторінку, а не лише видиму частину (типово — видиму). Для «Тоді» про весь довгий список без пошуку
+   * («картки … немає»): інакше місце, де був би рядок, лишається нижче кадру, і агент не може підтвердити відсутність.
+   */
+  fullPage?: boolean;
 };
 
 // Номер «Тоді» в межах тесту. Лічильник за testId, а не test.beforeEach у цьому модулі: модуль кешується,
@@ -56,7 +61,7 @@ async function captureEvidence(page: Page, n: number, spec: ThenSpec, assertions
   await page.screencast.hideOverlays().catch(() => {});
   await page.screencast.hideActions().catch(() => {});
   await info.attach(`then-${n}.png`, {
-    body: await page.screenshot({ mask: spec.mask ?? [], maskColor: "#6b7280" }),
+    body: await page.screenshot({ fullPage: spec.fullPage ?? false, mask: spec.mask ?? [], maskColor: "#6b7280" }),
     contentType: "image/png",
   });
   await page.screencast.showOverlays().catch(() => {});

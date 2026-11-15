@@ -1,0 +1,96 @@
+{
+  "kind": "uat",
+  "generatedAt": "2026-11-15T15:07:52.394Z",
+  "baseURL": "https://therapy-scheduling-sigma.vercel.app",
+  "deployedSha": "c7b988800222e6789b7a22f422c3481cc954b1c5",
+  "testsCommit": "b7432fcc3ab99f66921423334fefe9804a34e492",
+  "reviewer": {
+    "model": "claude-haiku-5-5",
+    "disputes": "claude-sonnet-5-5"
+  },
+  "note": "Відео кожного AC — assets pre-release uat-2026-11-15 (results[].video). Траси не збережено (test-results/ поза git). Перший прогін того ж дня (17:03) дав AC-INTAKE-03 NEEDS-HUMAN (R3): кадр «Тоді» показував лише видиму частину довгого списку клієнтів; після кадру на всю сторінку (b7432fc) — PASS. Див. first-run.md.",
+  "results": [
+    {
+      "id": "AC-INTAKE-03",
+      "proof": "AC-INTAKE-03",
+      "title": "AC-INTAKE-03: scheduler1 не створює картку з чернетки за текстом AC-INTAKE-01 — у списку клієнтів картки «Client Ten» немає",
+      "screenshot": "docs/qa/uat/2026-11-15/frames/AC-INTAKE-03-then-1.png",
+      "video": "https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-15/AC-INTAKE-03.webm",
+      "trace": null,
+      "asserted": true,
+      "vision": {
+        "met": true,
+        "readable": true,
+        "notes": "На кадрі видно сторінку «Clients» з обліковим записом scheduler1@example.test, а список таблиці повний і відсортований за іменем: після «Client Six 261109091554-6» одразу йде «Demo Child», тож картки «Client Ten» немає. Частина про те, що картку створює лише планувальник при збереженні, на кадрі не видна, тому не оцінювалась."
+      },
+      "agentModel": "claude-haiku-5-5",
+      "agentVerdicts": {
+        "claude-haiku-5-5": "PASS",
+        "claude-sonnet-5-5": null
+      },
+      "escalated": false,
+      "quotesVerified": [
+        {
+          "quote": "Clients",
+          "onPage": true
+        },
+        {
+          "quote": "scheduler1@example.test",
+          "onPage": true
+        },
+        {
+          "quote": "Client Six 261109091554-6",
+          "onPage": true
+        },
+        {
+          "quote": "Demo Child",
+          "onPage": true
+        }
+      ],
+      "verdict": "PASS",
+      "factoryGate": "PASS",
+      "rule": "R6: перевірки, агент і цитати збігаються",
+      "playwrightMs": 10252,
+      "reviewCostUsd": 0.00276,
+      "reviewWallMs": 11619
+    },
+    {
+      "id": "AC-INTAKE-06",
+      "proof": "AC-INTAKE-06",
+      "title": "AC-INTAKE-06: scheduler1 з Name «Client Fifteen» у формі просить чернетку з тексту не про нового клієнта — форма без змін і «This text can't be used to draft a client card. …»",
+      "screenshot": "docs/qa/uat/2026-11-15/frames/AC-INTAKE-06-then-1.png",
+      "video": "https://github.com/maryan-qc/therapy-scheduling/releases/download/uat-2026-11-15/AC-INTAKE-06.webm",
+      "trace": null,
+      "asserted": true,
+      "vision": {
+        "met": true,
+        "readable": true,
+        "notes": "На кадрі frame-then-1.png (сторінка New client card) під кнопкою «Draft card from request» видно повідомлення, яке дослівно збігається з критерієм. Поле Name містить «Client Fifteen», тобто його значення не змінилося. Апостроф у «can't» і «client's» на скріншоті виглядає як прямий, але при цій роздільності відрізнити прямий від типографського апострофа важко; я його не ставлю як дефект."
+      },
+      "agentModel": "claude-haiku-5-5",
+      "agentVerdicts": {
+        "claude-haiku-5-5": "PASS",
+        "claude-sonnet-5-5": null
+      },
+      "escalated": false,
+      "quotesVerified": [
+        {
+          "quote": "This text can't be used to draft a client card. Paste the client's request or fill in the form manually.",
+          "onPage": true
+        },
+        {
+          "quote": "Client Fifteen",
+          "onPage": true
+        }
+      ],
+      "verdict": "PASS",
+      "factoryGate": "PASS",
+      "rule": "R6: перевірки, агент і цитати збігаються",
+      "playwrightMs": 7611,
+      "reviewCostUsd": 0.00209,
+      "reviewWallMs": 9471
+    }
+  ],
+  "negativeControls": [],
+  "cleanup": null
+}
