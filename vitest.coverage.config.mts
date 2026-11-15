@@ -16,6 +16,7 @@ import base from "./vitest.config.mjs";
 // живе в SQL, його доводять тести бази й SQL-мутації).
 const FLOORED: string[] = [
   "health",
+  "clients/card", // WS7, зріз 2: картка клієнта (зауваження викладача до WS9)
   "clients/insurance", // WS9, зріз 3: статус перевірки страхування
   "clients/search",
   "holds/clients",
