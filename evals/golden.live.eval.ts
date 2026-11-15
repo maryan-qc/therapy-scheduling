@@ -1,4 +1,5 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { proposeDraft } from "@/lib/ai/draft";
@@ -7,7 +8,6 @@ import { DRAFT_PROMPT_VERSION } from "@/lib/ai/prompts/draft";
 import { DraftSchema } from "@/lib/ai/schema";
 import { passRate, scoreFields, type GoldenCase } from "@/lib/ai/scorer";
 import { DRAFT_REFUSED, finalizeDraft, hasAssistantInstructions } from "@/lib/clients/intake";
-import casesJson from "../tests/fixtures/golden/cases.json";
 
 // `npm run eval` — ЖИВИЙ прогін golden cases PM (#36) на безкоштовних моделях OpenRouter. Ніколи не в `npm test` і не в
 // CI. Потрібен власний ключ у .env.local (OPENROUTER_API_KEY); без ключа всі кейси пропускаються — це не помилка.
@@ -16,13 +16,18 @@ import casesJson from "../tests/fixtures/golden/cases.json";
 // постачальника, відповідь не за схемою — FAIL з причиною. Взято з набору курсу
 // koldovsky/2026-quitcode-10-ai-features-hw/materials/ai-feature (evals/golden.live.eval.ts), без LLM-судді.
 //   RUNS=2    — кілька прогонів поспіль для частки успіху.
-//   RECORD=1  — успішні відповіді моделі дописати в tests/fixtures/golden/recorded.json (офлайн-реплей у CI).
+//   RECORD=1  — успішні відповіді моделі дописати в recorded.json поруч із кейсами (офлайн-реплей у CI).
+//   CASES=tests/fixtures/extra/cases.json — інший набір у тому самому форматі (додаткові листи розробника, не PM);
+//             звіт тоді — evals/reports/<час>-extra.md, записи — tests/fixtures/extra/recorded.json.
 
-const cases = casesJson as GoldenCase[];
+const CASES_PATH = process.env.CASES ?? "tests/fixtures/golden/cases.json";
+const SET = path.basename(path.dirname(CASES_PATH)); // golden | extra
+const IS_PM_SET = SET === "golden";
+const cases = JSON.parse(readFileSync(CASES_PATH, "utf8")) as (GoldenCase & { type?: string })[];
 const key = process.env.OPENROUTER_API_KEY?.trim();
 const RECORD = process.env.RECORD === "1";
 const RUNS = Math.max(1, Number(process.env.RUNS ?? 1) || 1);
-const RECORDED_PATH = "tests/fixtures/golden/recorded.json";
+const RECORDED_PATH = path.join(path.dirname(CASES_PATH), "recorded.json");
 const REPORT_DIR = "evals/reports";
 
 // Бюджет: на прогін — по запиту на кожен кейс. Кейс, який відхиляє запобіжник коду, теж ставимо моделі — лише щоб
@@ -46,7 +51,7 @@ const rows: Row[] = [];
 const fresh: Record<string, Recording> = {};
 let stoppedAt: string | undefined;
 
-describe.skipIf(!key)("golden cases PM, живий прогін (безкоштовні моделі OpenRouter)", () => {
+describe.skipIf(!key)(`${IS_PM_SET ? "golden cases PM" : `кейси «${SET}»`}, живий прогін (безкоштовні моделі OpenRouter)`, () => {
   beforeAll(async () => {
     // Скільки безкоштовних запитів лишилось сьогодні (UTC-доба; у листопаді скидається о 02:00 за Києвом).
     const res = await fetch("https://openrouter.ai/api/v1/key", { headers: { Authorization: `Bearer ${key}` } });
@@ -127,7 +132,7 @@ describe.skipIf(!key)("golden cases PM, живий прогін (безкошт�
     writeReport();
     if (RECORD && Object.keys(fresh).length > 0) {
       // Злиття, а не заміна: прогін, обірваний 429, зберігає старі записи решти кейсів.
-      const old = JSON.parse(readFileSync(RECORDED_PATH, "utf8")) as Record<string, Recording>;
+      const old = (existsSync(RECORDED_PATH) ? JSON.parse(readFileSync(RECORDED_PATH, "utf8")) : {}) as Record<string, Recording>;
       writeFileSync(RECORDED_PATH, JSON.stringify({ ...old, ...fresh }, null, 2) + "\n");
     }
   });
@@ -146,26 +151,29 @@ function writeReport() {
   }
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const lines = [
-    `# Живий прогін golden cases PM (#36) — ${new Date().toISOString()}`,
+    IS_PM_SET
+      ? `# Живий прогін golden cases PM (#36) — ${new Date().toISOString()}`
+      : `# Живий прогін додаткових листів розробника (${CASES_PATH}, не golden cases PM) — ${new Date().toISOString()}`,
     "",
     `- Промпт: \`${DRAFT_PROMPT_VERSION}\`; ланцюжок моделей: ${PRODUCT_MODELS.map((m) => `\`${m}\``).join(" → ")}; LLM-судді немає (усе очікуване — точні поля)`,
     `- Прогонів: ${RUNS}; кейсів у прогоні: ${cases.length}; «сьогодні» кейсів: ${cases[0]?.today} (America/Los_Angeles)`,
-    `- **Частка успіху: ${total.passed}/${total.total} (${Math.round(total.rate * 100)}%)** — з кейсів, що отримали відповідь; поріг PM — ≥ 8/10, GC-09 і GC-10 обов'язкові`,
+    `- **Частка успіху: ${total.passed}/${total.total} (${Math.round(total.rate * 100)}%)** — з кейсів, що отримали відповідь${IS_PM_SET ? "; поріг PM — ≥ 8/10, GC-09 і GC-10 обов'язкові" : "; очікуване — з правил PM, не з відповідей моделі"}`,
     `- Не запущено (NOT RUN): ${notRun.length}${stoppedAt ? ` — ліміт 429, зупинено на: ${stoppedAt}` : ""}`,
     "",
     "| Хто дав відповідь | Пройшло | Усього |",
     "|---|---|---|",
     ...[...byModel].map(([m, rs]) => `| \`${m}\` | ${passRate(rs).passed} | ${rs.length} |`),
     "",
-    "| Прогін | Кейс | AC | Модель | Хто вирішив | Статус моделі | Результат | Розбіжності / помилка |",
-    "|---|---|---|---|---|---|---|---|",
+    "| Прогін | Кейс | Тип листа | AC | Модель | Хто вирішив | Статус моделі | Результат | Розбіжності / помилка |",
+    "|---|---|---|---|---|---|---|---|---|",
     ...rows.map(
       (r) =>
-        `| ${r.run} | ${r.id} | ${r.ac} | \`${r.modelId}\` | ${r.layer} | ${r.modelStatus} | ${r.notRun ? "NOT RUN" : r.pass ? "✅" : "❌"} | ${(r.why ?? "").replaceAll("|", "/")} |`,
+        `| ${r.run} | ${r.id} | ${cases.find((c) => c.id === r.id)?.type ?? "—"} | ${r.ac} | \`${r.modelId}\` | ${r.layer} | ${r.modelStatus} | ${r.notRun ? "NOT RUN" : r.pass ? "✅" : "❌"} | ${(r.why ?? "").replaceAll("|", "/")} |`,
     ),
     "",
   ];
   mkdirSync(REPORT_DIR, { recursive: true });
-  writeFileSync(`${REPORT_DIR}/${stamp}.md`, lines.join("\n"));
-  console.log(`Звіт: ${REPORT_DIR}/${stamp}.md`);
+  const file = `${REPORT_DIR}/${stamp}${IS_PM_SET ? "" : `-${SET}`}.md`;
+  writeFileSync(file, lines.join("\n"));
+  console.log(`Звіт: ${file}`);
 }
