@@ -16,7 +16,10 @@ import {
   type CardErrorCode,
   type CardForm,
 } from "@/lib/clients/card";
+import { draftToCardForm, type IntakeDraft } from "@/lib/clients/intake";
+import type { IntakeDraftResponse } from "@/lib/clients/intake-draft";
 import { createClientCard, type CardFormState } from "../actions";
+import { IntakeDraftPanel } from "./intake-draft-panel";
 
 type FieldName = keyof CardForm;
 
@@ -59,12 +62,28 @@ function Field({ id, label, error, children }: { id: string; label: string; erro
 
 // Форма картки: значення керовані станом, тож якщо картку не створено, усе введене лишається у формі (AC-CARD-03,
 // AC-CARD-12, AC-CARD-13). Дорослий — email; дитина — ім'я та email опікуна (AC-CARD-01, AC-CARD-02).
-export function ClientCardForm({ today }: { today: string }) {
+// Над формою — панель чернетки з тексту звернення: чернетка замінює всі значення форми, а створює картку лише людина
+// цією ж кнопкою «Create client card» з тими самими перевірками (AC-INTAKE-01…05).
+export function ClientCardForm({
+  today,
+  requestDraft,
+}: {
+  today: string;
+  requestDraft: (text: string) => Promise<IntakeDraftResponse>;
+}) {
   const [state, formAction, pending] = useActionState(createClientCard, INITIAL);
   const [values, setValues] = useState<CardForm>(EMPTY_CARD_FORM);
+  // Помилки попереднього «Create client card» не стосуються нових значень із чернетки: ховаємо їх, доки людина
+  // не збереже форму знову (новий результат дії — новий об'єкт state, і його помилки знову видно).
+  const [draftAppliedOver, setDraftAppliedOver] = useState<CardFormState | null>(null);
+  const errors = state === draftAppliedOver ? [] : state.errors;
+  const applyDraft = (draft: IntakeDraft) => {
+    setValues(draftToCardForm(draft));
+    setDraftAppliedOver(state);
+  };
 
   const fieldError = (field: FieldName) => {
-    const code = state.errors.find(
+    const code = errors.find(
       (candidate) => ERROR_FIELD[candidate] === field || ALSO_INVALID[candidate]?.includes(field),
     );
     return code ? CARD_MESSAGES[code] : undefined;
@@ -77,7 +96,7 @@ export function ClientCardForm({ today }: { today: string }) {
   });
   const set = (field: FieldName) => (event: { target: { value: string } }) =>
     setValues((current) => ({ ...current, [field]: event.target.value }));
-  const formErrors = state.errors.filter((code) => !ERROR_FIELD[code]);
+  const formErrors = errors.filter((code) => !ERROR_FIELD[code]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -87,7 +106,9 @@ export function ClientCardForm({ today }: { today: string }) {
 
   return (
     <Card className="max-w-2xl">
-      <CardContent>
+      <CardContent className="flex flex-col gap-6">
+        <IntakeDraftPanel requestDraft={requestDraft} onDraft={applyDraft} />
+        <hr className="border-border" />
         <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
           {formErrors.length > 0 ? (
             <Alert variant="destructive">

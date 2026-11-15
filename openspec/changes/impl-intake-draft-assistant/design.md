@@ -79,8 +79,8 @@ export type Draft = z.infer<typeof DraftSchema>;
 ```
 
 `src/lib/ai/prompts/draft.ts` — `DRAFT_PROMPT_VERSION: string`, `DRAFT_INSTRUCTIONS: string`,
-`sanitizeIntakeText(text: string): string` (вирізає `<document>` / `</document>` будь-яким регістром і з пробілами,
-обрізає до `INTAKE_MAX_LENGTH`), `wrapDocument(text: string): string` → `"<document>\n" + sanitizeIntakeText(text) + "\n</document>"`.
+`sanitizeIntakeText(text: string): string` (спершу обрізає до `INTAKE_MAX_LENGTH`, потім вирізає `<document>` /
+`</document>` будь-яким регістром і з пробілами, доки не лишиться жодного), `wrapDocument(text: string): string` → `"<document>\n" + sanitizeIntakeText(text) + "\n</document>"`.
 
 `src/lib/ai/draft.ts` — як у наборі: `proposeDraft({ text }, model, { maxRetries?, timeoutMs? }): Promise<DraftResult>`,
 `DraftResult = { ok: true; draft: Draft; modelId: string } | { ok: false; reason: "invalid_output" | "rate_limited" |
@@ -99,7 +99,8 @@ export type Draft = z.infer<typeof DraftSchema>;
   2. ім'я — `trim`, порожнє → `null`; дата — справжня календарна дата РРРР-ММ-ДД не пізніша за `today`, інакше `null`;
   3. тип — `Child`, якщо `writtenByParentForChild` або повних років на `today` < 18, інакше `Adult`;
   4. мова — `english` → «English», `spanish` → «Spanish» (без регістру й пробілів по краях), інше → `null`;
-  5. email — `trim` + нижній регістр; без «@» чи з пробілом усередині → `null`; дорослий — `email` з `clientEmail`,
+  5. email — `trim` + нижній регістр; некоректний за тим самим правилом, що й під час створення картки
+     (`isValidEmail`, AC-HOLD-39: рівно один «@», крапка після нього; без «@» — теж) → `null`; дорослий — `email` з `clientEmail`,
      поля опікуна `null`; дитина — `email: null`, `guardianName` / `guardianEmail` з полів опікуна;
   6. помічник **не знайшов у тексті жодного** поля клієнта — у відповіді моделі `clientName`, `dateOfBirth`,
      `sessionLanguage`, `clientEmail`, `guardianName`, `guardianEmail` усі `null` (до кроків 2–5) → `refused`

@@ -3,9 +3,11 @@ import { Nav } from "@/app/_components/nav";
 import { CARD_MESSAGES, cardRoleError } from "@/lib/clients/card";
 import { practiceDate } from "@/lib/holds/time";
 import { requireViewer } from "@/lib/supabase/viewer";
+import { requestIntakeDraft } from "../actions";
 import { ClientCardForm } from "./card-form";
 
-// Нова картка клієнта з анкети — лише планувальник і адміністратор; терапевт бачить відмову без форми (AC-CARD-06).
+// Нова картка клієнта з анкети — лише планувальник і адміністратор; терапевт бачить відмову без форми й без панелі
+// чернетки (AC-CARD-06, AC-INTAKE-09).
 // Ту саму перевірку робить і дія createClientCard: сторінка — лише зручність.
 export default async function NewClientCardPage() {
   const viewer = await requireViewer();
@@ -19,7 +21,7 @@ export default async function NewClientCardPage() {
         {forbidden ? (
           <ActionAlerts error={CARD_MESSAGES[forbidden]} />
         ) : (
-          <ClientCardForm today={practiceDate(new Date())} />
+          <ClientCardForm today={practiceDate(new Date())} requestDraft={requestIntakeDraft} />
         )}
       </main>
     </>

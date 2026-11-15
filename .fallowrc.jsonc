@@ -66,7 +66,11 @@
       "scripts/check-spec.mjs",
       "scripts/create-demo-users.mjs",
       "scripts/check-design-tokens.mjs",
-      "scripts/check-server-boundary.mjs"
+      "scripts/check-server-boundary.mjs",
+      // набір курсу WS10 (ai-feature): скрипти й живий eval запускає людина вручну, не застосунок
+      "scripts/free-models.mjs",
+      "scripts/quota.mjs",
+      "evals/**"
     ],
     "thresholdOverrides": [
       { "files": ["tests/**"], "maxUnitSize": 500, "reason": "describe()-блоки довгі за задумом" }

@@ -18,6 +18,10 @@ const FLOORED: string[] = [
   "health",
   "clients/card", // WS7, зріз 2: картка клієнта (зауваження викладача до WS9)
   "clients/insurance", // WS9, зріз 3: статус перевірки страхування
+  "clients/intake", // WS10, зріз 4: правила чернетки з тексту звернення
+  "clients/intake-draft",
+  "ai/draft",
+  "ai/prompts/draft",
   "clients/search",
   "holds/clients",
   "holds/messages",
