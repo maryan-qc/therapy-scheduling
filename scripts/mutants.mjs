@@ -21,6 +21,10 @@ const ACCESS_DB = "tests/db/client-access.test.ts";
 const CARDS_DB = "tests/db/client-cards.test.ts";
 const INSURANCE = "supabase/migrations/20261106170000_insurance_status.sql";
 const INSURANCE_DB = "tests/db/insurance-status.test.ts";
+const HOLD_CONFIRM = "supabase/migrations/20261021160000_hold_and_confirm.sql";
+const HOLD_CONFIRM_DB = "tests/db/hold-confirm.test.ts";
+const ACTIVE_HOLDS = "supabase/migrations/20261023084029_therapist_sees_active_holds_only.sql";
+const VISIBILITY_DB = "tests/db/therapist-visibility.test.ts";
 const CARD_TS = "src/lib/clients/card.ts";
 const CARD_UNIT = "tests/clients/card.test.ts";
 
@@ -128,6 +132,25 @@ export const mutants = [
     what: "не всі помилки одразу: після порожнього імені дитини перевірка зупиняється",
     find: '  if (type === "child" && !name) errors.push("CHILD_NAME");',
     replace: '  if (type === "child" && !name) return { ok: false, errors: ["CHILD_NAME"] };',
+  },
+  // ── Після рев'ю викладача WS9 (п. 1): мутант на кожну міграцію з правилами (scripts/check-mutant-coverage.mjs) ──
+  {
+    id: "C14", kind: "sql", ac: "AC-HOLD-08", file: HOLD_CONFIRM, tests: [HOLD_CONFIRM_DB],
+    what: "hold_slot_at без перевірки ролі is_staff(): терапевт утримує слот напряму через RPC",
+    find: "  if not (select private.is_staff()) then\n    return jsonb_build_object('code', 'HOLD_FORBIDDEN');",
+    replace: "  if false then\n    return jsonb_build_object('code', 'HOLD_FORBIDDEN');",
+  },
+  {
+    id: "C15", kind: "sql", ac: "AC-HOLD-14", file: HOLD_CONFIRM, tests: [HOLD_CONFIRM_DB],
+    what: "confirm_hold_at без перевірки ролі is_staff(): терапевт підтверджує утримання напряму через RPC",
+    find: "  if not (select private.is_staff()) then\n    return jsonb_build_object('code', 'CONFIRM_FORBIDDEN');",
+    replace: "  if false then\n    return jsonb_build_object('code', 'CONFIRM_FORBIDDEN');",
+  },
+  {
+    id: "C16", kind: "sql", ac: "AC-HOLD-21", file: ACTIVE_HOLDS, tests: [VISIBILITY_DB],
+    what: "політика holds_select без умови «підтверджене або активне»: терапевт бачить прострочені й звільнені утримання своїх слотів",
+    find: "      (holds.confirmed_at is not null or (holds.released_at is null and now() < holds.expires_at))\n      and exists (",
+    replace: "      true\n      and exists (",
   },
 ];
 

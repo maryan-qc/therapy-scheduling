@@ -1,0 +1,9 @@
+# Оновлення сторонніх дій GitHub Actions окремими PR (рев'ю викладача WS9, п. 3): дії закріплено за SHA коміту,
+# тож нова версія приходить лише так — з рев'ю й CI, а не тихим переміщенням тегу.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
