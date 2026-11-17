@@ -32,6 +32,8 @@ const HOSTILE_BACKS = [
   "//evil.example",
   "/slotsevil",
   "/holds/../admin",
+  // new URL() цього не розбирає (TypeError): дія не має падати після запису в базу — теж повернення на /slots.
+  "http://[",
 ];
 
 function form(fields: Record<string, string>): FormData {
