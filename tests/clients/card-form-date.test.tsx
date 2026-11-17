@@ -44,7 +44,9 @@ describe("поле Date of birth форми нової картки", () => {
     expect(attr(input, "name")).toBe("date_of_birth");
     expect(html).not.toMatch(/\stype="date"/i);
     expect(inputType(input)).toBe("text");
-    expect(attr(input, "inputmode")).toBe("numeric");
+    // Без inputmode="numeric": цифрова клавіатура на частині телефонів не має «-», а РРРР-ММ-ДД без нього не ввести
+    // (рев'ю CodeRabbit, PR #57) — типова текстова клавіатура.
+    expect(input).not.toMatch(/\sinputmode="numeric"/i);
     expect(attr(input, "placeholder")).toBe("YYYY-MM-DD");
     expect(attr(input, "maxlength")).toBe("10");
     expect(attr(input, "pattern")).toBe(String.raw`\d{4}-\d{2}-\d{2}`);
