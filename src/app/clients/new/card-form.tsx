@@ -132,11 +132,11 @@ export function ClientCardForm({
           </Field>
           <Field id="card-dateOfBirth" label="Date of birth" error={fieldError("dateOfBirth")}>
             {/* Текстове поле РРРР-ММ-ДД, а не вбудоване поле дати браузера: те показує дату в локальному форматі
-                (19.08.2015), а «Вигляд і тон» PM і «Тоді» AC-INTAKE-01, 02 — РРРР-ММ-ДД (зауваження PM у #53). */}
+                (19.08.2015), а «Вигляд і тон» PM і «Тоді» AC-INTAKE-01, 02 — РРРР-ММ-ДД (зауваження PM у #53). Без
+                inputMode="numeric": цифрова клавіатура на мобільних може не мати «-». */}
             <Input
               name="date_of_birth"
               type="text"
-              inputMode="numeric"
               placeholder="YYYY-MM-DD"
               maxLength={10}
               pattern="\d{4}-\d{2}-\d{2}"
