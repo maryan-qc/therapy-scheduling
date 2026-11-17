@@ -1,0 +1,110 @@
+{
+  "X-01": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:53:56.990Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Zoë O'Brien-Nuñez\",\"dateOfBirth\":\"1985-03-03\",\"sessionLanguage\":\"English\",\"clientEmail\":\"Zoe.OBrien-Nunez@Example.TEST\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-02": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:05.405Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Diego Salas\",\"dateOfBirth\":\"1990-02-09\",\"sessionLanguage\":\"English\",\"clientEmail\":\"diego.salas@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-03": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:13.172Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Олена Коваль\",\"dateOfBirth\":\"1992-03-07\",\"sessionLanguage\":\"English\",\"clientEmail\":\"olena.koval@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-04": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:18.851Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":true,\"clientName\":\"Luca Rossi\",\"dateOfBirth\":\"2014-06-21\",\"sessionLanguage\":\"Spanish\",\"clientEmail\":null,\"guardianName\":\"Marco Rossi\",\"guardianEmail\":\"marco.rossi@example.test\"}"
+  },
+  "X-05": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:23.753Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":true,\"clientName\":\"Amara Abara\",\"dateOfBirth\":\"2013-01-30\",\"sessionLanguage\":\"English\",\"clientEmail\":null,\"guardianName\":\"Ruth Abara\",\"guardianEmail\":\"ruth.abara@example.test\"}"
+  },
+  "X-06": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:30.900Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Jamie Cho\",\"dateOfBirth\":\"2010-05-02\",\"sessionLanguage\":\"English\",\"clientEmail\":\"jamie.cho@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-07": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:36.392Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Avery Lund\",\"dateOfBirth\":\"2008-11-13\",\"sessionLanguage\":\"English\",\"clientEmail\":\"avery.lund@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-08": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:41.268Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Priya Nand\",\"dateOfBirth\":null,\"sessionLanguage\":\"English\",\"clientEmail\":null,\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-09": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:48.495Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Tomas Berg\",\"dateOfBirth\":null,\"sessionLanguage\":\"Spanish\",\"clientEmail\":\"tomas.berg@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-10": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:54:56.168Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Hana Sato\",\"dateOfBirth\":\"1987-10-24\",\"sessionLanguage\":\"English\",\"clientEmail\":\"hana.sato@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-11": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:55:05.446Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":null,\"dateOfBirth\":\"1979-02-11\",\"sessionLanguage\":\"English\",\"clientEmail\":\"quiet.harbor79@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-12": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:55:12.077Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Ben Okafor\",\"dateOfBirth\":\"1995-08-17\",\"sessionLanguage\":\"English\",\"clientEmail\":\"ben.okafor(at)example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-13": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:55:20.086Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Iris Navarro\",\"dateOfBirth\":\"1983-12-05\",\"sessionLanguage\":\"Spanish\",\"clientEmail\":\"iris.navarro@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-14": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:55:25.213Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"ok\",\"writtenByParentForChild\":false,\"clientName\":\"Felix Grant\",\"dateOfBirth\":\"1972-04-18\",\"sessionLanguage\":\"English\",\"clientEmail\":\"felix.grant@example.test\",\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-15": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:55:32.987Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"refused\",\"writtenByParentForChild\":false,\"clientName\":null,\"dateOfBirth\":null,\"sessionLanguage\":null,\"clientEmail\":null,\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-16": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:55:45.222Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"refused\",\"writtenByParentForChild\":false,\"clientName\":null,\"dateOfBirth\":null,\"sessionLanguage\":null,\"clientEmail\":null,\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-17": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:55:53.581Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"refused\",\"writtenByParentForChild\":false,\"clientName\":null,\"dateOfBirth\":null,\"sessionLanguage\":null,\"clientEmail\":null,\"guardianName\":null,\"guardianEmail\":null}"
+  },
+  "X-18": {
+    "modelId": "nvidia/nemotron-3.5-super-vl:free",
+    "recordedAt": "2026-11-17T08:56:02.359Z",
+    "promptVersion": "intake-v2",
+    "text": "{\"status\":\"refused\",\"writtenByParentForChild\":false,\"clientName\":null,\"dateOfBirth\":null,\"sessionLanguage\":null,\"clientEmail\":null,\"guardianName\":null,\"guardianEmail\":null}"
+  }
+}

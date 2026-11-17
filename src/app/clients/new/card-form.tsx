@@ -64,8 +64,9 @@ function Field({ id, label, error, children }: { id: string; label: string; erro
 // AC-CARD-12, AC-CARD-13). Дорослий — email; дитина — ім'я та email опікуна (AC-CARD-01, AC-CARD-02).
 // Над формою — панель чернетки з тексту звернення: чернетка замінює всі значення форми, а створює картку лише людина
 // цією ж кнопкою «Create client card» з тими самими перевірками (AC-INTAKE-01…05).
+// today лишається в пропах (сторінка й тести його передають), але поле дати — текстове: межу «не пізніше за сьогодні»
+// перевіряє сервер (validateClientCard, AC-CARD-12).
 export function ClientCardForm({
-  today,
   requestDraft,
 }: {
   today: string;
@@ -130,14 +131,26 @@ export function ClientCardForm({
             <Input name="name" autoComplete="off" onChange={set("name")} {...fieldProps("name")} />
           </Field>
           <Field id="card-dateOfBirth" label="Date of birth" error={fieldError("dateOfBirth")}>
+            {/* Текстове поле РРРР-ММ-ДД, а не вбудоване поле дати браузера: те показує дату в локальному форматі
+                (19.08.2015), а «Вигляд і тон» PM і «Тоді» AC-INTAKE-01, 02 — РРРР-ММ-ДД (зауваження PM у #53). Без
+                inputMode="numeric": цифрова клавіатура на мобільних може не мати «-». */}
             <Input
               name="date_of_birth"
-              type="date"
-              max={today}
+              type="text"
+              placeholder="YYYY-MM-DD"
+              maxLength={10}
+              pattern="\d{4}-\d{2}-\d{2}"
+              autoComplete="off"
               className="w-48"
               onChange={set("dateOfBirth")}
               {...fieldProps("dateOfBirth")}
+              aria-describedby={
+                fieldError("dateOfBirth") ? "card-dateOfBirth-format card-dateOfBirth-error" : "card-dateOfBirth-format"
+              }
             />
+            <p id="card-dateOfBirth-format" className="text-small text-muted-foreground">
+              Format: YYYY-MM-DD
+            </p>
           </Field>
           <Field id="card-language" label="Session language" error={fieldError("language")}>
             <NativeSelect name="session_language" onChange={set("language")} {...fieldProps("language")}>
