@@ -34,7 +34,7 @@
 | AC | Що перевіряє | Код | Тест | Статус |
 |---|---|---|---|---|
 | AC-HOLD-01 | слоти дня зі статусами вільний / «Held» / «Confirmed»; утримати можна лише вільний | `src/lib/holds/day-view.ts`, `src/lib/holds/status.ts`, `src/app/slots/page.tsx` | `tests/holds/day-view.test.ts` | реалізовано |
-| AC-HOLD-02 | утримання вільного слоту: «Held», клієнт, «Held until» +24 години | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-02 | утримання вільного слоту: «Held», клієнт, «Held until» +24 години; повернення лише на свій `/slots` чи `/holds` | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts`, `tests/slots/back-redirect.test.ts` | реалізовано |
 | AC-HOLD-03 | утриманий слот не утримують за іншим клієнтом | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-04 | два одночасні утримання — рівно одне створено | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-05 | о 14:29 через добу утримання ще «Held» | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
@@ -44,7 +44,7 @@
 | AC-HOLD-09 | терапевт бачить лише власний розклад | `src/lib/holds/schedule.ts`, `src/app/schedule/page.tsx` | `tests/holds/schedule.test.ts`, `tests/db/therapist-visibility.test.ts` | реалізовано |
 | AC-HOLD-10 | створення картки клієнта з ім'ям і email | `src/lib/holds/clients.ts`, `src/lib/clients/card.ts`, `src/app/clients/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/db/clients.test.ts`, `tests/holds/clients.test.ts` | реалізовано |
 | AC-HOLD-11 | порожнє ім'я клієнта відхилено | `src/lib/holds/clients.ts`, `src/lib/clients/card.ts`, `src/app/clients/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/db/clients.test.ts`, `tests/holds/clients.test.ts` | реалізовано |
-| AC-HOLD-12 | підтвердження утримання: «Confirmed», без «Held until», не прострочується | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
+| AC-HOLD-12 | підтвердження утримання: «Confirmed», без «Held until», не прострочується; повернення лише на свій `/slots` чи `/holds` | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts`, `tests/slots/back-redirect.test.ts` | реалізовано |
 | AC-HOLD-13 | прострочене утримання не підтверджують | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-14 | терапевт не підтверджує утримання | `supabase/migrations/20261021160000_hold_and_confirm.sql`, `src/lib/holds/rules.ts`, `src/app/slots/actions.ts` | `tests/db/hold-confirm.test.ts` | реалізовано |
 | AC-HOLD-15 | email без «@» відхилено | `src/lib/holds/clients.ts`, `src/lib/clients/card.ts`, `src/app/clients/actions.ts`, `supabase/migrations/20261021150100_slot_holds.sql` | `tests/db/clients.test.ts`, `tests/holds/clients.test.ts` | реалізовано |
