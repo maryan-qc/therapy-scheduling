@@ -12,10 +12,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * Повертаємось на сторінку, з якої прийшла форма (слоти дня або список утримань), з кодом результату в адресі.
  * Після успіху — ще й id рядка, який змінила дія (поле changed форми): сторінка коротко його підсвічує.
  */
+const LOCAL = "http://local";
+const BACK_PATHS = ["/slots", "/holds"];
+
 function backTo(formData: FormData, key: "error" | "ok", code: string): string {
-  const raw = String(formData.get("back") ?? "");
-  const allowed = raw.startsWith("/slots") || raw.startsWith("/holds");
-  const url = new URL(allowed ? raw : "/slots", "http://local");
+  // Перевіряємо вже розібрану адресу — те саме значення, що піде в redirect: «/slots/../..//evil.example» чи
+  // «%2e%2e» після нормалізації стали б чужим сайтом. Дозволено лише свій origin і рівно /slots чи /holds.
+  let url = new URL(String(formData.get("back") ?? "") || "/slots", LOCAL);
+  if (url.origin !== LOCAL || !BACK_PATHS.includes(url.pathname)) url = new URL("/slots", LOCAL);
   url.searchParams.delete("error");
   url.searchParams.delete("ok");
   url.searchParams.delete("changed");
