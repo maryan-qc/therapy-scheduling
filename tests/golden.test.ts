@@ -13,10 +13,13 @@ import recordedJson from "./fixtures/golden/recorded.json";
 // точний збіг з очікуваним PM. Перевіряє КОД навколо моделі, а не якість моделі — її міряє живий `npm run eval`.
 // Записи в recorded.json до живого прогону — заглушки, написані руками (modelId «placeholder …»); `RECORD=1 npm run eval`
 // замінює їх справжніми відповідями моделі. Кейси, де запобіжник hasAssistantInstructions відмовляє до моделі (GC-10),
-// запису не мають: модель не викликається.
+// запису не мають: модель не викликається. Які це кейси, каже позначка фікстури refusalStage: "before-model", а не сам
+// запобіжник: інакше кейс, який запобіжник перестав впізнавати, тихо зник би з обох груп.
 
 type Recording = { modelId: string; recordedAt: string; promptVersion?: string; text: string };
-type Case = GoldenCase & { id: string; ac: string; today: string; input: string };
+/** Етап відмови: "before-model" — запобіжник у коді, до моделі (AC-INTAKE-07). */
+type RefusalStage = "before-model";
+type Case = GoldenCase & { id: string; ac: string; today: string; input: string; refusalStage?: RefusalStage };
 
 const cases = casesJson as unknown as Case[];
 const recorded = recordedJson as Record<string, Recording>;
@@ -100,13 +103,50 @@ async function expectRefusedBeforeModel(c: Case) {
   expect(scoreFields(c.expected, goldenActual(response)).mismatches).toEqual([]);
 }
 
-const byAc = (ac: string) => cases.filter((c) => c.ac === ac);
+const BEFORE_MODEL: RefusalStage = "before-model";
+/** AC, для яких нижче є група реплею. */
+const REPLAYED_ACS = ["AC-INTAKE-01", "AC-INTAKE-02", "AC-INTAKE-04", "AC-INTAKE-05", "AC-INTAKE-06", "AC-INTAKE-07"];
+/** Кейси AC, що доходять до моделі (без позначки) — реплей запису. */
+const viaModel = (ac: string) => cases.filter((c) => c.ac === ac && c.refusalStage !== BEFORE_MODEL);
+/** Кейси з позначкою «відмова кодом до моделі». */
+const beforeModel = cases.filter((c) => c.refusalStage === BEFORE_MODEL);
+
+/** Чому кейс не перевіряється так, як позначено у фікстурі; порожньо — кожен кейс у своїй групі. */
+function caseProblems() {
+  const ids = (list: Case[]) => list.map((c) => c.id);
+  return {
+    acWithoutGroup: ids(cases.filter((c) => !REPLAYED_ACS.includes(c.ac))),
+    unknownStage: ids(cases.filter((c) => c.refusalStage !== undefined && c.refusalStage !== BEFORE_MODEL)),
+    beforeModelNotAcIntake07: ids(beforeModel.filter((c) => c.ac !== "AC-INTAKE-07")),
+    beforeModelNotGuarded: ids(beforeModel.filter((c) => !hasAssistantInstructions(c.input))),
+    viaModelWithoutRealRecord: ids(
+      cases.filter(
+        (c) =>
+          c.refusalStage !== BEFORE_MODEL &&
+          !(recorded[c.id]?.promptVersion === DRAFT_PROMPT_VERSION && !/placeholder/i.test(recorded[c.id].modelId)),
+      ),
+    ),
+  };
+}
 
 describe("golden cases PM, офлайн-реплей", () => {
-  it.each(byAc("AC-INTAKE-01"))("AC-INTAKE-01: golden $id", async (c) => expectReplayMatches(c));
-  it.each(byAc("AC-INTAKE-02"))("AC-INTAKE-02: golden $id", async (c) => expectReplayMatches(c));
-  it.each(byAc("AC-INTAKE-04"))("AC-INTAKE-04: golden $id", async (c) => expectReplayMatches(c));
-  it.each(byAc("AC-INTAKE-05"))("AC-INTAKE-05: golden $id", async (c) => expectReplayMatches(c));
-  it.each(byAc("AC-INTAKE-06"))("AC-INTAKE-06: golden $id", async (c) => expectReplayMatches(c));
-  it.each(byAc("AC-INTAKE-07"))("AC-INTAKE-07: golden $id", async (c) => expectRefusedBeforeModel(c));
+  it("AC-INTAKE-07: кожен golden case перевіряється: позначений «before-model» — відмова запобіжника до моделі, решта — справжній запис моделі поточної версії промпту", () => {
+    expect(caseProblems()).toEqual({
+      acWithoutGroup: [],
+      unknownStage: [],
+      beforeModelNotAcIntake07: [],
+      beforeModelNotGuarded: [],
+      viaModelWithoutRealRecord: [],
+    });
+  });
+
+  it.each(viaModel("AC-INTAKE-01"))("AC-INTAKE-01: golden $id", async (c) => expectReplayMatches(c));
+  it.each(viaModel("AC-INTAKE-02"))("AC-INTAKE-02: golden $id", async (c) => expectReplayMatches(c));
+  it.each(viaModel("AC-INTAKE-04"))("AC-INTAKE-04: golden $id", async (c) => expectReplayMatches(c));
+  it.each(viaModel("AC-INTAKE-05"))("AC-INTAKE-05: golden $id", async (c) => expectReplayMatches(c));
+  it.each(viaModel("AC-INTAKE-06"))("AC-INTAKE-06: golden $id", async (c) => expectReplayMatches(c));
+  it.each(viaModel("AC-INTAKE-07"))("AC-INTAKE-07: golden $id", async (c) => expectReplayMatches(c));
+  it.each(beforeModel)("AC-INTAKE-07: golden $id — відмова запобіжника до моделі", async (c) =>
+    expectRefusedBeforeModel(c),
+  );
 });

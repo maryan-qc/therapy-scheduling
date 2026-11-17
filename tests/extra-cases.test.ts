@@ -12,11 +12,22 @@ import recordedJson from "./fixtures/extra/recorded.json";
 // Очікуване виведено лише з правил PM (requirements/36-…, «Припущення» й AC) і власних припущень розробника
 // (openspec/changes/archive/2026-11-14-add-intake-draft-assistant/proposal.md), а не з відповідей моделі.
 // Записи (tests/fixtures/extra/recorded.json) — з живого прогону, і лише відповіді, що пройшли: реплей ловить регресії
-// коду навколо моделі (запобіжник, промпт, схема, правила застосунку). Кейс без запису не реплеїться; кейс, який
-// запобіжник hasAssistantInstructions відмовляє до моделі, запису не потребує.
+// коду навколо моделі (запобіжник, промпт, схема, правила застосунку). Кожен кейс без позначки має запис; кейс з
+// позначкою фікстури refusalStage: "before-model" запобіжник відмовляє до моделі, і запис йому не потрібен. Групи
+// вибирає позначка, а не сам запобіжник: інакше кейс, який запобіжник перестав впізнавати, тихо зник би з обох груп.
 
 type Recording = { modelId: string; recordedAt: string; promptVersion?: string; text: string };
-type ExtraCase = GoldenCase & { id: string; ac: string; type: string; today: string; input: string; rule: string };
+/** Етап відмови: "before-model" — запобіжник у коді, до моделі (AC-INTAKE-07). */
+type RefusalStage = "before-model";
+type ExtraCase = GoldenCase & {
+  id: string;
+  ac: string;
+  type: string;
+  today: string;
+  input: string;
+  rule: string;
+  refusalStage?: RefusalStage;
+};
 
 const cases = casesJson as unknown as ExtraCase[];
 const recorded = recordedJson as Record<string, Recording>;
@@ -56,13 +67,17 @@ function scored(response: IntakeDraftResponse): IntakeDraft {
   };
 }
 
-/** Кейси, які запобіжник у коді відмовляє ще до моделі. */
-const guarded = cases.filter((c) => hasAssistantInstructions(c.input));
-/** Кейси AC, що доходять до моделі й мають запис живого прогону. */
-const withRecord = (ac: string) =>
-  cases.filter((c) => c.ac === ac && !hasAssistantInstructions(c.input) && Object.hasOwn(recorded, c.id));
+const BEFORE_MODEL: RefusalStage = "before-model";
+/** AC, для яких нижче є група реплею. */
+const REPLAYED_ACS = ["AC-INTAKE-01", "AC-INTAKE-02", "AC-INTAKE-04", "AC-INTAKE-06", "AC-INTAKE-07"];
+/** Кейси з позначкою «відмова кодом до моделі». */
+const beforeModel = cases.filter((c) => c.refusalStage === BEFORE_MODEL);
+/** Кейси AC, що доходять до моделі (без позначки) — реплей запису живого прогону. */
+const viaModel = (ac: string) => cases.filter((c) => c.ac === ac && c.refusalStage !== BEFORE_MODEL);
 
 async function expectRecordedAnswerMatches(c: ExtraCase) {
+  expect(hasAssistantInstructions(c.input), `${c.id}: запобіжник відмовив листу без позначки before-model`).toBe(false);
+  expect(Object.hasOwn(recorded, c.id), `немає запису для ${c.id} у tests/fixtures/extra/recorded.json`).toBe(true);
   const model = recordedModel(recorded[c.id]);
   const actual = scored(await draftIntake({ role: "scheduler", text: c.input, model, today: c.today }));
 
@@ -74,6 +89,7 @@ async function expectRecordedAnswerMatches(c: ExtraCase) {
 }
 
 async function expectRefusedBeforeModel(c: ExtraCase) {
+  expect(hasAssistantInstructions(c.input), `${c.id}: запобіжник не впізнав вказівку помічнику`).toBe(true);
   const model = recordedModel({ modelId: "must-not-be-called", text: "{}" });
   const response = await draftIntake({ role: "scheduler", text: c.input, model, today: c.today });
 
@@ -87,38 +103,51 @@ async function expectRefusedBeforeModel(c: ExtraCase) {
 function recordProblems() {
   const ids = new Set(cases.map((c) => c.id));
   const entries = Object.entries(recorded);
+  const caseIds = (list: ExtraCase[]) => list.map((c) => c.id);
   return {
     withoutCase: entries.filter(([id]) => !ids.has(id)).map(([id]) => id),
     notModelAnswers: entries.filter(([, r]) => !r.modelId?.trim() || /placeholder/i.test(r.modelId)).map(([id]) => id),
     otherPromptVersion: entries.filter(([, r]) => r.promptVersion !== DRAFT_PROMPT_VERSION).map(([id]) => id),
+    viaModelWithoutRecord: caseIds(cases.filter((c) => c.refusalStage !== BEFORE_MODEL && !Object.hasOwn(recorded, c.id))),
+    acWithoutGroup: caseIds(cases.filter((c) => !REPLAYED_ACS.includes(c.ac))),
+    unknownStage: caseIds(cases.filter((c) => c.refusalStage !== undefined && c.refusalStage !== BEFORE_MODEL)),
+    beforeModelNotAcIntake07: caseIds(beforeModel.filter((c) => c.ac !== "AC-INTAKE-07")),
   };
 }
 
-// Один describe на все: Vitest валить блок describe без жодного тесту, а поки записів немає (recorded.json — {}), it.each
-// нижче не створюють жодного — у блоці завжди лишається перевірка записів.
+// Один describe на все: Vitest валить блок describe без жодного тесту, а it.each з порожнім списком (зараз — кейси
+// з позначкою before-model) не створює жодного — у блоці завжди лишається перевірка записів.
 describe("додаткові листи X-01…X-18, офлайн-реплей записів живого прогону", () => {
-  it("AC-INTAKE-07: записи додаткових кейсів — лише справжні відповіді моделі поточної версії промпту, і в кожного є кейс", () => {
-    expect(recordProblems()).toEqual({ withoutCase: [], notModelAnswers: [], otherPromptVersion: [] });
+  it("AC-INTAKE-07: записи додаткових кейсів — справжні відповіді моделі поточної версії промпту для кожного кейсу без позначки before-model, і в кожного запису є кейс", () => {
+    expect(recordProblems()).toEqual({
+      withoutCase: [],
+      notModelAnswers: [],
+      otherPromptVersion: [],
+      viaModelWithoutRecord: [],
+      acWithoutGroup: [],
+      unknownStage: [],
+      beforeModelNotAcIntake07: [],
+    });
   });
 
-  it.each(withRecord("AC-INTAKE-01"))("AC-INTAKE-01: додатковий кейс $id ($type)", async (c) =>
+  it.each(viaModel("AC-INTAKE-01"))("AC-INTAKE-01: додатковий кейс $id ($type)", async (c) =>
     expectRecordedAnswerMatches(c),
   );
-  it.each(withRecord("AC-INTAKE-02"))("AC-INTAKE-02: додатковий кейс $id ($type)", async (c) =>
+  it.each(viaModel("AC-INTAKE-02"))("AC-INTAKE-02: додатковий кейс $id ($type)", async (c) =>
     expectRecordedAnswerMatches(c),
   );
-  it.each(withRecord("AC-INTAKE-04"))("AC-INTAKE-04: додатковий кейс $id ($type)", async (c) =>
+  it.each(viaModel("AC-INTAKE-04"))("AC-INTAKE-04: додатковий кейс $id ($type)", async (c) =>
     expectRecordedAnswerMatches(c),
   );
-  it.each(withRecord("AC-INTAKE-06"))("AC-INTAKE-06: додатковий кейс $id ($type)", async (c) =>
+  it.each(viaModel("AC-INTAKE-06"))("AC-INTAKE-06: додатковий кейс $id ($type)", async (c) =>
     expectRecordedAnswerMatches(c),
   );
-  it.each(withRecord("AC-INTAKE-07"))("AC-INTAKE-07: додатковий кейс $id ($type)", async (c) =>
+  it.each(viaModel("AC-INTAKE-07"))("AC-INTAKE-07: додатковий кейс $id ($type)", async (c) =>
     expectRecordedAnswerMatches(c),
   );
 
-  // Запобіжник у коді: такі листи відмовляють до моделі, запис їм не потрібен.
-  it.each(guarded)("AC-INTAKE-07: додатковий кейс $id ($type) — відмова кодом, модель не викликано", async (c) =>
+  // Позначені before-model: запобіжник у коді відмовляє до моделі, запис їм не потрібен.
+  it.each(beforeModel)("AC-INTAKE-07: додатковий кейс $id ($type) — відмова кодом, модель не викликано", async (c) =>
     expectRefusedBeforeModel(c),
   );
 });
