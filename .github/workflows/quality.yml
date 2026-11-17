@@ -106,9 +106,18 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
+          # Стан гілки перед усім push (а не лише останній коміт): міграція в передостанньому коміті push теж рахується.
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          if [ "$EVENT" = "pull_request" ]; then RANGE="origin/${BASE_REF:-main}...HEAD"; else RANGE="HEAD~1...HEAD"; fi
-          if git diff --name-only "$RANGE" | grep -qE '^(supabase/migrations|tests/db)/|^scripts/(mutants|mutation-check|check-mutant-coverage)\.mjs$|^\.github/workflows/quality\.yml$'; then
+          if [ "$EVENT" = "pull_request" ]; then
+            RANGE="origin/${BASE_REF:-main}...HEAD"
+          elif [ -n "$PUSH_BEFORE" ] && ! echo "$PUSH_BEFORE" | grep -qE '^0+$' && git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            RANGE="$PUSH_BEFORE...HEAD"
+          else
+            RANGE="HEAD~1...HEAD" # нова гілка чи невідомий before — хоча б останній коміт
+          fi
+          # package.json / package-lock.json задають команду mutation:sql і версії PGlite та Vitest — теж середовище мутантів.
+          if git diff --name-only "$RANGE" | grep -qE '^(supabase/migrations|tests/db)/|^scripts/(mutants|mutation-check|check-mutant-coverage)\.mjs$|^\.github/workflows/quality\.yml$|^package(-lock)?\.json$'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"

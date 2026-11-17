@@ -5,11 +5,18 @@
 // Код виходу: 0 — усе покрито; 1 — є міграція з правилами без мутанта (назва файлу й правила в stderr).
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { mutants } from "./mutants.mjs";
 
 const DIR = "supabase/migrations";
-// Правило доступу: політика RLS, видача прав чи функція з правами власника.
-const RULE = /\b(create|alter)\s+policy\b|^\s*grant\s|\bsecurity\s+definer\b/gim;
+// Правило доступу: політика RLS, видача прав (на початку рядка чи після «;» іншої інструкції) або функція з правами
+// власника.
+const RULE = /\b(create|alter)\s+policy\b|(?:^|;)\s*grant\s|\bsecurity\s+definer\b/gim;
+
+/** Правила доступу в тексті міграції (нормалізовані: «create policy», «grant», «security definer»). */
+export function accessRules(sql) {
+  return (sql.match(RULE) ?? []).map((r) => r.replace(/^[;\s]+/, "").replace(/\s+/g, " ").trim().toLowerCase());
+}
 
 /** Міграції без власних правил доступу — з причиною (без причини виняток не приймаємо). */
 const NO_MUTANT = {
@@ -17,20 +24,24 @@ const NO_MUTANT = {
   "20261023105252_pm_therapist_seed.sql": "лише сид синтетичних даних PM",
 };
 
-const covered = new Set(mutants.filter((m) => m.kind === "sql").map((m) => path.basename(m.file)));
-const problems = [];
-for (const file of readdirSync(DIR).filter((f) => f.endsWith(".sql")).sort()) {
-  const rules = readFileSync(path.join(DIR, file), "utf8").match(RULE) ?? [];
-  const reason = NO_MUTANT[file];
-  if (reason !== undefined && !reason.trim()) problems.push(`${file}: виняток без причини`);
-  if (rules.length === 0 || covered.has(file) || reason) continue;
-  problems.push(`${file}: правил доступу ${rules.length} (${[...new Set(rules.map((r) => r.trim().toLowerCase()))].join(", ")}), мутанта немає`);
+function main() {
+  const covered = new Set(mutants.filter((m) => m.kind === "sql").map((m) => path.basename(m.file)));
+  const problems = [];
+  for (const file of readdirSync(DIR).filter((f) => f.endsWith(".sql")).sort()) {
+    const rules = accessRules(readFileSync(path.join(DIR, file), "utf8"));
+    const reason = NO_MUTANT[file];
+    if (reason !== undefined && !reason.trim()) problems.push(`${file}: виняток без причини`);
+    if (rules.length === 0 || covered.has(file) || reason) continue;
+    problems.push(`${file}: правил доступу ${rules.length} (${[...new Set(rules)].join(", ")}), мутанта немає`);
+  }
+  if (problems.length) {
+    console.error("mutation:coverage — міграції з правилами без мутанта:");
+    for (const p of problems) console.error(`  - ${p}`);
+    console.error("Додайте мутанта в scripts/mutants.mjs (find/replace, що ламає правило) або причину в NO_MUTANT.");
+    process.exit(1);
+  }
+  console.log(`mutation:coverage — OK: міграцій з правилами покрито мутантами ${covered.size}, винятків ${Object.keys(NO_MUTANT).length}.`);
 }
 
-if (problems.length) {
-  console.error("mutation:coverage — міграції з правилами без мутанта:");
-  for (const p of problems) console.error(`  - ${p}`);
-  console.error("Додайте мутанта в scripts/mutants.mjs (find/replace, що ламає правило) або причину в NO_MUTANT.");
-  process.exit(1);
-}
-console.log(`mutation:coverage — OK: міграцій з правилами покрито мутантами ${covered.size}, винятків ${Object.keys(NO_MUTANT).length}.`);
+// Запуск як скрипт (npm run mutation:coverage); імпорт у тесті лише бере accessRules.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
