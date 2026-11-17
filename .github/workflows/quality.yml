@@ -40,9 +40,13 @@ jobs:
       # З node_modules fallow правильно класифікує залежності (без них друкує WARN і може помилитися); версія — з lock-файлу.
       - run: npm ci
       - name: fallow audit (лише нове відносно бази)
+        # Контекст GitHub — через env, а не підстановкою ${{ }} прямо в run: так звичка не перейде на небезпечніші поля.
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
           set -o pipefail
-          if [ "${{ github.event_name }}" = "pull_request" ]; then BASE="origin/${{ github.base_ref }}"; else BASE="HEAD~1"; fi
+          if [ "$EVENT" = "pull_request" ]; then BASE="origin/${BASE_REF}"; else BASE="HEAD~1"; fi
           npx fallow audit --base "$BASE" --format github-summary | tee -a "$GITHUB_STEP_SUMMARY"
 
   coverage:
@@ -79,3 +83,68 @@ jobs:
             echo "::warning title=npm audit::Вразливі залежності продакшену — оновіть пакет (див. лог цього кроку)"
             exit 1
           fi
+
+  # Мутанти SQL — обов'язкова перевірка ruleset (рев'ю викладача WS9, п. 1): job є в кожному PR і сам вирішує, чи є що
+  # мутувати. Покриття «кожна міграція з правилами має мутанта» перевіряється завжди; самі мутанти (PGlite, ~1–2 хв)
+  # проганяються, коли змінено міграції, тести бази, мутанти чи цей workflow.
+  mutation-sql:
+    name: "Мутанти SQL: правила бази"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # без історії origin/main недоступний, і перевірка змін мовчки пропустила б усе
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Кожна міграція з правилами має мутанта
+        run: node scripts/check-mutant-coverage.mjs
+      - name: Чи є що мутувати
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          # Стан гілки перед усім push (а не лише останній коміт): міграція в передостанньому коміті push теж рахується.
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            RANGE="origin/${BASE_REF:-main}...HEAD"
+          elif [ -n "$PUSH_BEFORE" ] && ! echo "$PUSH_BEFORE" | grep -qE '^0+$' && git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            RANGE="$PUSH_BEFORE...HEAD"
+          else
+            RANGE="HEAD~1...HEAD" # нова гілка чи невідомий before — хоча б останній коміт
+          fi
+          # package.json / package-lock.json задають команду mutation:sql і версії PGlite та Vitest — теж середовище мутантів.
+          if git diff --name-only "$RANGE" | grep -qE '^(supabase/migrations|tests/db)/|^scripts/(mutants|mutation-check|check-mutant-coverage)\.mjs$|^\.github/workflows/quality\.yml$|^package(-lock)?\.json$'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=mutation-sql::Міграцій, тестів бази й мутантів не змінено — прогін мутантів пропущено"
+          fi
+      - if: steps.scope.outputs.run == 'true'
+        run: npm ci
+      # Код виходу 1 — є SURVIVED чи ERROR (тести правила не доводять), 2 — помилка запуску: job червоний в обох випадках.
+      - name: npm run mutation:sql (кожен мутант має бути KILLED)
+        if: steps.scope.outputs.run == 'true'
+        run: |
+          set -o pipefail
+          npm run -s mutation:sql -- --json reports/sql-mutation.json --markdown | tee mutation.log
+      - name: Вердикти → Summary
+        if: always() && steps.scope.outputs.run == 'true'
+        run: |
+          {
+            echo "## Мутанти SQL"
+            echo
+            grep -E "^Мутаційний бал" mutation.log || echo "Звіту немає — див. лог кроку вище."
+            echo
+            # Таблиця --markdown разом із розділювачем |---|: усі рядки, що починаються з «|».
+            grep -E "^\|" mutation.log || true
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.scope.outputs.run == 'true'
+        with:
+          name: sql-mutation
+          path: reports/sql-mutation.json
+          if-no-files-found: ignore

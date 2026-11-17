@@ -24,6 +24,7 @@
     "coverage:summary": "node scripts/coverage-summary.mjs",
     "mutation:ts": "stryker run",
     "mutation:sql": "node scripts/mutation-check.mjs --kind sql",
+    "mutation:coverage": "node scripts/check-mutant-coverage.mjs",
     "test:e2e": "playwright test",
     "uat": "node scripts/uat/run.mjs",
     "uat:nc": "node scripts/uat/run.mjs --negative-controls",
