@@ -9,9 +9,10 @@ import { pathToFileURL } from "node:url";
 import { mutants } from "./mutants.mjs";
 
 const DIR = "supabase/migrations";
-// Правило доступу: політика RLS, видача прав (на початку рядка чи після «;» іншої інструкції) або функція з правами
-// власника.
-const RULE = /\b(create|alter)\s+policy\b|(?:^|;)\s*grant\s|\bsecurity\s+definer\b/gim;
+// Правило доступу: політика RLS, видача прав або функція з правами власника. «grant» — окремим словом будь-де:
+// після «;» іншої інструкції, в «alter default privileges … grant …» і в динамічному execute 'grant …'. Слово в
+// коментарі теж рахується — це лише суворіше (така міграція вимагатиме мутанта або причину в NO_MUTANT).
+const RULE = /\b(create|alter)\s+policy\b|\bgrant\s|\bsecurity\s+definer\b/gim;
 
 /** Правила доступу в тексті міграції (нормалізовані: «create policy», «grant», «security definer»). */
 export function accessRules(sql) {
