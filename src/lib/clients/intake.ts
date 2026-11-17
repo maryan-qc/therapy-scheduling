@@ -3,7 +3,7 @@
 // цей модуль — детерміновано, без мережі (ADR 0002).
 import type { Draft } from "@/lib/ai/schema";
 import { isBirthDate, type CardForm } from "./card";
-import { normalizeEmail } from "@/lib/holds/clients";
+import { isValidEmail, normalizeEmail } from "@/lib/holds/clients";
 
 /** Поле тексту звернення приймає до 2000 символів («Припущення» PM). */
 export const INTAKE_MAX_LENGTH = 2000;
@@ -49,10 +49,14 @@ const REFUSED: IntakeDraft = {
 
 const text = (value: string | null): string | null => value?.trim() || null;
 
-/** Email як у тексті, малими літерами без пробілів по краях; без «@» чи з пробілом усередині — порожньо. */
+/**
+ * Email як у тексті, малими літерами без пробілів по краях. Некоректний за тим самим правилом, що й під час створення
+ * картки (isValidEmail, AC-HOLD-39: рівно один «@», крапка після нього), — порожньо, щоб чернетка не була «ready» з
+ * адресою, яку картка потім відхилить. Без «@» — порожньо (правило PM #36).
+ */
 function email(value: string | null): string | null {
   const normalized = normalizeEmail(value ?? "");
-  return normalized.includes("@") && !/\s/.test(normalized) ? normalized : null;
+  return isValidEmail(normalized) ? normalized : null;
 }
 
 /** Повних років на `today` (обидві дати — РРРР-ММ-ДД). */

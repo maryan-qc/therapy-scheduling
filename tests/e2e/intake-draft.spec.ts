@@ -67,6 +67,9 @@ test.describe("чернетка картки з тексту звернення 
             "перед тим чернетку заповнено: «Draft ready. Check the fields and create the card.», Client type «Adult», Name «Client Ten», Date of birth 1990-05-14, Session language «English», Email client10@example.test (перевірки кроку «Дано»)",
             "картки «Client Ten» і адреси client10@example.test немає в усьому списку, а не лише на кадрі",
           ],
+          // /clients — довгий список без пошуку, а «Client Ten» за абеткою був би нижче видимої частини: кадр на всю
+          // сторінку, щоб відсутність було видно (UAT 2026-11-15: R3, агент не бачив цього місця списку).
+          fullPage: true,
         },
         async () => {
           await expect(page).toHaveURL((url) => url.pathname === "/clients");
