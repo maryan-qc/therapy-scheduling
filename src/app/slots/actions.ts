@@ -18,7 +18,13 @@ const BACK_PATHS = ["/slots", "/holds"];
 function backTo(formData: FormData, key: "error" | "ok", code: string): string {
   // Перевіряємо вже розібрану адресу — те саме значення, що піде в redirect: «/slots/../..//evil.example» чи
   // «%2e%2e» після нормалізації стали б чужим сайтом. Дозволено лише свій origin і рівно /slots чи /holds.
-  let url = new URL(String(formData.get("back") ?? "") || "/slots", LOCAL);
+  // Адреса, яку new URL не розбирає (наприклад, «http://["), — теж /slots, а не виняток після запису в базу.
+  let url: URL;
+  try {
+    url = new URL(String(formData.get("back") ?? "") || "/slots", LOCAL);
+  } catch {
+    url = new URL("/slots", LOCAL);
+  }
   if (url.origin !== LOCAL || !BACK_PATHS.includes(url.pathname)) url = new URL("/slots", LOCAL);
   url.searchParams.delete("error");
   url.searchParams.delete("ok");
