@@ -37,9 +37,9 @@ describe("checkTargetRef (UAT: та сама база в цілі й у .env.loc
 });
 
 describe("bypassHeaders (захист Vercel)", () => {
-  it("додає заголовки обходу лише коли секрет задано", () => {
+  it("додає заголовок обходу лише коли секрет задано, без запиту cookie (переспрямування зламало б health)", () => {
     expect(bypassHeaders(undefined)).toBeUndefined();
     expect(bypassHeaders("")).toBeUndefined();
-    expect(bypassHeaders("s3cr3t")).toEqual({ "x-vercel-protection-bypass": "s3cr3t", "x-vercel-set-bypass-cookie": "true" });
+    expect(bypassHeaders("s3cr3t")).toEqual({ "x-vercel-protection-bypass": "s3cr3t" });
   });
 });

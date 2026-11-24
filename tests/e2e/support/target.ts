@@ -5,9 +5,13 @@
 // Ref — не секрет (є в публічній адресі бази), тож у повідомленні його можна показати; ключів і паролів — ніколи.
 import { supabaseRefFromUrl } from "../../../src/lib/health";
 
-/** Заголовки обходу захисту Vercel — лише коли секрет задано (значення ніде не друкуємо). */
+/**
+ * Заголовок обходу захисту Vercel — лише коли секрет задано (значення ніде не друкуємо). Без
+ * x-vercel-set-bypass-cookie: з ним Vercel відповідає переспрямуванням, що ставить cookie, і перевірка health з
+ * redirect: "manual" не отримала б JSON. Playwright і так додає заголовок до кожного запиту (extraHTTPHeaders).
+ */
 export function bypassHeaders(secret: string | undefined): Record<string, string> | undefined {
-  return secret ? { "x-vercel-protection-bypass": secret, "x-vercel-set-bypass-cookie": "true" } : undefined;
+  return secret ? { "x-vercel-protection-bypass": secret } : undefined;
 }
 
 export type TargetCheck = { ok: true; ref: string } | { ok: false; message: string };
