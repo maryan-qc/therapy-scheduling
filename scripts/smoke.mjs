@@ -1,21 +1,35 @@
 #!/usr/bin/env node
-// D0 smoke розгорнутого застосунку: лише GET, без входу й форм, без секретів (Node 24, без залежностей).
+// Smoke розгорнутого застосунку (D0 → WS11 v2): лише GET, без входу й форм (Node 24, без залежностей).
 // Використання: node scripts/smoke.mjs <base-url> [expected-sha]     (або npm run smoke -- <base-url> [sha])
 //   1) "/api/health" → 200 {db:"ok"}; з expected-sha — sha збігається (до 6 спроб × 20 с: прод-домен перемикається
-//                      на новий деплой не миттєво);
+//                      на новий деплой не миттєво; адреса конкретного деплою показує свій коміт одразу);
 //   2) "/"           → редірект на /login того самого origin або 200 (не 401/404/5xx і не стіна входу Vercel);
 //   3) "/login"      → 200 і поле пароля (застосунок справді віддає сторінку).
 // Код виходу: 0 — усе гаразд, 1 — є збій (рядки ::error:: видно в GitHub Actions), 2 — не вказано адресу.
+//
+// WS11 (v2, взято з materials/ops-kit/scripts/smoke.mjs курсу):
+//   - VERCEL_AUTOMATION_BYPASS_SECRET задано → кожен запит несе заголовок x-vercel-protection-bypass: так smoke
+//     відкриває preview і staging за захистом Vercel. Значення не друкуємо: у журналі лише "bypass": true/false.
+//     x-vercel-set-bypass-cookie НЕ надсилаємо: він для браузера й відповідає редіректом із Set-Cookie, а smoke
+//     з redirect:"manual" побачив би 3xx замість сторінки;
+//   - SMOKE_TARGET=deploy (ставить job deploy у smoke.yml) змінює лише підказки в повідомленнях про збій.
+// Наше (з D0, понад набір): межа 15 с на запит; "/" має вести саме на /login того самого origin; спершу чекаємо
+// коміт у /api/health, потім сторінки (усі перевірки — на одному деплої); HTTP-статус health не перезаписується
+// полем status з JSON; db=ok без 200 і відповідь без sha при очікуваному коміті — теж збій.
 const [rawBase = process.env.PROD_URL ?? "", expectSha = ""] = process.argv.slice(2);
+const bypass = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "").trim();
+const target = process.env.SMOKE_TARGET === "deploy" ? "deploy" : "prod";
 // client_payload.url від Vercel може прийти хостом без схеми — додаємо https://.
 const base = (/^https?:\/\//.test(rawBase) ? rawBase : rawBase ? `https://${rawBase}` : "").replace(/\/+$/, "");
+const headers = { "user-agent": "smoke/2.0 (WS11)" };
+if (bypass) headers["x-vercel-protection-bypass"] = bypass;
 
 const get = async (path) => {
   try {
     // Межа на кожен запит: сервер, що прийняв з'єднання й мовчить, не тримає прогін до timeout-minutes workflow.
     const r = await fetch(base + path, {
       redirect: "manual",
-      headers: { "user-agent": "smoke/1.0 (D0)" },
+      headers,
       signal: AbortSignal.timeout(15_000),
     });
     return {
@@ -38,6 +52,16 @@ const redirectPath = (location) => {
     return "";
   }
 };
+// Підказка залежить від того, що перевіряємо і чи є секрет обходу.
+function wallHint() {
+  if (bypass) {
+    return "Vercel не прийняв секрет обходу — його перегенерували чи видалили? Скопіюйте актуальний з Vercel (Settings → Deployment Protection → Protection Bypass for Automation) у GitHub Secrets VERCEL_AUTOMATION_BYPASS_SECRET і зробіть Redeploy";
+  }
+  if (target === "deploy") {
+    return "деплой за захистом Vercel, а секрету обходу немає — увімкніть Protection Bypass for Automation (Vercel → Settings → Deployment Protection) і додайте значення в GitHub Secrets як VERCEL_AUTOMATION_BYPASS_SECRET";
+  }
+  return "прод за стіною входу Vercel — Settings → Deployment Protection: Standard Protection (захищає preview і staging, прод відкритий), не All Deployments";
+}
 const vercelWall = (r) =>
   /vercel\.com\/(sso|login)|_vercel_sso/.test(r.location) || ((r.status === 401 || r.status === 403) && /vercel/i.test(r.text));
 
@@ -61,7 +85,7 @@ async function main() {
   }
 
   const root = await get("/");
-  if (vercelWall(root)) fail.push(`"/": стіна входу Vercel — Settings → Deployment Protection → вимкніть Vercel Authentication`);
+  if (vercelWall(root)) fail.push(`"/": ${wallHint()}`);
   else if (root.status === 0) fail.push(`"/": недоступний (${root.text})`);
   else if (root.status >= 400) {
     const hint = root.vercelError === "MIDDLEWARE_INVOCATION_FAILED" ? " — у Vercel бракує NEXT_PUBLIC_SUPABASE_*?" : "";
@@ -82,9 +106,9 @@ async function main() {
   } else if (health.status >= 300 && health.status < 400) {
     fail.push(`"/api/health": ${health.status} → ${health.location} — додайте "/api/health" у PUBLIC_PATHS (src/lib/supabase/proxy.ts)`);
   } else if (health.reason === "paused") {
-    fail.push(`"/api/health": Supabase призупинено — Dashboard → Resume project (безкоштовний проєкт засинає після тижня без активності)`);
+    fail.push(`"/api/health": Supabase призупинено — Dashboard → Resume project у проєкті цієї бази (безкоштовний проєкт засинає після 7 днів без достатньої активності бази)`);
   } else if (health.reason === "invalid-api-key") {
-    fail.push(`"/api/health": ключ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY у Vercel не приймається — звірте змінні Production і зробіть Redeploy`);
+    fail.push(`"/api/health": ключ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY у Vercel не приймається — звірте змінні цього середовища і зробіть Redeploy`);
   } else if (health.db !== "ok") {
     fail.push(
       `"/api/health": HTTP ${health.status}, db=${health.db ?? "?"}${health.reason ? ` (${health.reason})` : ""} — Supabase недоступний чи NEXT_PUBLIC_SUPABASE_URL у Vercel не той?`,
@@ -97,12 +121,17 @@ async function main() {
   } else if (expectSha && health && health.status < 300 && health.sha !== expectSha) {
     // Відповідь без sha теж не підтверджує деплой main.
     const shown = health.sha ? String(health.sha).slice(0, 7) : "відповідь без sha";
-    fail.push(`прод показує ${shown}, а очікувався ${expectSha.slice(0, 7)} — деплой main не пройшов чи зроблено Instant Rollback?`);
+    const why =
+      target === "deploy"
+        ? "адреса деплою показує інший коміт — чи та адреса в client_payload.url?"
+        : "деплой main не пройшов чи зроблено Instant Rollback?";
+    fail.push(`${base} показує ${shown}, а очікувався ${expectSha.slice(0, 7)} — ${why}`);
   }
 
-  console.log(JSON.stringify({ base, root: root.status, login: login.status, health }));
+  // Лише статуси й відповідь /api/health (публічна, без секретів). Секрет обходу — тільки як true/false.
+  console.log(JSON.stringify({ base, target, bypass: Boolean(bypass), root: root.status, login: login.status, health }));
   for (const f of fail) console.log(`::error title=smoke ${base}::${f}`);
-  if (!fail.length) console.log("OK — прод живий, сторінка входу відкривається, база відповідає.");
+  if (!fail.length) console.log("OK — застосунок живий, сторінка входу відкривається, база відповідає.");
   return fail.length ? 1 : 0;
 }
 
