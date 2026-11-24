@@ -89,10 +89,9 @@ jobs:
             echo "::error title=smoke::Немає змінної репо PROD_URL — Settings → Secrets and variables → Actions → Variables → PROD_URL = https://<проєкт>.vercel.app"
             exit 1
           fi
+      # Наше: прод — БЕЗ секрету обходу (рев'ю CodeRabbit до #64). Прод має бути відкритим; з обходом smoke
+      # пройшов би й тоді, коли користувачі бачать стіну входу Vercel (напр., хтось увімкнув All Deployments).
       - name: Прод = main, сторінка входу відкривається, база відповідає
-        env:
-          # Прод не за захистом (Standard Protection), але заголовок не шкодить, якщо колись увімкнуть All Deployments.
-          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: node scripts/smoke.mjs "$PROD_URL" "$EXPECT_SHA"
       - name: Алерт людині в Telegram (лише якщо щось червоне)
         if: failure()

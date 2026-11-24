@@ -22,6 +22,12 @@ const target = process.env.SMOKE_TARGET === "deploy" ? "deploy" : "prod";
 // client_payload.url від Vercel може прийти хостом без схеми — додаємо https://.
 const base = (/^https?:\/\//.test(rawBase) ? rawBase : rawBase ? `https://${rawBase}` : "").replace(/\/+$/, "");
 const headers = { "user-agent": "smoke/2.0 (WS11)" };
+// Наше: секрет обходу — лише по https. По http:// заголовок пішов би відкритим каналом (рев'ю CodeRabbit до #64);
+// адреса без схеми (client_payload.url) уже стала https:// вище.
+if (bypass && base.startsWith("http://")) {
+  console.log("::error title=smoke::Адреса з http:// — секрет обходу Vercel відкритим каналом не надсилаємо. Вкажіть https://…");
+  process.exit(1);
+}
 if (bypass) headers["x-vercel-protection-bypass"] = bypass;
 
 const get = async (path) => {
