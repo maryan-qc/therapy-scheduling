@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cardErrorCode, cardRoleError, validateClientCard, type CardErrorCode, type CardForm } from "@/lib/clients/card";
 import { insuranceResult } from "@/lib/clients/insurance";
+import { PRODUCT_MODELS } from "@/lib/ai/models";
 import { draftIntake, type IntakeDraftResponse } from "@/lib/clients/intake-draft";
 import { practiceDate } from "@/lib/holds/time";
 import { requireViewer } from "@/lib/supabase/viewer";
@@ -58,6 +59,8 @@ export async function requestIntakeDraft(text: string): Promise<IntakeDraftRespo
     text: typeof text === "string" ? text : "",
     model: productModel(),
     today: practiceDate(new Date()),
+    // WS11 B: один рядок llm.call на виклик моделі — без тексту звернення (src/lib/ai/llm-log.ts).
+    options: { log: { requestId: crypto.randomUUID(), route: "/clients/new", primaryModel: PRODUCT_MODELS[0] } },
   });
 }
 
