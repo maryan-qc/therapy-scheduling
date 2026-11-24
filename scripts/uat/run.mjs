@@ -1,5 +1,7 @@
 // npm run uat — UAT за AC на РОЗГОРНУТОМУ застосунку: запис → кадри «Тоді» → вердикт агента → звіт для PM.
-//   npm run uat -- --url https://<ваш-прод>.vercel.app      (або змінна UAT_BASE_URL; без неї — локальна збірка)
+//   npm run uat -- --url https://<staging>.vercel.app       (або змінна UAT_BASE_URL; без неї — локальна збірка)
+//   З WS11 .env.local = staging, тож ціль — staging: globalSetup (tests/e2e/global-setup.ts) зупинить прогін, якщо
+//   ref бази цілі (/api/health → supabaseRef) ≠ ref з .env.local.
 //   npm run uat -- --url … --grep-invert '@writes'          (лише AC, що нічого не пишуть; решта аргументів → Playwright)
 //   npm run uat:nc -- --url …                               (негативні контролі; звіт у test-results/uat-report-nc/)
 // Кроки: playwright test → pack.mjs → review.mjs (claude -p) → combine.mjs → report.mjs.
@@ -40,7 +42,10 @@ const git = (...a) => {
 async function deployedSha(base) {
   if (!base) return null;
   try {
-    const res = await fetch(`${base}/api/health`, { redirect: "manual" });
+    // WS11: staging і preview можуть бути закриті входом Vercel — заголовок обходу лише коли секрет задано.
+    const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    const headers = secret ? { "x-vercel-protection-bypass": secret } : undefined;
+    const res = await fetch(`${base}/api/health`, { headers, redirect: "manual" });
     if (!res.headers.get("content-type")?.includes("json")) return null;
     return (await res.json()).sha ?? null;
   } catch {

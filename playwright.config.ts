@@ -1,9 +1,10 @@
 // E2E і UAT — одна специфікація Playwright (tests/e2e/*.spec.ts), дві цілі:
-//   UAT_BASE_URL задано  → розгорнутий застосунок (ваш прод), npm run uat: запис → кадри «Тоді» → вердикт агента → звіт;
+//   UAT_BASE_URL задано  → розгорнутий застосунок (з WS11 — staging: .env.local = ключі staging), npm run uat: запис → кадри «Тоді» → вердикт агента → звіт;
 //   UAT_BASE_URL немає   → локальна збірка (webServer: npm run build && npm run start) — так само в CI (.github/workflows/e2e.yml).
 // Запис увімкнено для КОЖНОГО тесту, не лише для впалих: для PM зелений прогін — такий самий доказ, як червоний.
 import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import { bypassHeaders } from "./tests/e2e/support/target";
 
 // Локально — значення з .env.local (DEMO_USER_PASSWORD, ключі Supabase). Файл не друкуємо й не комітимо.
 // У CI .env.local немає: змінні дає workflow.
@@ -20,6 +21,8 @@ const noRecording = { video: "off", trace: "off", screenshot: "off" } as const;
 
 export default defineConfig({
   testDir: "tests/e2e",
+  // WS11: перед першим записом — та сама база в цілі й у .env.local (tests/e2e/support/target.ts).
+  globalSetup: "./tests/e2e/global-setup.ts",
   testMatch: "**/*.spec.ts",
   outputDir: "test-results/artifacts",
   forbidOnly: !!process.env.CI,
@@ -36,6 +39,10 @@ export default defineConfig({
   use: {
     ...devices["Desktop Chrome"],
     baseURL,
+    // WS11: staging і preview можуть бути закриті входом Vercel. Обхід — лише коли секрет задано, лише заголовком
+    // (не параметром адреси: адреси потрапляють у журнали й трейси). Браузер застосунку ходить лише на власний домен
+    // (Supabase викликає сервер), тож сторонні сайти цього заголовка не отримують.
+    extraHTTPHeaders: bypassHeaders(process.env.VERCEL_AUTOMATION_BYPASS_SECRET),
     locale: "uk-UA",
     timezoneId: "Europe/Kyiv",
     viewport: { width: 1280, height: 800 },
