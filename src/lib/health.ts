@@ -26,3 +26,31 @@ export function classifyDbProbe({ status, error }: DbProbe): DbHealth {
   // 0 — мережа (Supabase недоступний або хибний URL), 5xx, PGRST000–003, PGRST300, PGRSTX00, SQLSTATE класів 08, 53, 57.
   return { db: "down", reason: `status-${status}${code ? `-${code}` : ""}` };
 }
+
+// WS11, трек A: /api/health показує, яке це середовище і в яку базу Supabase воно ходить. Обидва значення — не
+// секрети, але health публічний, тож пропускаємо лише очікувану форму, а не будь-який рядок із змінної.
+
+/** Ref проєкту Supabase — перший сегмент хоста https://<ref>.supabase.co (те саме бачить браузер). */
+const SUPABASE_HOST = /^([a-z0-9]+)\.supabase\.co$/;
+/** Назва середовища з APP_ENV: коротке слово (staging, prod-like, …). Інше в публічну відповідь не потрапляє. */
+const APP_ENV_NAME = /^[A-Za-z0-9._-]{1,32}$/;
+
+/** Ref проєкту з NEXT_PUBLIC_SUPABASE_URL або null (змінної немає, не https чи хост не *.supabase.co). */
+export function supabaseRefFromUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:") return null;
+  return SUPABASE_HOST.exec(parsed.hostname)?.[1] ?? null;
+}
+
+/** APP_ENV для health: null, коли змінної немає (прод); "invalid", коли значення не схоже на назву середовища. */
+export function appEnvName(value: string | undefined): string | null {
+  const name = value?.trim();
+  if (!name) return null;
+  return APP_ENV_NAME.test(name) ? name : "invalid";
+}

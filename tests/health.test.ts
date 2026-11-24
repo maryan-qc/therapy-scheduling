@@ -1,6 +1,7 @@
 // D0: /api/health відрізняє «база відповіла» від «база недоступна, призупинена чи ключ хибний».
+// WS11: health показує середовище (appEnv) і ref проєкту бази (supabaseRef) — без секретів і без довільних рядків.
 import { describe, expect, it } from "vitest";
-import { classifyDbProbe } from "@/lib/health";
+import { appEnvName, classifyDbProbe, supabaseRefFromUrl } from "@/lib/health";
 
 describe("classifyDbProbe (/api/health)", () => {
   it("рахує базу живою, коли запит пройшов або Postgres відмовив у правах (42501)", () => {
@@ -45,5 +46,39 @@ describe("classifyDbProbe (/api/health)", () => {
       "down",
     );
     expect(classifyDbProbe({ status: 503, error: { code: "08006", message: "connection failure" } }).db).toBe("down");
+  });
+});
+
+describe("supabaseRefFromUrl (/api/health → supabaseRef)", () => {
+  it("бере ref — перший сегмент хоста https://<ref>.supabase.co", () => {
+    expect(supabaseRefFromUrl("https://abcdefghijklmnopqrst.supabase.co")).toBe("abcdefghijklmnopqrst");
+    expect(supabaseRefFromUrl("https://abcdefghijklmnopqrst.supabase.co/")).toBe("abcdefghijklmnopqrst");
+  });
+
+  it("повертає null без змінної, на не-https, чужому хості й неадресі", () => {
+    expect(supabaseRefFromUrl(undefined)).toBeNull();
+    expect(supabaseRefFromUrl("")).toBeNull();
+    expect(supabaseRefFromUrl("http://abcdefghijklmnopqrst.supabase.co")).toBeNull();
+    expect(supabaseRefFromUrl("http://127.0.0.1:54321")).toBeNull();
+    expect(supabaseRefFromUrl("https://abc.supabase.co.evil.example")).toBeNull();
+    expect(supabaseRefFromUrl("https://a.b.supabase.co")).toBeNull();
+    expect(supabaseRefFromUrl("не адреса")).toBeNull();
+  });
+});
+
+describe("appEnvName (/api/health → appEnv)", () => {
+  it("повертає назву середовища з APP_ENV, обрізавши пробіли", () => {
+    expect(appEnvName("staging")).toBe("staging");
+    expect(appEnvName(" staging \n")).toBe("staging");
+  });
+
+  it("null без змінної (прод) і для порожнього значення", () => {
+    expect(appEnvName(undefined)).toBeNull();
+    expect(appEnvName("  ")).toBeNull();
+  });
+
+  it("не віддає в публічну відповідь довільний рядок: інше значення — «invalid»", () => {
+    expect(appEnvName("staging; drop")).toBe("invalid");
+    expect(appEnvName("x".repeat(33))).toBe("invalid");
   });
 });
