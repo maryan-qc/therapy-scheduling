@@ -14,20 +14,35 @@ export const SAME_ERROR_PAUSE_MS = 60_000; // та сама помилка на 
 /**
  * Лише рядки «at …» зі стеку. Заголовок «Назва: текст помилки» відрізаємо цілим (текст може бути багаторядковим і
  * містити дані користувача), беремо лише рядки виду «at … файл:рядок:колонка».
+ * Заголовок шукаємо в двох формах: з поточною назвою і з «Error» (клас помилки, що ставить this.name після super(),
+ * лишає в стеку «Error: …»). Не збігся жоден — кадрів не надсилаємо: текст повідомлення могли змінити після запису
+ * стеку, і рядок тексту, схожий на «at …», пройшов би фільтр (рев'ю CodeRabbit до #66).
  */
 export function stackFrames(error: unknown): string[] {
   if (!(error instanceof Error) || typeof error.stack !== "string") return [];
-  const header = error.message ? `${error.name}: ${error.message}` : error.name;
-  const body = error.stack.startsWith(header)
-    ? error.stack.slice(header.length)
-    : error.stack.split("\n").slice(header.split("\n").length).join("\n"); // заголовок інший — пропускаємо стільки ж рядків
-  return body
+  const stack = error.stack;
+  const headers = [error.name, "Error"].map((name) => (error.message ? `${name}: ${error.message}` : name));
+  const header = headers.find((candidate) => stack.startsWith(candidate));
+  if (header === undefined) return [];
+  return stack
+    .slice(header.length)
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.startsWith("at ") && /:\d+:\d+\)?$/.test(line))
-    .map((line) => line.replace(/(?:[A-Za-z]:)?[\\/][^\s()]*?[\\/](\.next|src|node_modules)[\\/]/g, "$1/"))
+    .map(shortenPaths)
     .slice(0, STACK_FRAMES)
     .map((line) => line.slice(0, FRAME_MAX));
+}
+
+/**
+ * Абсолютні шляхи без імені користувача ОС: до відомої теки збірки — «.next/…», «src/…», «node_modules/…»;
+ * будь-який інший абсолютний шлях (зокрема file://) — лише ім'я файлу з рядком і колонкою.
+ */
+function shortenPaths(line: string): string {
+  // (?<=^|[\s(]) — шлях починається з початку рядка, після пробілу чи «(»: уже скорочений «src/…» не чіпаємо.
+  return line
+    .replace(/(?<=^|[\s(])(?:file:\/\/)?(?:[A-Za-z]:)?[\\/][^\s()]*?[\\/](\.next|src|node_modules)[\\/]/g, "$1/")
+    .replace(/(?<=^|[\s(])(?:file:\/\/)?(?:[A-Za-z]:)?[\\/][^\s()]*[\\/]([^\\/\s()]+:\d+:\d+)/g, "$1");
 }
 
 /** Назва помилки (не текст): Error, TypeError… Для не-Error — лише тип значення. */

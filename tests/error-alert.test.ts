@@ -70,6 +70,38 @@ describe("formatErrorAlert", () => {
     }
   });
 
+  it("невідомий абсолютний шлях (зокрема file://) — лише ім'я файлу з рядком і колонкою", () => {
+    const error = errorWithStack("boom", [
+      "    at handler (/home/operator/app/handler.js:1:2)",
+      "    at file:///Users/someone/tools/run.mjs:3:4",
+      "    at async /var/task/.next/server/app/page.js:5:6",
+    ]);
+    const frames = stackFrames(error);
+    expect(frames).toEqual(["at handler (handler.js:1:2)", "at run.mjs:3:4", "at async .next/server/app/page.js:5:6"]);
+    expect(frames.join("\n")).not.toMatch(/operator|someone/);
+  });
+
+  it("заголовок стеку не збігся (текст змінили після запису стеку) — кадрів не надсилаємо", () => {
+    const error = new Error("original");
+    error.stack = ["Error: original", "    at marker.client@example.test:1:2", "    at f (/var/task/.next/a.js:1:1)"].join("\n");
+    error.message = "changed";
+    expect(stackFrames(error)).toEqual([]);
+    expect(formatErrorAlert({ ...base, error })).not.toContain("marker");
+  });
+
+  it("клас помилки з this.name після super() — стек «Error: …» розпізнано, кадри є", () => {
+    class SlotError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = "SlotError";
+      }
+    }
+    const error = new SlotError("boom");
+    error.stack = ["Error: boom", ...FRAMES].join("\n");
+    expect(stackFrames(error)[0]).toBe("at insertClient (src/app/clients/actions.ts:40:11)");
+    expect(errorName(error)).toBe("SlotError");
+  });
+
   it("не більше 5 рядків стеку, кожен до 160 символів", () => {
     const long = errorWithStack("x", [`    at ${"f".repeat(300)} (/var/task/.next/server/a.js:1:1)`, ...FRAMES]);
     const frames = stackFrames(long);
@@ -127,11 +159,32 @@ describe("/api/ops/error-check", () => {
     viewer.calls = 0;
   });
 
-  it("на проді — 404 ще до перевірки входу", async () => {
+  it("на проді — 404 ще до перевірки входу, навіть з APP_ENV=staging", async () => {
     vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("APP_ENV", "staging");
+    viewer.role = "admin";
     const { GET } = await import("@/app/api/ops/error-check/route");
     expect((await GET()).status).toBe(404);
     expect(viewer.calls).toBe(0);
+  });
+
+  it("поза preview і staging (локально без VERCEL_ENV, development) — 404 ще до перевірки входу", async () => {
+    viewer.role = "admin";
+    const { GET } = await import("@/app/api/ops/error-check/route");
+    for (const env of ["", "development"]) {
+      vi.stubEnv("VERCEL_ENV", env);
+      vi.stubEnv("APP_ENV", "");
+      expect((await GET()).status).toBe(404);
+    }
+    expect(viewer.calls).toBe(0);
+  });
+
+  it("APP_ENV=staging без VERCEL_ENV=preview — дозволено адміністратору", async () => {
+    vi.stubEnv("VERCEL_ENV", "");
+    vi.stubEnv("APP_ENV", "staging");
+    viewer.role = "admin";
+    const { GET } = await import("@/app/api/ops/error-check/route");
+    await expect(GET()).rejects.toThrow("ops error-check: intentional server error");
   });
 
   it("на preview не адміністратору — 404", async () => {

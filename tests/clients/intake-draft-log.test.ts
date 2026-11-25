@@ -1,7 +1,8 @@
 // Журнал llm.call на справжньому шляху чернетки: draftIntake → proposeDraft → logLlmCall (WS11 B).
 // Модель — MockLanguageModelV4 з "ai/test" (без мережі й ключа). Перевіряємо: один рядок JSON на виклик моделі,
 // поля з відповіді моделі, і що в рядку немає ні тексту звернення, ні відповіді моделі, ні тексту помилки постачальника.
-// Назви тестів без AC ID: технічна перевірка, а не критерій приймання.
+// Сценарії «помічник недоступний» мають AC-INTAKE-08 (той самий стан, що в tests/clients/intake-draft.test.ts);
+// решта — технічна перевірка журналу, без AC ID.
 import { APICallError } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -94,7 +95,7 @@ describe("llm.call у draftIntake", () => {
     expect(JSON.parse(String(info.mock.calls[0][0]))).toMatchObject({ model: "vendor/backup", fallbackUsed: true });
   });
 
-  it("ліміт 429 — рядок error зі станом unavailable і кодом rate_limited", async () => {
+  it("AC-INTAKE-08: ліміт 429 — рядок error зі станом unavailable і кодом rate_limited", async () => {
     const limit = new APICallError({
       message: "Rate limit exceeded: free-models-per-day",
       url: "https://openrouter.ai/api/v1/chat/completions",
@@ -108,7 +109,7 @@ describe("llm.call у draftIntake", () => {
     expect(parsed).toMatchObject({ event: "llm.call", state: "unavailable", errorKind: "rate_limited", model: "vendor/primary:free" });
   });
 
-  it("помилка постачальника з текстом звернення в повідомленні — у журнал іде лише код provider_error", async () => {
+  it("AC-INTAKE-08: помилка постачальника з текстом звернення в повідомленні — у журнал іде лише код provider_error", async () => {
     const response = await draftIntake({
       role: "scheduler",
       text: TEXT,
@@ -122,7 +123,7 @@ describe("llm.call у draftIntake", () => {
     expect(JSON.parse(line)).toMatchObject({ state: "unavailable", errorKind: "provider_error" });
   });
 
-  it("немає ключа (модель null) — рядок unavailable / no_api_key, хоча модель не викликали", async () => {
+  it("AC-INTAKE-08: немає ключа (модель null) — рядок unavailable / no_api_key, хоча модель не викликали", async () => {
     const response = await draftIntake({ role: "admin", text: TEXT, model: null, today: TODAY, options: { log: LOG } });
     expect(response.kind).toBe("unavailable");
     const parsed = JSON.parse(String(error.mock.calls[0][0]));
