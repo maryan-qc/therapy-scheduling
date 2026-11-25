@@ -15,7 +15,8 @@ const ERRORS: Record<string, string> = {
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { error } = await searchParams;
-  const message = typeof error === "string" ? ERRORS[error] : undefined;
+  // ?error=Invalid і ?error=invalid — той самий код.
+  const message = ERRORS[(error as string).toLowerCase()];
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 px-6 py-16">
