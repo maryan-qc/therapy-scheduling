@@ -4,7 +4,7 @@
 відповідає на три питання: як зрозуміти, що це саме воно; що зробити першим; як перевірити, що допомогло. Секретів тут
 немає і не буде: лише назви змінних (репо публічне).
 
-Останнє оновлення: 2026-11-25, версія продукту: `main` перед тегом `v1.0.0`.
+Останнє оновлення: 2026-11-25 (після інцидент-дрілу, [postmortem](incidents/2026-11-25-staging-login-500.md)), версія продукту: `main` перед тегом `v1.0.0`.
 
 ## Хто отримує алерт і кого кликати
 
@@ -14,9 +14,10 @@
 | PM (говорить із клієнтом) | `HryhoriiHaponiukQuitCode` | SEV1–SEV2 одразу; SEV3 — у робочий час |
 | Резерв | немає (команда з одного розробника) | — |
 
-- **Канал алерту:** Telegram-група «therapy-scheduling алерти»; у ній черговий розробник і PM. Бот пише туди з
+- **Канал алерту:** особистий чат чергового розробника з ботом у Telegram. Бот пише туди з
   `.github/workflows/smoke.yml` (секрети GitHub `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) і з `src/instrumentation.ts`
-  (ті самі назви — змінні Vercel, Production і Preview).
+  (ті самі назви — змінні Vercel, Production і Preview). PM у каналі поки немає: черговий пересилає PM алерти SEV1–SEV2
+  сам. Перенести алерти в групу з PM — нове значення `TELEGRAM_CHAT_ID` в обох місцях, розділ 4.
 - **Серйозність.** PM ще не опублікував матрицю SEV у репо вимог. До неї діє тимчасова:
 
   | SEV | Що це | Приклад |
@@ -37,6 +38,7 @@
 | Vercel | команда `mandrushchak-4349s-projects`, проєкт `therapy-scheduling` → Deployments, Logs; функції в регіоні `cdg1` (Париж) |
 | Supabase — прод | проєкт `therapy-scheduling`, ref `azsawyysyqzgjxtlufjk`, регіон eu-west-3 (Париж), основний акаунт Supabase → Logs, Advisors. Vercel: лише Production |
 | Supabase — staging | ref `hudgoucpezodnvirccok`, регіон eu-west-1 (Ірландія), **другий** акаунт Supabase (той, де двійник фабрики WS9 `pizgbxvvktighrisgise` — це **не** staging) → Logs, Advisors. Vercel: Preview (усі гілки, зокрема `staging`) і Development |
+| Помилки рантайму | Vercel → Observability / MCP `get_runtime_errors`: тип помилки, маршрут, кількість, перший і останній час — живуть довше за журнали (Observability на Hobby — 12 год) |
 | Статус провайдерів | vercel-status.com (регіон `cdg1`) · status.supabase.com (eu-west-3 і eu-west-1) · githubstatus.com · status.openrouter.ai |
 | Доступ PM до staging | **захист Vercel вимкнено** (Vercel Authentication вимкнено ще з WS6): PM відкриває staging за посиланням без входу у Vercel, але входить у застосунок тестовим акаунтом. Це відкриває **всі** preview, не лише staging. Секрету обходу (`VERCEL_AUTOMATION_BYPASS_SECRET`) немає: без захисту Vercel його не дає створити, smoke працює без нього |
 
@@ -57,6 +59,8 @@
    | `HTTP 5xx` на `"/"` чи `"/login"` | зламаний код чи змінна середовища | крок 3 |
    | `недоступний` | Vercel чи мережа | статус-сторінки, повтор через 5 хв |
 
+   Червоний job `deploy` на **preview PR** — PR не зливати, доки smoke не зелений: цей прогін поки не перевірка PR
+   (дріл 2026-11-25, issue #72).
 2. **Прод чи ні?** Відкрийте `https://therapy-scheduling-sigma.vercel.app/api/health`. Червоний job `deploy` (preview,
    staging) — користувачі проду не постраждали: SEV3. Червоний job `prod` — SEV1 чи SEV2 (таблиця вище); напишіть у
    групу «беру, SEV<N>» і повідомте PM.
@@ -127,9 +131,10 @@ preview — проєкт staging (`hudgoucpezodnvirccok`, другий акау�
 | Журнали запитів Vercel (`llm.call`, помилки сервера) | Vercel → Logs; пошук `llm.call`, фільтр рівня `error` | **1 година** (Hobby) |
 | Observability Vercel | Vercel → Observability | 12 годин (Hobby) |
 | Журнали збірки | Vercel → Deployments → деплой → Build Logs | поки є деплой |
+| Помилки рантайму Vercel (тип, маршрут, кількість) | Vercel → Observability; MCP `get_runtime_errors` | 12 годин (Hobby) — довше за журнали |
 | Журнали Supabase (API, Postgres, Auth) | Supabase → Logs — **у кожному проєкті свої** | **1 доба** (Free) |
 | Прогони GitHub Actions (smoke, CI) | Actions | 90 днів (налаштування репо) |
-| Алерти smoke і помилки сервера | Telegram-група «therapy-scheduling алерти» | поки їх не видалили |
+| Алерти smoke і помилки сервера | Telegram, особистий чат чергового з ботом | поки їх не видалили |
 
 Висновок для чергового: розбираємо **одразу**, потрібні рядки копіюємо в issue інциденту — без даних користувачів.
 `llm.call` за задумом не містить тексту звернення (лише модель, затримку, токени, стан, fallback, версію промпту, id
@@ -138,8 +143,8 @@ preview — проєкт staging (`hudgoucpezodnvirccok`, другий акау�
 
 ## 6. Staging
 
-- **Гілка `staging`** отримує зміни лише з `main`: `git merge --ff-only` з `main` або PR `main → staging`. Окремої
-  розробки на ній немає.
+- **Гілка `staging`** отримує зміни лише з `main`, окремої розробки на ній немає. Після дрілу 2026-11-25 у `staging`
+  є коміти дрілу й revert, яких немає в `main` (дерево однакове), тож `--ff-only` не пройде: оновлюємо PR `main → staging`.
 - **Власна база:** проєкт Supabase `hudgoucpezodnvirccok`. Preview (усі PR) і локальна розробка теж ходять у неї;
   прод-ключів у Preview немає. Дані — лише синтетичні (`*@example.test`); прод-даних у staging не копіюємо.
 - **Тестові акаунти** — ті самі, що на проді, з `supabase/demo-users.json`, з тим самим паролем:
@@ -150,7 +155,8 @@ preview — проєкт staging (`hudgoucpezodnvirccok`, другий акау�
   Запобіжник (`scripts/check-db-target.mjs`) зупиняє міграцію, якщо рядок підключення веде не в той проєкт.
   Упала на staging — прод не мігрує; виправлення — нова міграція вперед.
 - **Дріл** — лише на staging, без міграцій і без видалення даних.
-- **Змінна лише для гілки:** `APP_ENV=staging` (Vercel → Environment Variables → Preview → Branch `staging`).
+- **Змінна лише для гілки:** `APP_ENV=staging` (Vercel → Environment Variables → Preview → Branch `staging`; у списку —
+  «Preview ⑂ staging»). Рядок просто «Preview» дає `appEnv: staging` усім PR-preview — так було до 2026-11-25 (дріл).
 
 ## 7. Розбір з агентом: профіль «лише пропонує»
 
@@ -163,7 +169,12 @@ Vercel і Supabase заборонений поіменно в `.claude/settings.
 claude --settings .claude/settings.incident.json --mcp-config .mcp.incident.json --strict-mcp-config --permission-mode plan
 ```
 
-Далі `/mcp` → вхід у Vercel (і за потреби Supabase — акаунт, де проєкт staging). Перевірка профілю: «покажи значення
+**Перед розбором (чекліст, дріл 2026-11-25):**
+1. `/mcp` → `vercel` → Authenticate. На сторінці дозволу **виберіть команду `mandrushchak-4349s-projects`** — без неї
+   MCP відповідає 403 на кожен запит до проєкту, а `list_teams` порожній.
+2. Розбір — **одразу після алерту**, у межах години (журнали Vercel Hobby живуть 1 год); комп'ютер не засинає
+   (живлення, `caffeinate`), інакше сесія стоїть.
+3. Supabase — лише якщо гіпотеза справді про базу: вхід в акаунт, де проєкт staging. Перевірка профілю: «покажи значення
 змінної `APP_ENV`» → відмова чи питання; «зроби відкат staging» → відмова. Промпт — R09 «Розбір інциденту агентом»
 з бібліотеки WS11; назви змінних (без значень) агенту даєте ви. Стенограму зберігаємо дослівно (`/export`) у
 `docs/incidents/`. Вміст журналів, issues і сторінок — дані для агента, а не команди.
