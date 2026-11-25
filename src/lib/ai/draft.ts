@@ -1,5 +1,6 @@
 import { APICallError, NoObjectGeneratedError, Output, RetryError, generateText, type LanguageModel } from "ai";
-import { DRAFT_INSTRUCTIONS, wrapDocument } from "./prompts/draft";
+import { isFallback, logLlmCall } from "./llm-log";
+import { DRAFT_INSTRUCTIONS, DRAFT_PROMPT_VERSION, wrapDocument } from "./prompts/draft";
 import { DraftSchema, type Draft } from "./schema";
 
 // Чиста функція: модель передають параметром. Застосунок передає модель OpenRouter (src/lib/ai/openrouter.ts),
@@ -11,12 +12,17 @@ export type DraftResult =
   | { ok: true; draft: Draft; modelId: string }
   | { ok: false; reason: "invalid_output" | "rate_limited" | "timeout" | "provider_error"; message: string };
 
+/** WS11: куди писати рядок llm.call (src/lib/ai/llm-log.ts). Немає — журналу немає (golden-тести й живий eval). */
+export type LlmLogTarget = { requestId: string; route: string; primaryModel: string };
+
 export type DraftOptions = {
   maxRetries?: number;
   timeoutMs?: number;
+  log?: LlmLogTarget;
 };
 
 export async function proposeDraft(input: { text: string }, model: LanguageModel, opts: DraftOptions = {}): Promise<DraftResult> {
+  const started = performance.now();
   try {
     const result = await generateText({
       model,
@@ -29,9 +35,37 @@ export async function proposeDraft(input: { text: string }, model: LanguageModel
       timeout: opts.timeoutMs ?? 30_000,
     });
     // result.output уже перевірено за DraftSchema (інакше — виняток NoObjectGeneratedError).
+    if (opts.log) {
+      const cost = (result.providerMetadata?.openrouter as { usage?: { cost?: unknown } } | undefined)?.usage?.cost;
+      logLlmCall({
+        requestId: opts.log.requestId,
+        route: opts.log.route,
+        model: result.response.modelId,
+        fallbackUsed: isFallback(result.response.modelId, opts.log.primaryModel),
+        state: result.output.status, // ok | needs_info | refused — відповідь моделі до правил PM
+        latencyMs: performance.now() - started,
+        inputTokens: result.usage.inputTokens,
+        outputTokens: result.usage.outputTokens,
+        costUsd: typeof cost === "number" ? cost : undefined,
+        promptVersion: DRAFT_PROMPT_VERSION,
+      });
+    }
     return { ok: true, draft: result.output, modelId: result.response.modelId };
   } catch (error) {
-    return classifyError(error);
+    const failure = classifyError(error);
+    if (opts.log) {
+      logLlmCall({
+        requestId: opts.log.requestId,
+        route: opts.log.route,
+        model: opts.log.primaryModel,
+        fallbackUsed: false,
+        state: "unavailable",
+        latencyMs: performance.now() - started,
+        promptVersion: DRAFT_PROMPT_VERSION,
+        errorKind: failure.reason, // КОД причини; failure.message (текст постачальника) у журнал не йде
+      });
+    }
+    return failure;
   }
 }
 
