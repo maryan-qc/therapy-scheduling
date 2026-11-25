@@ -227,7 +227,15 @@
       "mcp__supabase__run_notebook",
       "mcp__supabase__delete_notebook",
       "mcp__supabase__submit_feedback",
-      "mcp__supabase__delete_feedback"
+      "mcp__supabase__delete_feedback",
+      "Read(~/.claude/**)",
+      "Read(~/.claude.json)",
+      "Read(~/.gdrive-*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.config/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.netrc)",
+      "Read(~/.npmrc)"
     ]
   }
 }
