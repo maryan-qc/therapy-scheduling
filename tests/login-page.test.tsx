@@ -32,6 +32,7 @@ describe("/login рендериться за будь-якої адреси", ()
       const html = await render({ error });
       expect(html).toContain('type="password"');
       expect(html).not.toContain("Incorrect email or password.");
+      expect(html).not.toContain("Enter your email and password.");
     }
   });
 });

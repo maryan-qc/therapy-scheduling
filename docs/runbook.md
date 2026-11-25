@@ -65,8 +65,9 @@
    staging) — користувачі проду не постраждали: SEV3. Червоний job `prod` — SEV1 чи SEV2 (таблиця вище); напишіть у
    групу «беру, SEV<N>» і повідомте PM.
 3. **Відкат чи ні?** Прод зламав щойно злитий коміт → спершу відкат (розділ 2), потім розбір. Зламалась змінна
-   середовища → відкат не допоможе (старий деплой несе старі значення): виправити змінну → Redeploy. Базу відкатом не
-   повернути — лише нова міграція вперед.
+   середовища → відкат допоможе, лише якщо попередній деплой зібрано з ще чинними правильними значеннями (ключ не
+   відкликано, адреса та сама); інакше виправити змінну → Redeploy. Базу відкатом не повернути — лише нова міграція
+   вперед.
 4. **Провайдер?** Статус-сторінки з «Де що» для нашого регіону. Інцидент у провайдера і час збігається — посилання в
    issue і PM, чекаємо. Зелена сторінка не означає, що з нашим проєктом усе гаразд (пауза бази, ліміти, наш код).
 5. **Розбір** — з агентом у профілі «лише пропонує» (розділ 7) або вручну. Агент пропонує, виправляє людина.
@@ -118,7 +119,7 @@ preview — проєкт staging (`hudgoucpezodnvirccok`, другий акау�
 | Ключ Supabase **проєкту staging** (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) | проєкт staging → Project Settings → API Keys | Vercel → **Preview** і Development | Redeploy `staging` і новий push у відкриті PR |
 | Секретний ключ Supabase (`SUPABASE_SECRET_KEY`) | той самий проєкт → API Keys | лише локальні `.env.local` / `.env.staging.local` (для `npm run users:demo`). У Vercel і GitHub його немає: застосунок його не читає | нічого перезбирати не треба |
 | Рядок підключення бази (`SUPABASE_DB_URL`, після зміни пароля бази) | Connect у тому самому проєкті → Session pooler | GitHub → Settings → Environments → `production` чи `staging` → секрет `SUPABASE_DB_URL` | наступний прогін CI: крок «Guard» друкує правильний ref і хост |
-| `TELEGRAM_BOT_TOKEN` | Telegram → @BotFather → `/token` (новий токен, старий перестає діяти) | GitHub Secrets **і** змінні Vercel (Production, Preview) | Redeploy проду; ручний червоний прогін smoke (`url` = `https://example.invalid`) → повідомлення прийшло |
+| `TELEGRAM_BOT_TOKEN` | Telegram → @BotFather → `/token` (новий токен, старий перестає діяти) | GitHub Secrets **і** змінні Vercel (Production, Preview) | Redeploy проду, `staging` і відкритих PR-preview (чинні деплої тримають старий токен) → ручний червоний прогін smoke (`url` = `https://example.invalid`) — алерт smoke прийшов → на staging тестовим адміністратором `/api/ops/error-check` — прийшло «ПОМИЛКА СЕРВЕРА» (це окремий шлях, smoke його не перевіряє) |
 | `OPENROUTER_API_KEY` | OpenRouter → Keys | Vercel (Production, Preview) і `.env.local` | Redeploy; старий ключ видалити в OpenRouter |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | лише якщо колись увімкнуть захист Vercel: Settings → Deployment Protection → Protection Bypass for Automation | GitHub → Settings → Secrets → Actions | після перегенерації старе значення не діє: одразу оновити секрет, інакше job `deploy` червонітиме |
 
@@ -162,8 +163,10 @@ preview — проєкт staging (`hudgoucpezodnvirccok`, другий акау�
 
 Агент читає журнали, деплої, прогони й код і **пропонує** причину та виправлення. Нічого не змінює: запис через MCP
 Vercel і Supabase заборонений поіменно в `.claude/settings.json` і `.claude/settings.incident.json`, Supabase
-підключено лише до проєкту staging з `read_only=true`, редагування файлів, `git push`, злиття PR і запуск workflow
-заборонені.
+під'єднано лише до проєкту staging з `read_only=true`. У `.claude/settings.incident.json` також заборонені
+редагування файлів, git-команди, що змінюють робоче дерево чи індекс (`add`, `rm`, `mv`, `commit`, `switch`,
+`checkout`, `restore`, `reset`, `stash`…), запис у файл через `--output`, `>` чи `tee`, `git push`, злиття PR і запуск
+workflow. Заборони за шаблоном рядка не герметичні: стенограму перед комітом переглядає людина.
 
 ```bash
 claude --settings .claude/settings.incident.json --mcp-config .mcp.incident.json --strict-mcp-config --permission-mode plan
