@@ -4,7 +4,7 @@
 відповідає на три питання: як зрозуміти, що це саме воно; що зробити першим; як перевірити, що допомогло. Секретів тут
 немає і не буде: лише назви змінних (репо публічне).
 
-Останнє оновлення: 2026-11-26 (зауваження PM до runbook і [postmortem](incidents/2026-11-25-staging-login-500.md) у
+Останнє оновлення: 2026-11-26 (алерти — у групі з PM, [#77](https://github.com/maryan-qc/therapy-scheduling/issues/77); зауваження PM до runbook і [postmortem](incidents/2026-11-25-staging-login-500.md) у
 [коментарі до #73](https://github.com/maryan-qc/therapy-scheduling/pull/73#issuecomment-7174684592)), версія продукту: `v1.0.0`.
 
 ## Хто отримує алерт і кого кликати
@@ -12,16 +12,18 @@
 | Роль | Хто (GitHub-логін) | Коли кликати |
 |---|---|---|
 | Черговий розробник (отримує алерт) | `maryan-qc` | будь-який червоний smoke чи повідомлення «ПОМИЛКА СЕРВЕРА» |
-| PM (говорить із клієнтом) | `HryhoriiHaponiukQuitCode` | SEV1–SEV2 — одразу, у Telegram особисто: PM пише клієнту за [`docs/incident-message.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/incident-message.md) (коли саме — у таблиці «Серйозність» нижче). SEV3 — не кличемо: прод не зачеплено, клієнту не пишемо |
+| PM (говорить із клієнтом) | `HryhoriiHaponiukQuitCode` | SEV1–SEV2 — одразу, у групі алертів: PM пише клієнту за [`docs/incident-message.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/incident-message.md) (коли саме — у таблиці «Серйозність» нижче). SEV3 — не кличемо: прод не зачеплено, клієнту не пишемо |
 | Резерв | немає (команда з одного розробника) | — |
 
-- **Канал алерту:** поки що особистий чат чергового розробника з ботом у Telegram. Бот пише туди з
-  `.github/workflows/smoke.yml` (секрети GitHub `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) і з `src/instrumentation.ts`
-  (ті самі назви — змінні Vercel, Production і Preview). За вимогою PM алерт проду отримують розробник **і PM** у
-  групі ([`docs/operations.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/operations.md),
-  розділ 4). Перенесення — [#77](https://github.com/maryan-qc/therapy-scheduling/issues/77): нове значення
-  `TELEGRAM_CHAT_ID` в обох місцях, розділ 4. **Доки групи немає, PM алертів не бачить:** про SEV1–SEV2 черговий пише
-  PM у Telegram сам (розділ 1, кроки 2 і 6; розділ 3).
+- **Канал алерту:** Telegram-група «therapy-scheduling: алерти» — черговий розробник, PM і бот (з 2026-11-26,
+  [#77](https://github.com/maryan-qc/therapy-scheduling/issues/77); до того алерти йшли в особистий чат чергового).
+  Так вимагає PM ([`docs/operations.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/operations.md),
+  розділ 4). Бот пише туди з `.github/workflows/smoke.yml` (секрети GitHub `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) і
+  з `src/instrumentation.ts` (ті самі назви — змінні Vercel, Production і Preview). **Налаштувань групи не змінюйте**
+  (історія для нових учасників, публічність, права адмінів): Telegram тоді робить із групи супергрупу з новим id, і
+  алерти перестають доходити — потрібне нове значення `TELEGRAM_CHAT_ID`, розділ 4.
+- **PM у групі?** PM запрошено 2026-11-26. Перед тим як покладатися на групу, гляньте список учасників: якщо PM там
+  немає, про SEV1–SEV2 пишіть йому ще й у Telegram особисто.
 - **Хід інциденту** — в issue «Інцидент: …» у цьому репо: докази, хто взяв і з яким SEV, що зроблено, коли закрито.
 - **Серйозність — за матрицею PM:**
   [`docs/operations.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/operations.md),
@@ -73,10 +75,9 @@
 2. **Прод чи ні?** Дивіться на рядок «Адреса» в алерті, а не на назву job: job `deploy` перевіряє ту адресу, яку йому
    дали, зокрема прод при ручному запуску з полем `url` (тоді в алерті «Середовище: manual»). Відкрийте
    `https://therapy-scheduling-sigma.vercel.app/api/health`. Прод відповідає `"db":"ok"`, а червоні лише staging чи
-   preview — прод не зачеплено: SEV3, PM не кличемо. Червона адреса проду (job `prod` чи ручний `deploy` з адресою
-   проду) — SEV1 чи SEV2 (таблиця «Серйозність» вище): запишіть в issue інциденту «беру, SEV<N>» і **одразу напишіть
-   PM у Telegram особисто** (поки алерти не в групі з PM — [#77](https://github.com/maryan-qc/therapy-scheduling/issues/77)):
-   SEV, що бачать працівники практики, коли наступне оновлення.
+   preview — прод не зачеплено: SEV3, окремо PM не кличемо. Червона адреса проду (job `prod` чи ручний `deploy` з
+   адресою проду) — SEV1 чи SEV2 (таблиця «Серйозність» вище): запишіть в issue інциденту «беру, SEV<N>» і **одразу
+   напишіть у групу алертів**: «беру, SEV<N>», що бачать працівники практики, коли наступне оновлення.
 3. **Відкат чи ні?** Прод зламав щойно злитий коміт → спершу відкат (розділ 2), потім розбір. Зламалась змінна
    середовища → відкат допоможе, лише якщо попередній деплой зібрано з ще чинними правильними значеннями (ключ не
    відкликано, адреса та сама); інакше виправити змінну → Redeploy. Базу відкатом не повернути — лише нова міграція
@@ -84,8 +85,8 @@
 4. **Провайдер?** Статус-сторінки з «Де що» для нашого регіону. Інцидент у провайдера і час збігається — посилання в
    issue і PM, чекаємо. Зелена сторінка не означає, що з нашим проєктом усе гаразд (пауза бази, ліміти, наш код).
 5. **Розбір** — з агентом у профілі «лише пропонує» (розділ 7) або вручну. Агент пропонує, виправляє людина.
-6. **Перевірка:** Actions → `smoke` → Re-run (чи Run workflow; для staging — поле `url`) — зелений. В issue інциденту:
-   «SEV<N> закрито, причина: …». **SEV1–SEV2 — те саме одразу PM:** PM пише клієнту за
+6. **Перевірка:** Actions → `smoke` → Re-run (чи Run workflow; для staging — поле `url`) — зелений. В issue інциденту
+   й у групі алертів: «SEV<N> закрито, причина: …». **Для SEV1–SEV2 після цього PM пише клієнту** за
    [`docs/incident-message.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/incident-message.md)
    (що бачили працівники, як довго, чи втрачено дані, що зроблено).
 7. Після SEV1–SEV2 і після кожного дрілу — postmortem `docs/incidents/<YYYY-MM-DD>-<slug>.md` за шаблоном.
@@ -115,13 +116,14 @@
 preview — проєкт staging (`hudgoucpezodnvirccok`, другий акаунт). Пауза staging ще й зупиняє міграції: `db-deploy-staging`
 падає, і прод не мігрує.
 
-**Серйозність:** пауза **проду** — SEV1 (матриця PM, приклад 1): напишіть PM у Telegram одразу, ще до Resume. Пауза
-staging — SEV3: PM не кличемо.
+**Серйозність:** пауза **проду** — SEV1 (матриця PM, приклад 1): напишіть у групу алертів одразу, ще до Resume. Пауза
+staging — SEV3: окремо PM не кличемо.
 
 1. Supabase Dashboard → **той акаунт і той проєкт, що на паузі** (звірте ref з `supabaseRef` у health) →
    **Resume project**. Відновлення триває кілька хвилин.
 2. Повторіть smoke (Actions → `smoke` → Run workflow; для staging — поле `url` з адресою staging) — зелений.
-3. Запишіть в issue інциденту, коли була пауза і скільки тривала; для проду — те саме PM (PM пише клієнту).
+3. Запишіть в issue інциденту й у групі алертів, коли була пауза і скільки тривала; для проду після цього PM пише
+   клієнту.
 
 Як не допустити: щоденний smoke `prod` будить прод-базу (Supabase цього не гарантує). Staging він **не** будить —
 **перед UAT, демо чи дрілом: Dashboard → проєкт staging активний, інакше Resume project.**
@@ -138,6 +140,7 @@ staging — SEV3: PM не кличемо.
 | Секретний ключ Supabase (`SUPABASE_SECRET_KEY`) | той самий проєкт → API Keys | лише локальні `.env.local` / `.env.staging.local` (для `npm run users:demo`). У Vercel і GitHub його немає: застосунок його не читає | нічого перезбирати не треба |
 | Рядок підключення бази (`SUPABASE_DB_URL`, після зміни пароля бази) | Connect у тому самому проєкті → Session pooler | GitHub → Settings → Environments → `production` чи `staging` → секрет `SUPABASE_DB_URL` | наступний прогін CI: крок «Guard» друкує правильний ref і хост |
 | `TELEGRAM_BOT_TOKEN` | Telegram → @BotFather → `/token` (новий токен, старий перестає діяти) | GitHub Secrets **і** змінні Vercel (Production, Preview) | Redeploy проду, `staging` і відкритих PR-preview (чинні деплої тримають старий токен) → ручний червоний прогін smoke (`url` = `https://example.invalid`) — алерт smoke прийшов → на staging тестовим адміністратором `/api/ops/error-check` — прийшло «ПОМИЛКА СЕРВЕРА» (це окремий шлях, smoke його не перевіряє) |
+| `TELEGRAM_CHAT_ID` (новий чат алертів: нова група чи група стала супергрупою) | додати бота в чат і написати там `/start@<бот>`; id чату — з `getUpdates` бота, скриптом через `node --env-file`, не друкуючи значення | GitHub Secrets **і** змінні Vercel (Production, Preview) | Redeploy проду й `staging` → перевірки, як для `TELEGRAM_BOT_TOKEN` |
 | `OPENROUTER_API_KEY` | OpenRouter → Keys | Vercel (Production, Preview) і `.env.local` | Redeploy; старий ключ видалити в OpenRouter |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | лише якщо колись увімкнуть захист Vercel: Settings → Deployment Protection → Protection Bypass for Automation | GitHub → Settings → Secrets → Actions | після перегенерації старе значення не діє: одразу оновити секрет, інакше job `deploy` червонітиме |
 
@@ -153,7 +156,7 @@ staging — SEV3: PM не кличемо.
 | Помилки рантайму Vercel (тип, маршрут, кількість) | Vercel → Observability; MCP `get_runtime_errors` | 12 годин (Hobby) — довше за журнали |
 | Журнали Supabase (API, Postgres, Auth) | Supabase → Logs — **у кожному проєкті свої** | **1 доба** (Free) |
 | Прогони GitHub Actions (smoke, CI) | Actions | 90 днів (налаштування репо) |
-| Алерти smoke і помилки сервера | Telegram: поки що особистий чат чергового з ботом (група з PM — [#77](https://github.com/maryan-qc/therapy-scheduling/issues/77)) | поки їх не видалили |
+| Алерти smoke і помилки сервера | Telegram-група «therapy-scheduling: алерти» (до 2026-11-26 — особистий чат чергового з ботом) | поки їх не видалили |
 
 Висновок для чергового: розбираємо **одразу**, потрібні рядки копіюємо в issue інциденту — без даних користувачів.
 `llm.call` за задумом не містить тексту звернення (лише модель, затримку, токени, стан, fallback, версію промпту, id
