@@ -83,19 +83,44 @@ jobs:
           set -euo pipefail
           umask 077
           d="$RUNNER_TEMP/backup"; mkdir -p "$d"
+          # Наше: історія міграцій (схема supabase_migrations) — окремими файлами, як у Supabase «Backup and restore
+          # using the CLI»: без неї db-deploy у відновлений проєкт спробував би застосувати всі міграції заново.
+          supabase db dump --db-url "$SUPABASE_DB_URL" -s supabase_migrations -f "$d/history_schema.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -s supabase_migrations -f "$d/history_data.sql"
           supabase db dump --db-url "$SUPABASE_DB_URL" --role-only -f "$d/roles.sql"
           supabase db dump --db-url "$SUPABASE_DB_URL" -f "$d/schema.sql"
           supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy \
             -x storage.buckets_vectors -x storage.vector_indexes -f "$d/data.sql"
           # Запасний варіант для відновлення лише таблиць застосунку.
           supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -s public -f "$d/data-public.sql"
+          # Наше: кожен дамп — окремий знімок бази. Схема змінюється лише міграціями (db-deploy, інша група concurrency),
+          # тож порівнюємо версії міграцій до і після дампів: різні — між дампами пройшла міграція, і схема з даними
+          # можуть бути з різних станів бази. Таку копію не зберігаємо.
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -s supabase_migrations \
+            -f "$RUNNER_TEMP/history_after.sql"
+          versions() { awk '/^COPY /{inside = ($2 ~ /schema_migrations/); next} inside && /^\\\.$/{inside = 0; next} inside{print $1}' "$1" | sort; }
+          before=$(versions "$d/history_data.sql"); after=$(versions "$RUNNER_TEMP/history_after.sql")
+          rm -f "$RUNNER_TEMP/history_after.sql"
+          if [ "$before" != "$after" ]; then
+            echo "::error title=backup::Під час копії застосовано міграцію — схема й дані можуть бути з різних станів бази. Копію не збережено: запустіть ще раз після CI на main."
+            exit 1
+          fi
+          latest=$(printf '%s\n' "$before" | tail -n 1)
+          printf 'dumped_at_utc=%s\nlatest_migration=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${latest:-none}" > "$d/meta.txt"
           # Кількість рядків кожної таблиці — з блоків COPY самого дампу (лише назви таблиць і числа).
           for f in data data-public; do
             awk '/^COPY /{t=$2; n=0; inside=1; next} inside && /^\\\.$/{print t"|"n; inside=0; next} inside{n++}' \
               "$d/$f.sql" | sort > "$d/$f.counts"
           done
           echo "Розміри файлів (вміст не друкуємо):"; wc -c "$d"/*.sql
+          echo "Остання міграція в копії: ${latest:-немає}"
           echo "Таблиць у дампі: $(wc -l < "$d/data.counts") (усі схеми), $(wc -l < "$d/data-public.counts") (public)"
+          {
+            echo "### Резервна копія"
+            echo
+            echo "- остання міграція в копії: \`${latest:-немає}\` (схема й дані — з одного стану міграцій)"
+            echo "- таблиць з даними: $(wc -l < "$d/data.counts") (усі схеми), $(wc -l < "$d/data-public.counts") (public)"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Шифрування (gpg, AES256) і видалення відкритих файлів
         env:
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
@@ -109,10 +134,12 @@ jobs:
             --symmetric --cipher-algo AES256 -o "$RUNNER_TEMP/out/backup-$stamp.tgz.gpg" "$RUNNER_TEMP/backup.tgz"
           rm -rf "$RUNNER_TEMP/backup" "$RUNNER_TEMP/backup.tgz"
           ls -l "$RUNNER_TEMP/out"
+          echo "- артефакт \`supabase-backup\`: \`backup-$stamp.tgz.gpg\` (gpg, AES256), $(wc -c < "$RUNNER_TEMP/out/backup-$stamp.tgz.gpg") байт, 7 днів" \
+            >> "$GITHUB_STEP_SUMMARY"
       # Наше: якщо дамп чи шифрування впали посередині, відкриті файли на раннері не лишаються.
       - name: Прибрати відкриті файли
         if: always()
-        run: rm -rf "$RUNNER_TEMP/backup" "$RUNNER_TEMP/backup.tgz"
+        run: rm -rf "$RUNNER_TEMP/backup" "$RUNNER_TEMP/backup.tgz" "$RUNNER_TEMP/history_after.sql"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: supabase-backup

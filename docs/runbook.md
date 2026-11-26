@@ -237,8 +237,9 @@ claude --settings .claude/settings.incident.json --mcp-config .mcp.incident.json
 
 | Що | Як у нас |
 |---|---|
-| Що копіюємо | лише **прод-базу** (`azsawyysyqzgjxtlufjk`; запобіжник у прогоні друкує ref і хост): ролі, схема, дані разом зі схемами `auth` і `storage`, окремо — дані лише `public`. Staging не копіюємо: там синтетичні дані з міграцій і `users:demo` |
-| Як часто (RPO) | щодня ≈ 03:41 за Києвом і вручну: Actions → `backup` → Run workflow. RPO — до 24 год, ціль PM виконується. Розклад GitHub може запізнитися на години, а через 60 днів без комітів у репо GitHub його вимикає: Actions → `backup` → Enable workflow |
+| Що копіюємо | лише **прод-базу** (`azsawyysyqzgjxtlufjk`; запобіжник у прогоні друкує ref і хост): ролі, схема, дані разом зі схемами `auth` і `storage`, окремо — дані лише `public` і історія міграцій (`supabase_migrations`). Версії міграцій звіряємо до і після дампів: якщо між ними пройшла міграція, копію не зберігаємо. Staging не копіюємо: там синтетичні дані з міграцій і `users:demo` |
+| Як часто (RPO) | щодня ≈ 03:41 за Києвом і вручну: Actions → `backup` → Run workflow. RPO — до 24 год **лише за умови успішного щоденного прогону**: якщо GitHub запізниться чи пропустить запуск або прогін упаде, остання копія буде старша. Через 60 днів без комітів у репо GitHub вимикає розклад: Actions → `backup` → Enable workflow |
+| Свіжість копії | пропущений чи вимкнений запуск workflow сам не помітить, а лист GitHub приходить лише про впалий прогін. Тому черговий **щопонеділка й перед UAT, demo day і дрілом** відкриває Actions → `backup`: останній зелений прогін молодший за добу; ні — Run workflow і запис у групу алертів. Автоматичного сторожа поза GitHub Actions (dead man's switch: сервіс, який чекає пінг після кожної зеленої копії й алертить, коли пінгу немає довше доби) додамо разом із переходом на платний стек ([`docs/cost-note.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/cost-note.md) PM): зараз дані лише синтетичні |
 | Де лежить | артефакт `supabase-backup` прогону `backup`: лише `backup-<час UTC>.tgz.gpg` (gpg, AES256), **7 днів**. Відкритого дампу немає ніде: ні в git, ні в артефакті, ні в журналі (журнал — лише розміри файлів, назви таблиць і числа) |
 | Чим шифруємо | фраза `BACKUP_PASSPHRASE`. Знає черговий розробник (`maryan-qc`). Зберігається у двох місцях: секрет середовища GitHub `production` (прочитати не можна, лише замінити) і Keychain чергового — запис `therapy-scheduling-backup` (Keychain Access → пошук). Втрачено обидва — старі копії не розшифрувати: нова фраза → секрет і Keychain → Run workflow |
 | Тренування відновлення | job `restore-drill` того самого прогону (щоночі й вручну): розшифровує копію в раннері, піднімає одноразову базу з міграцій репо, очищає в ній рядки, які вставили самі міграції (терапевти й слоти), завантажує дані й порівнює кількість рядків по кожній таблиці — таблиця й тривалість у Summary прогону. Наших проєктів Supabase цей job не торкається |
@@ -252,6 +253,7 @@ claude --settings .claude/settings.incident.json --mcp-config .mcp.incident.json
 | `Немає секрету середовища production …` | секрет не в середовищі `production`: `SUPABASE_DB_URL` — розділ 4; `BACKUP_PASSPHRASE` — з Keychain |
 | Guard: рядок «веде у другий проєкт (staging ↔ прод)» | `SUPABASE_DB_URL` у `production` веде не в прод — замінити рядком Session pooler прод-проєкту (розділ 4) |
 | Дамп не підключається до бази | база проду на паузі — розділ 3, потім Run workflow |
+| `Під час копії застосовано міграцію …` | між дампами пройшов `db-deploy`; копію не збережено — Run workflow ще раз, коли CI на `main` завершиться |
 | `Очікувалась Supabase CLI 2.x` | `supabase` у `package.json` оновили до 3.x — повернути закріплену 2.120.0 |
 | Завантаження з `scope=all` падає на таблицях `auth.*` | схема `auth` локального Supabase відрізняється від хмарної → Run workflow з `scope=public` (таблиці застосунку) і запис про це в рядку «Останнє тренування» |
 | `Кількість рядків не збігається` | Summary покаже таблицю; перевірте, що міграції `main` застосовано на проді (`db-deploy` зелений) |
@@ -261,17 +263,35 @@ staging — ніколи.
 
 1. Actions → останній зелений прогін `backup` → Artifacts → `supabase-backup` → завантажити **поза теку репо**.
 2. Розшифрувати (потрібен `gpg`, на macOS — `brew install gnupg`): `gpg -d backup-<час>.tgz.gpg > backup.tgz`
-   (фраза — Keychain, `therapy-scheduling-backup`) → `tar -xzf backup.tgz` → тека `backup/` з `roles.sql`,
-   `schema.sql`, `data.sql`.
+   (фраза — Keychain, `therapy-scheduling-backup`) → `tar -xzf backup.tgz` → тека `backup/`: `roles.sql`,
+   `schema.sql`, `data.sql`, `history_schema.sql`, `history_data.sql` і `meta.txt` (час копії й остання міграція).
 3. **Новий** проєкт Supabase, не поверх живих даних. Порядок — за інструкцією Supabase «Backup and restore using the
-   CLI» (рядок підключення — Session pooler нового проєкту, у журнал і чат його не копіюємо):
+   CLI»; рядок підключення — Session pooler нового проєкту в змінній `NEW_DB_URL`, у журнал і чат його не копіюємо.
+   Перші три команди відкликають права, які новий проєкт за замовчуванням дає `anon` і `authenticated` на нові об'єкти
+   в `public`: дамп відтворює лише ті права, що дали наші міграції, а зайвих не забирає.
 
    ```bash
-   psql --single-transaction -v ON_ERROR_STOP=1 -f roles.sql -f schema.sql \
-     -c 'SET session_replication_role = replica' -f data.sql --dbname "$NEW_DB_URL"
+   cd backup
+   psql --single-transaction -v ON_ERROR_STOP=1 \
+     -c 'alter default privileges in schema public revoke all on tables from anon, authenticated' \
+     -c 'alter default privileges in schema public revoke all on functions from anon, authenticated' \
+     -c 'alter default privileges in schema public revoke all on sequences from anon, authenticated' \
+     -f roles.sql -f schema.sql -c 'SET session_replication_role = replica' -f data.sql --dbname "$NEW_DB_URL"
    ```
-4. Перевести прод на новий проєкт: змінні Vercel Production (`NEXT_PUBLIC_SUPABASE_URL`,
+4. **Історія міграцій — до того, як CI побачить новий проєкт**, інакше `db-deploy` спробує застосувати всі міграції
+   заново на готову схему:
+   `psql --single-transaction -v ON_ERROR_STOP=1 -f history_schema.sql -f history_data.sql --dbname "$NEW_DB_URL"`.
+5. Перевірка прав (міграції відкликають у `anon` усе — обидва запити мають повернути 0 рядків):
+
+   ```sql
+   select table_name, privilege_type from information_schema.role_table_grants
+   where table_schema = 'public' and grantee = 'anon';
+   select n.nspname, p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname in ('public', 'private') and has_function_privilege('anon', p.oid, 'EXECUTE');
+   ```
+6. Перевести прод на новий проєкт: змінні Vercel Production (`NEXT_PUBLIC_SUPABASE_URL`,
    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) → Redeploy; секрет `SUPABASE_DB_URL` у `production` і змінна репо
    `SUPABASE_PROD_REF` — новий ref, інакше запобіжник зупинить міграції й копію.
-5. Перевірка: `/api/health` → `"db":"ok"` і новий `supabaseRef`; smoke `prod` зелений; вхід тестовим акаунтом.
-6. Розшифровані файли й `backup.tgz` видалити одразу. Postmortem — як після SEV1 (розділ 1, крок 7).
+7. Перевірка: `/api/health` → `"db":"ok"` і новий `supabaseRef`; smoke `prod` зелений; вхід тестовим акаунтом;
+   Actions → `CI` → Run workflow на `main` — у `db-deploy` крок «Dry run» не знаходить міграцій до застосування.
+8. Розшифровані файли й `backup.tgz` видалити одразу. Postmortem — як після SEV1 (розділ 1, крок 7).
