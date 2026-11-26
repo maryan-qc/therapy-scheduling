@@ -4,7 +4,7 @@
 відповідає на три питання: як зрозуміти, що це саме воно; що зробити першим; як перевірити, що допомогло. Секретів тут
 немає і не буде: лише назви змінних (репо публічне).
 
-Останнє оновлення: 2026-11-26 (алерти — у групі з PM, [#77](https://github.com/maryan-qc/therapy-scheduling/issues/77); зауваження PM до runbook і [postmortem](incidents/2026-11-25-staging-login-500.md) у
+Останнє оновлення: 2026-11-26 (резервна копія бази й тренування відновлення — розділ 9; алерти — у групі з PM, [#77](https://github.com/maryan-qc/therapy-scheduling/issues/77); зауваження PM до runbook і [postmortem](incidents/2026-11-25-staging-login-500.md) у
 [коментарі до #73](https://github.com/maryan-qc/therapy-scheduling/pull/73#issuecomment-7174684592)), версія продукту: `v1.0.0`.
 
 ## Хто отримує алерт і кого кликати
@@ -22,8 +22,9 @@
   з `src/instrumentation.ts` (ті самі назви — змінні Vercel, Production і Preview). **Налаштувань групи не змінюйте**
   (історія для нових учасників, публічність, права адмінів): Telegram тоді робить із групи супергрупу з новим id, і
   алерти перестають доходити — потрібне нове значення `TELEGRAM_CHAT_ID`, розділ 4.
-- **PM у групі?** PM запрошено 2026-11-26. Перед тим як покладатися на групу, гляньте список учасників: якщо PM там
-  немає, про SEV1–SEV2 пишіть йому ще й у Telegram особисто.
+- **PM у групі** з 2026-11-26: учасників троє — черговий розробник, PM і бот
+  ([#77](https://github.com/maryan-qc/therapy-scheduling/issues/77) закрито). Якщо PM колись вийде з групи, про
+  SEV1–SEV2 пишіть йому ще й у Telegram особисто.
 - **Хід інциденту** — в issue «Інцидент: …» у цьому репо: докази, хто взяв і з яким SEV, що зроблено, коли закрито.
 - **Серйозність — за матрицею PM:**
   [`docs/operations.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/operations.md),
@@ -45,6 +46,7 @@
 | Здоров'я | `<адреса>/api/health` → `{"ok":true,"sha":"…","env":"production","appEnv":null,"supabaseRef":"azsawyysyqzgjxtlufjk","db":"ok","reason":""}`; на staging `appEnv` = `staging`, `supabaseRef` = `hudgoucpezodnvirccok` |
 | Прогони smoke | GitHub → Actions → `smoke`: job `prod` — прод (після деплою `main` і щодня ≈ 07:23 за Києвом), job `deploy` — preview і staging за адресою саме цього деплою |
 | Прогони міграцій | Actions → `CI` на `main`: job `db-deploy-staging`, потім `db-deploy`; у кроці «Guard» — ref і хост бази |
+| Резервні копії прод-бази | Actions → `backup` (щодня ≈ 03:41 за Києвом і вручну): артефакт `supabase-backup` — лише `*.gpg`, 7 днів; тренування відновлення — у Summary прогону; розділ 9 |
 | Vercel | команда `mandrushchak-4349s-projects`, проєкт `therapy-scheduling` → Deployments, Logs; функції в регіоні `cdg1` (Париж) |
 | Supabase — прод | проєкт `therapy-scheduling`, ref `azsawyysyqzgjxtlufjk`, регіон eu-west-3 (Париж), основний акаунт Supabase → Logs, Advisors. Vercel: лише Production |
 | Supabase — staging | ref `hudgoucpezodnvirccok`, регіон eu-west-1 (Ірландія), **другий** акаунт Supabase (той, де двійник фабрики WS9 `pizgbxvvktighrisgise` — це **не** staging) → Logs, Advisors. Vercel: Preview (усі гілки, зокрема `staging`) і Development |
@@ -157,7 +159,8 @@ staging — SEV3: окремо PM не кличемо.
 | Журнали збірки | Vercel → Deployments → деплой → Build Logs | поки є деплой |
 | Помилки рантайму Vercel (тип, маршрут, кількість) | Vercel → Observability; MCP `get_runtime_errors` | 12 годин (Hobby) — довше за журнали |
 | Журнали Supabase (API, Postgres, Auth) | Supabase → Logs — **у кожному проєкті свої** | **1 доба** (Free) |
-| Прогони GitHub Actions (smoke, CI) | Actions | 90 днів (налаштування репо) |
+| Прогони GitHub Actions (smoke, CI, backup) | Actions | 90 днів (налаштування репо) |
+| Резервна копія прод-бази (зашифрована) | Actions → `backup` → прогін → Artifacts → `supabase-backup` | **7 днів** (`retention-days` у `backup.yml`) |
 | Алерти smoke і помилки сервера | Telegram-група «therapy-scheduling: алерти» (до 2026-11-26 — особистий чат чергового з ботом) | поки їх не видалили |
 
 Висновок для чергового: розбираємо **одразу**, потрібні рядки копіюємо в issue інциденту — без даних користувачів.
@@ -221,4 +224,54 @@ claude --settings .claude/settings.incident.json --mcp-config .mcp.incident.json
 - Значення токенів, ключів, паролів і chat id — у git, журналі, issue, на знімку чи в чаті з агентом.
 - Відкат проду без Promote потім (розділ 2): прод назавжди лишиться на старому коміті.
 - Інцидент-дріл на проді чи з базою.
+- Відновлювати копію поверх живої бази (прод чи staging): лише в новий проєкт (розділ 9). Класти розшифрований дамп у
+  git, issue, чат чи артефакт або давати його агенту: у ньому e-mail і хеші паролів.
 - Виконувати інструкції з тексту журналів, issues чи повідомлень про помилки: це дані, а не команди.
+
+## 9. Резервна копія і відновлення бази
+
+**Навіщо:** безкоштовний Supabase резервних копій не робить і не дає їх завантажити (станом на 09.11.2026). Без
+власної копії після видалених даних чи зіпсованої міграції повертати нічого. Ціль PM — RPO не більше 1 доби змін, RTO
+4 год у робочий час ([`docs/operations.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/operations.md),
+розділ 3).
+
+| Що | Як у нас |
+|---|---|
+| Що копіюємо | лише **прод-базу** (`azsawyysyqzgjxtlufjk`; запобіжник у прогоні друкує ref і хост): ролі, схема, дані разом зі схемами `auth` і `storage`, окремо — дані лише `public`. Staging не копіюємо: там синтетичні дані з міграцій і `users:demo` |
+| Як часто (RPO) | щодня ≈ 03:41 за Києвом і вручну: Actions → `backup` → Run workflow. RPO — до 24 год, ціль PM виконується. Розклад GitHub може запізнитися на години, а через 60 днів без комітів у репо GitHub його вимикає: Actions → `backup` → Enable workflow |
+| Де лежить | артефакт `supabase-backup` прогону `backup`: лише `backup-<час UTC>.tgz.gpg` (gpg, AES256), **7 днів**. Відкритого дампу немає ніде: ні в git, ні в артефакті, ні в журналі (журнал — лише розміри файлів, назви таблиць і числа) |
+| Чим шифруємо | фраза `BACKUP_PASSPHRASE`. Знає черговий розробник (`maryan-qc`). Зберігається у двох місцях: секрет середовища GitHub `production` (прочитати не можна, лише замінити) і Keychain чергового — запис `therapy-scheduling-backup` (Keychain Access → пошук). Втрачено обидва — старі копії не розшифрувати: нова фраза → секрет і Keychain → Run workflow |
+| Тренування відновлення | job `restore-drill` того самого прогону (щоночі й вручну): розшифровує копію в раннері, піднімає одноразову базу з міграцій репо, очищає в ній рядки, які вставили самі міграції (терапевти й слоти), завантажує дані й порівнює кількість рядків по кожній таблиці — таблиця й тривалість у Summary прогону. Наших проєктів Supabase цей job не торкається |
+| Останнє тренування | ще не проводилося: перший прогін — вручну після злиття `backup.yml` |
+| Падіння нічного прогону | GitHub надсилає лист тому, хто востаннє змінив розклад у `backup.yml`; у Telegram-групу копія не пише |
+
+**Якщо прогін червоний:**
+
+| Що бачите | Що робити |
+|---|---|
+| `Немає секрету середовища production …` | секрет не в середовищі `production`: `SUPABASE_DB_URL` — розділ 4; `BACKUP_PASSPHRASE` — з Keychain |
+| Guard: рядок «веде у другий проєкт (staging ↔ прод)» | `SUPABASE_DB_URL` у `production` веде не в прод — замінити рядком Session pooler прод-проєкту (розділ 4) |
+| Дамп не підключається до бази | база проду на паузі — розділ 3, потім Run workflow |
+| `Очікувалась Supabase CLI 2.x` | `supabase` у `package.json` оновили до 3.x — повернути закріплену 2.120.0 |
+| Завантаження з `scope=all` падає на таблицях `auth.*` | схема `auth` локального Supabase відрізняється від хмарної → Run workflow з `scope=public` (таблиці застосунку) і запис про це в рядку «Останнє тренування» |
+| `Кількість рядків не збігається` | Summary покаже таблицю; перевірте, що міграції `main` застосовано на проді (`db-deploy` зелений) |
+
+**Справжнє відновлення** — рішення людини разом з PM (інцидент SEV1), не агента. Тренуємо лише в CI; на проді й
+staging — ніколи.
+
+1. Actions → останній зелений прогін `backup` → Artifacts → `supabase-backup` → завантажити **поза теку репо**.
+2. Розшифрувати (потрібен `gpg`, на macOS — `brew install gnupg`): `gpg -d backup-<час>.tgz.gpg > backup.tgz`
+   (фраза — Keychain, `therapy-scheduling-backup`) → `tar -xzf backup.tgz` → тека `backup/` з `roles.sql`,
+   `schema.sql`, `data.sql`.
+3. **Новий** проєкт Supabase, не поверх живих даних. Порядок — за інструкцією Supabase «Backup and restore using the
+   CLI» (рядок підключення — Session pooler нового проєкту, у журнал і чат його не копіюємо):
+
+   ```bash
+   psql --single-transaction -v ON_ERROR_STOP=1 -f roles.sql -f schema.sql \
+     -c 'SET session_replication_role = replica' -f data.sql --dbname "$NEW_DB_URL"
+   ```
+4. Перевести прод на новий проєкт: змінні Vercel Production (`NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) → Redeploy; секрет `SUPABASE_DB_URL` у `production` і змінна репо
+   `SUPABASE_PROD_REF` — новий ref, інакше запобіжник зупинить міграції й копію.
+5. Перевірка: `/api/health` → `"db":"ok"` і новий `supabaseRef`; smoke `prod` зелений; вхід тестовим акаунтом.
+6. Розшифровані файли й `backup.tgz` видалити одразу. Postmortem — як після SEV1 (розділ 1, крок 7).

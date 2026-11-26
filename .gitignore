@@ -57,3 +57,13 @@ accounts.txt
 /playwright-report/
 /blob-report/
 /playwright/.auth/
+# WS11 бонус: локальні дампи бази й розшифровані копії — ніколи в git (у дампі e-mail і хеші паролів).
+# Справжнє відновлення робимо поза репо (docs/runbook.md, розділ 9); ці правила — страховка, якщо файли таки опинились тут.
+/backup/
+/roles.sql
+/schema.sql
+/data.sql
+/data-public.sql
+*.dump
+*.tgz
+*.tgz.gpg
