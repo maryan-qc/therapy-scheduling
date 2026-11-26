@@ -168,6 +168,7 @@ jobs:
       # Наше: як job db-check у ci.yml — `supabase db start` піднімає базу раннера й застосовує всі міграції
       # (supabase/seed.sql порожній). Проти наших проєктів (--linked, --db-url) жодних команд тут немає.
       - name: Одноразова база з міграцій репо
+        id: localdb
         run: |
           set -euo pipefail
           case "$(supabase --version)" in 2.*) ;; *) echo "::error title=restore::Очікувалась Supabase CLI 2.x"; exit 1;; esac
@@ -241,6 +242,25 @@ jobs:
             | tee -a "$GITHUB_STEP_SUMMARY"
           [ "$fail" = 0 ] || { echo "::error title=restore::Кількість рядків не збігається — дивіться Summary прогону"; exit 1; }
           echo "Кількість рядків збігається в усіх таблицях." | tee -a "$GITHUB_STEP_SUMMARY"
+      # Наше: еталон прав для справжнього відновлення (docs/runbook.md, розділ 9, крок 5) — права anon і authenticated у
+      # базі з міграцій репо, той самий запит scripts/privileges.sql. Лише назви об'єктів і прав, без даних.
+      - name: Еталон прав anon і authenticated (з міграцій)
+        if: ${{ !cancelled() && steps.localdb.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          psql "$LOCAL_DB" -At -F '|' -v ON_ERROR_STOP=1 -f scripts/privileges.sql > "$RUNNER_TEMP/privileges.txt"
+          n=$(wc -l < "$RUNNER_TEMP/privileges.txt")
+          echo "Рядків прав: $n"
+          {
+            echo
+            echo "<details><summary>Еталон прав anon і authenticated з міграцій ($n рядків) — для кроку 5 розділу 9 runbook</summary>"
+            echo
+            echo '```text'
+            cat "$RUNNER_TEMP/privileges.txt"
+            echo '```'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Прибрати відкриті файли
         if: always()
         run: rm -rf "$RUNNER_TEMP/backup" "$RUNNER_TEMP/in" "$RUNNER_TEMP/psql.err"
