@@ -86,7 +86,9 @@
    issue і PM, чекаємо. Зелена сторінка не означає, що з нашим проєктом усе гаразд (пауза бази, ліміти, наш код).
 5. **Розбір** — з агентом у профілі «лише пропонує» (розділ 7) або вручну. Агент пропонує, виправляє людина.
 6. **Перевірка:** Actions → `smoke` → Re-run (чи Run workflow; для staging — поле `url`) — зелений. В issue інциденту
-   й у групі алертів: «SEV<N> закрито, причина: …». **Для SEV1–SEV2 після цього PM пише клієнту** за
+   й у групі алертів: «SEV<N> закрито, причина: …». **Клієнту при SEV1–SEV2 PM пише у строки з таблиці «Серйозність»,
+   не чекаючи закриття**: SEV1 — протягом 2 год, навіть якщо збій ще триває (для цього — повідомлення з кроку 2).
+   Після закриття PM надсилає підсумок за
    [`docs/incident-message.md`](https://github.com/HryhoriiHaponiukQuitCode/therapy-scheduling-spec/blob/0bedb11/docs/incident-message.md)
    (що бачили працівники, як довго, чи втрачено дані, що зроблено).
 7. Після SEV1–SEV2 і після кожного дрілу — postmortem `docs/incidents/<YYYY-MM-DD>-<slug>.md` за шаблоном.
@@ -122,8 +124,8 @@ staging — SEV3: окремо PM не кличемо.
 1. Supabase Dashboard → **той акаунт і той проєкт, що на паузі** (звірте ref з `supabaseRef` у health) →
    **Resume project**. Відновлення триває кілька хвилин.
 2. Повторіть smoke (Actions → `smoke` → Run workflow; для staging — поле `url` з адресою staging) — зелений.
-3. Запишіть в issue інциденту й у групі алертів, коли була пауза і скільки тривала; для проду після цього PM пише
-   клієнту.
+3. Запишіть в issue інциденту й у групі алертів, коли була пауза і скільки тривала. Пауза проду — SEV1: клієнту PM
+   пише протягом 2 год, не чекаючи Resume; після відновлення — підсумок за `docs/incident-message.md`.
 
 Як не допустити: щоденний smoke `prod` будить прод-базу (Supabase цього не гарантує). Staging він **не** будить —
 **перед UAT, демо чи дрілом: Dashboard → проєкт staging активний, інакше Resume project.**
@@ -140,7 +142,7 @@ staging — SEV3: окремо PM не кличемо.
 | Секретний ключ Supabase (`SUPABASE_SECRET_KEY`) | той самий проєкт → API Keys | лише локальні `.env.local` / `.env.staging.local` (для `npm run users:demo`). У Vercel і GitHub його немає: застосунок його не читає | нічого перезбирати не треба |
 | Рядок підключення бази (`SUPABASE_DB_URL`, після зміни пароля бази) | Connect у тому самому проєкті → Session pooler | GitHub → Settings → Environments → `production` чи `staging` → секрет `SUPABASE_DB_URL` | наступний прогін CI: крок «Guard» друкує правильний ref і хост |
 | `TELEGRAM_BOT_TOKEN` | Telegram → @BotFather → `/token` (новий токен, старий перестає діяти) | GitHub Secrets **і** змінні Vercel (Production, Preview) | Redeploy проду, `staging` і відкритих PR-preview (чинні деплої тримають старий токен) → ручний червоний прогін smoke (`url` = `https://example.invalid`) — алерт smoke прийшов → на staging тестовим адміністратором `/api/ops/error-check` — прийшло «ПОМИЛКА СЕРВЕРА» (це окремий шлях, smoke його не перевіряє) |
-| `TELEGRAM_CHAT_ID` (новий чат алертів: нова група чи група стала супергрупою) | додати бота в чат і написати там `/start@<бот>`; id чату — з `getUpdates` бота, скриптом через `node --env-file`, не друкуючи значення | GitHub Secrets **і** змінні Vercel (Production, Preview) | Redeploy проду й `staging` → перевірки, як для `TELEGRAM_BOT_TOKEN` |
+| `TELEGRAM_CHAT_ID` (новий чат алертів: нова група чи група стала супергрупою) | додати бота в чат і написати там `/start@<бот>`; id чату — з `getUpdates` бота, скриптом через `node --env-file`, не друкуючи значення | GitHub Secrets **і** змінні Vercel (Production, Preview) | Redeploy проду, `staging` і відкритих PR-preview (чинні деплої тримають старе значення) → перевірки, як для `TELEGRAM_BOT_TOKEN` |
 | `OPENROUTER_API_KEY` | OpenRouter → Keys | Vercel (Production, Preview) і `.env.local` | Redeploy; старий ключ видалити в OpenRouter |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | лише якщо колись увімкнуть захист Vercel: Settings → Deployment Protection → Protection Bypass for Automation | GitHub → Settings → Secrets → Actions | після перегенерації старе значення не діє: одразу оновити секрет, інакше job `deploy` червонітиме |
 
