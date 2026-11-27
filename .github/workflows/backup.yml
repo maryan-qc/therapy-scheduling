@@ -1,0 +1,266 @@
+# Зашифрована резервна копія прод-бази Supabase (щодня і вручну) + тренування відновлення в одноразовій базі CI з
+# порівнянням кількості рядків. WS11, бонус (+10), варіант «Резервна копія і відновлення».
+# Зразок — materials/ops-kit/bonus/backup.yml курсу (koldovsky/2026-quitcode-11-devops-operations-hw); що змінено під
+# наш репо — у коментарях «Наше:». Як користуватися і що робити, якщо червоне, — docs/runbook.md, розділ 9.
+#
+# Секрети (лише назви) — середовища production (Settings → Environments → production; Deployment branches = main):
+#   SUPABASE_DB_URL   — той самий рядок Session pooler (порт 5432), що в job db-deploy (ci.yml);
+#   BACKUP_PASSPHRASE — випадкова фраза шифрування; друга копія — у Keychain чергового (runbook, розділ 9).
+#
+# Чому так:
+# - Безкоштовний Supabase резервних копій не робить і не дає завантажити. Ця копія — єдина (RPO — до 24 год).
+# - Дамп даних містить e-mail і хеші паролів (схема auth). Відкритий дамп — НІДЕ: ні в git, ні в артефакті, ні в
+#   журналі. В артефакт іде лише *.gpg; журнал показує тільки розміри файлів, назви таблиць і кількості рядків.
+# - Артефакти публічного репо може завантажити кожен — тому лише шифротекст і 7 днів.
+# - Supabase CLI — закріплена 2.x з package-lock.json (2.120.0), як у ci.yml; 3.x змінює поведінку команд.
+# - Окрема група concurrency, НЕ supabase-prod: інакше нічна копія в черзі могла б скасувати db-deploy, що чекає.
+# - Наше: секрети — лише в кроках, яким вони потрібні (як у ci.yml); сторонні дії (setup-cli, артефакти) їх не бачать.
+name: backup
+
+on:
+  schedule:
+    - cron: "41 1 * * *" # щодня ≈ 03:41 за Києвом (зимовий час); не на початку години — GitHub тоді затримує розклад
+  workflow_dispatch:
+    inputs:
+      restore_drill:
+        description: "Після копії провести тренування відновлення"
+        type: boolean
+        default: true
+      scope:
+        description: "Що відновлювати: all (разом з auth.*) або public (лише таблиці застосунку)"
+        type: choice
+        options: [all, public]
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    # Наше: лише main — секрети production доступні тільки з main (Deployment branches); розклад і так іде з main.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      # Без шифрування копію не робимо: спершу перевіряємо, що обидва секрети задано (значень не друкуємо).
+      - name: Секрети задано
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          [ -n "$SUPABASE_DB_URL" ] || { echo "::error title=backup::Немає секрету середовища production SUPABASE_DB_URL"; exit 1; }
+          [ -n "$BACKUP_PASSPHRASE" ] || { echo "::error title=backup::Немає секрету середовища production BACKUP_PASSPHRASE — без шифрування копію не робимо"; exit 1; }
+      # Наше: той самий запобіжник, що перед міграціями в ci.yml, — рядок веде саме в прод-проєкт (SUPABASE_PROD_REF),
+      # а не в staging. Друкує лише ref і хост пулера; рядок журналу каже «Ціль міграцій» — тут це ціль копії.
+      - name: Guard - копіюємо саме прод-базу
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          EXPECTED_REF: ${{ vars.SUPABASE_PROD_REF }}
+          OTHER_REF: ${{ vars.SUPABASE_STAGING_REF }}
+          LABEL: production
+        run: node scripts/check-db-target.mjs
+      # Без `version:` setup-cli бере версію supabase з package-lock.json (2.120.0). Закріплено за SHA коміту v3.2.0.
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+      - name: CLI — закріплена 2.x
+        run: |
+          v=$(supabase --version)
+          case "$v" in 2.*) echo "Supabase CLI $v";; *) echo "::error title=backup::Очікувалась Supabase CLI 2.x з package-lock.json, а встановлено $v"; exit 1;; esac
+      - name: Дамп (ролі, схема, дані; окремо — дані лише схеми public)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          umask 077
+          d="$RUNNER_TEMP/backup"; mkdir -p "$d"
+          # Наше: історія міграцій (схема supabase_migrations) — окремими файлами, як у Supabase «Backup and restore
+          # using the CLI»: без неї db-deploy у відновлений проєкт спробував би застосувати всі міграції заново.
+          supabase db dump --db-url "$SUPABASE_DB_URL" -s supabase_migrations -f "$d/history_schema.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -s supabase_migrations -f "$d/history_data.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --role-only -f "$d/roles.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "$d/schema.sql"
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy \
+            -x storage.buckets_vectors -x storage.vector_indexes -f "$d/data.sql"
+          # Запасний варіант для відновлення лише таблиць застосунку.
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -s public -f "$d/data-public.sql"
+          # Наше: кожен дамп — окремий знімок бази. Схема змінюється лише міграціями (db-deploy, інша група concurrency),
+          # тож порівнюємо версії міграцій до і після дампів: різні — між дампами пройшла міграція, і схема з даними
+          # можуть бути з різних станів бази. Таку копію не зберігаємо.
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy -s supabase_migrations \
+            -f "$RUNNER_TEMP/history_after.sql"
+          versions() { awk '/^COPY /{inside = ($2 ~ /schema_migrations/); next} inside && /^\\\.$/{inside = 0; next} inside{print $1}' "$1" | sort; }
+          before=$(versions "$d/history_data.sql"); after=$(versions "$RUNNER_TEMP/history_after.sql")
+          rm -f "$RUNNER_TEMP/history_after.sql"
+          if [ "$before" != "$after" ]; then
+            echo "::error title=backup::Під час копії застосовано міграцію — схема й дані можуть бути з різних станів бази. Копію не збережено: запустіть ще раз після CI на main."
+            exit 1
+          fi
+          latest=$(printf '%s\n' "$before" | tail -n 1)
+          printf 'dumped_at_utc=%s\nlatest_migration=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${latest:-none}" > "$d/meta.txt"
+          # Кількість рядків кожної таблиці — з блоків COPY самого дампу (лише назви таблиць і числа).
+          for f in data data-public; do
+            awk '/^COPY /{t=$2; n=0; inside=1; next} inside && /^\\\.$/{print t"|"n; inside=0; next} inside{n++}' \
+              "$d/$f.sql" | sort > "$d/$f.counts"
+          done
+          echo "Розміри файлів (вміст не друкуємо):"; wc -c "$d"/*.sql
+          echo "Остання міграція в копії: ${latest:-немає}"
+          echo "Таблиць у дампі: $(wc -l < "$d/data.counts") (усі схеми), $(wc -l < "$d/data-public.counts") (public)"
+          {
+            echo "### Резервна копія"
+            echo
+            echo "- остання міграція в копії: \`${latest:-немає}\` (схема й дані — з одного стану міграцій)"
+            echo "- таблиць з даними: $(wc -l < "$d/data.counts") (усі схеми), $(wc -l < "$d/data-public.counts") (public)"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Шифрування (gpg, AES256) і видалення відкритих файлів
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          stamp=$(date -u +%Y-%m-%dT%H%M)
+          mkdir -p "$RUNNER_TEMP/out"
+          tar -czf "$RUNNER_TEMP/backup.tgz" -C "$RUNNER_TEMP" backup
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 -o "$RUNNER_TEMP/out/backup-$stamp.tgz.gpg" "$RUNNER_TEMP/backup.tgz"
+          rm -rf "$RUNNER_TEMP/backup" "$RUNNER_TEMP/backup.tgz"
+          ls -l "$RUNNER_TEMP/out"
+          echo "- артефакт \`supabase-backup\`: \`backup-$stamp.tgz.gpg\` (gpg, AES256), $(wc -c < "$RUNNER_TEMP/out/backup-$stamp.tgz.gpg") байт, 7 днів" \
+            >> "$GITHUB_STEP_SUMMARY"
+      # Наше: якщо дамп чи шифрування впали посередині, відкриті файли на раннері не лишаються.
+      - name: Прибрати відкриті файли
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/backup" "$RUNNER_TEMP/backup.tgz" "$RUNNER_TEMP/history_after.sql"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: supabase-backup
+          path: ${{ runner.temp }}/out/*.gpg
+          retention-days: 7
+          if-no-files-found: error
+
+  restore-drill:
+    # Тренування відновлення: копію розшифровуємо й завантажуємо в ОДНОРАЗОВУ локальну базу раннера (Docker), зібрану
+    # з міграцій репо. Наші проєкти Supabase тут не чіпаємо: SUPABASE_DB_URL цей job не використовує.
+    needs: dump
+    if: github.event_name == 'schedule' || inputs.restore_drill
+    runs-on: ubuntu-latest
+    environment: production # лише заради BACKUP_PASSPHRASE
+    timeout-minutes: 25
+    env:
+      SCOPE: ${{ inputs.scope || 'all' }}
+      LOCAL_DB: postgresql://postgres:postgres@127.0.0.1:54322/postgres # локальна база Supabase CLI (supabase/config.toml)
+    steps:
+      - name: Початок тренування (для RTO)
+        run: echo "DRILL_START=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+      # Наше: як job db-check у ci.yml — `supabase db start` піднімає базу раннера й застосовує всі міграції
+      # (supabase/seed.sql порожній). Проти наших проєктів (--linked, --db-url) жодних команд тут немає.
+      - name: Одноразова база з міграцій репо
+        id: localdb
+        run: |
+          set -euo pipefail
+          case "$(supabase --version)" in 2.*) ;; *) echo "::error title=restore::Очікувалась Supabase CLI 2.x"; exit 1;; esac
+          supabase db start
+          psql --version
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: supabase-backup
+          path: ${{ runner.temp }}/in
+      - name: Розшифрувати
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          f=$(ls "$RUNNER_TEMP"/in/*.gpg | head -n 1)
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            -o "$RUNNER_TEMP/backup.tgz" -d "$f" 2>/dev/null
+          tar -xzf "$RUNNER_TEMP/backup.tgz" -C "$RUNNER_TEMP"
+          rm -f "$RUNNER_TEMP/backup.tgz"
+      - name: Відновити дані (scope=${{ inputs.scope || 'all' }})
+        run: |
+          set -euo pipefail
+          file="$RUNNER_TEMP/backup/data.sql"; expected="$RUNNER_TEMP/backup/data.counts"
+          if [ "$SCOPE" = public ]; then
+            file="$RUNNER_TEMP/backup/data-public.sql"; expected="$RUNNER_TEMP/backup/data-public.counts"
+          fi
+          # Наше: міграції самі вставляють рядки (терапевти й слоти — 20261021150100_slot_holds і
+          # 20261023105252_pm_therapist_seed), а в копії ці рядки вже є. Тому в одноразовій базі очищаємо таблиці з копії,
+          # де після міграцій уже щось лежить, — інакше COPY впаде на дублікатах. У журнал — лише назви таблиць і числа.
+          clear=""
+          while IFS='|' read -r table want; do
+            n=$(psql "$LOCAL_DB" -At -c "select count(*) from $table" 2>/dev/null || echo "?")
+            if [ "$n" != "0" ] && [ "$n" != "?" ]; then
+              echo "Після міграцій у $table рядків: $n — очищаємо перед завантаженням (у копії: $want)"
+              clear="$clear DELETE FROM $table;"
+            fi
+          done < "$expected"
+          # replica — тимчасово без тригерів і перевірок зовнішніх ключів, як в офіційній інструкції відновлення.
+          # Очищення й завантаження — одна транзакція. Вивід psql (там можуть бути рядки даних у помилках) не друкуємо.
+          if psql "$LOCAL_DB" --quiet --single-transaction -v ON_ERROR_STOP=1 \
+               -c 'SET session_replication_role = replica' ${clear:+-c "$clear"} -f "$file" \
+               > /dev/null 2> "$RUNNER_TEMP/psql.err"; then
+            echo "Дані завантажено ($SCOPE)."
+          else
+            # Лише початок першого рядка помилки, до першої лапки: значення з рядків даних у журнал не потрапляють.
+            echo "::error title=restore::Завантаження не вдалося (scope=$SCOPE): $(head -n 1 "$RUNNER_TEMP/psql.err" | cut -d'"' -f1 | cut -c1-160)"
+            echo "Якщо scope=all падає на таблицях auth.* — запустіть з scope=public (docs/runbook.md, розділ 9)."
+            exit 1
+          fi
+      - name: Порівняти кількість рядків (копія vs відновлена база)
+        run: |
+          set -euo pipefail
+          expected="$RUNNER_TEMP/backup/data.counts"
+          if [ "$SCOPE" = public ]; then expected="$RUNNER_TEMP/backup/data-public.counts"; fi
+          fail=0
+          {
+            echo "### Тренування відновлення ($SCOPE)"
+            echo
+            echo "| Таблиця | У копії | Відновлено | |"
+            echo "|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          while IFS='|' read -r table want; do
+            got=$(psql "$LOCAL_DB" -At -c "select count(*) from $table" 2>/dev/null || echo "?")
+            mark="ok"; [ "$got" = "$want" ] || { mark="РІЗНИЦЯ"; fail=1; }
+            echo "$table | $want | $got | $mark"
+            echo "| $table | $want | $got | $mark |" >> "$GITHUB_STEP_SUMMARY"
+          done < "$expected"
+          secs=$(( $(date +%s) - DRILL_START ))
+          { echo; echo "Тривалість тренування (від старту job до перевірки): $((secs / 60)) хв $((secs % 60)) с."; } \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$fail" = 0 ] || { echo "::error title=restore::Кількість рядків не збігається — дивіться Summary прогону"; exit 1; }
+          echo "Кількість рядків збігається в усіх таблицях." | tee -a "$GITHUB_STEP_SUMMARY"
+      # Наше: еталон прав для справжнього відновлення (docs/runbook.md, розділ 9, крок 5) — права anon і authenticated у
+      # базі з міграцій репо, той самий запит scripts/privileges.sql. Лише назви об'єктів і прав, без даних.
+      - name: Еталон прав anon і authenticated (з міграцій)
+        if: ${{ !cancelled() && steps.localdb.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          psql "$LOCAL_DB" -At -F '|' -v ON_ERROR_STOP=1 -f scripts/privileges.sql > "$RUNNER_TEMP/privileges.txt"
+          n=$(wc -l < "$RUNNER_TEMP/privileges.txt")
+          echo "Рядків прав: $n"
+          {
+            echo
+            echo "<details><summary>Еталон прав anon і authenticated з міграцій ($n рядків) — для кроку 5 розділу 9 runbook</summary>"
+            echo
+            echo '```text'
+            cat "$RUNNER_TEMP/privileges.txt"
+            echo '```'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Прибрати відкриті файли
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/backup" "$RUNNER_TEMP/in" "$RUNNER_TEMP/psql.err"
