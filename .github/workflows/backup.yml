@@ -27,10 +27,10 @@ on:
         type: boolean
         default: true
       scope:
-        description: "Що відновлювати: all (разом з auth.*) або public (лише таблиці застосунку)"
+        description: "Що відновлювати: public (таблиці застосунку) або all (разом з auth.* — у CI падає, docs/runbook.md, розділ 9)"
         type: choice
-        options: [all, public]
-        default: all
+        options: [public, all]
+        default: public
 
 permissions:
   contents: read
@@ -156,7 +156,10 @@ jobs:
     environment: production # лише заради BACKUP_PASSPHRASE
     timeout-minutes: 25
     env:
-      SCOPE: ${{ inputs.scope || 'all' }}
+      # Наше: за замовчуванням (і за розкладом) — public. З all завантаження падає на auth.*: у схемі auth локального
+      # Supabase CLI 2.120.0 немає стовпця з копії хмарного проєкту (перше тренування 2026-11-27, прогін 45970519677).
+      # Дані auth.* у копії є (data.sql) і відновлюються лише в новий хмарний проєкт (docs/runbook.md, розділ 9).
+      SCOPE: ${{ inputs.scope || 'public' }}
       LOCAL_DB: postgresql://postgres:postgres@127.0.0.1:54322/postgres # локальна база Supabase CLI (supabase/config.toml)
     steps:
       - name: Початок тренування (для RTO)
@@ -189,7 +192,7 @@ jobs:
             -o "$RUNNER_TEMP/backup.tgz" -d "$f" 2>/dev/null
           tar -xzf "$RUNNER_TEMP/backup.tgz" -C "$RUNNER_TEMP"
           rm -f "$RUNNER_TEMP/backup.tgz"
-      - name: Відновити дані (scope=${{ inputs.scope || 'all' }})
+      - name: Відновити дані (scope=${{ inputs.scope || 'public' }})
         run: |
           set -euo pipefail
           file="$RUNNER_TEMP/backup/data.sql"; expected="$RUNNER_TEMP/backup/data.counts"
